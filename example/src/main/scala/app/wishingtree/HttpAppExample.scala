@@ -19,5 +19,5 @@ object HttpAppExample extends HttpApp {
     override val getHandler: RequestHandler[_, _] = SubGetter()
   }
 
-  RouteHandler.registerHandler(server)(myhandler)
+  RouteHandler.registerHandler(myhandler)
 }

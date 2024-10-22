@@ -7,7 +7,7 @@ import java.net.InetSocketAddress
 
 trait HttpApp {
 
-  val server: HttpServer =
+  given server: HttpServer =
     HttpServer.create(new InetSocketAddress(9000), 0)
 
   server.setExecutor(LazyRuntime.executorService)
@@ -15,7 +15,6 @@ trait HttpApp {
     server
       .createContext(path)
       .setHandler(handler)
-    
 
   final def main(args: Array[String]): Unit =
     server.start()

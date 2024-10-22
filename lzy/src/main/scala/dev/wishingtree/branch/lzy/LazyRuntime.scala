@@ -28,7 +28,7 @@ object LazyRuntime extends LazyRuntime {
     CompletableFuture.supplyAsync(
       () => {
         lzy match
-          case Lazy.Fn(a) =>
+          case Lazy.Fn(a)                               =>
             Try(a())
           case Lazy.FlatMap(lzy, f: (Any => Lazy[Any])) => {
             eval(lzy).get() match {
@@ -36,9 +36,9 @@ object LazyRuntime extends LazyRuntime {
               case Failure(e) => Failure(e)
             }
           }
-          case Lazy.Fail(e) =>
+          case Lazy.Fail(e)                             =>
             Failure[A](e)
-          case Lazy.Recover(lzy, f) =>
+          case Lazy.Recover(lzy, f)                     =>
             eval(lzy).get match {
               case Failure(e) => eval(f(e)).get
               case success    => success
