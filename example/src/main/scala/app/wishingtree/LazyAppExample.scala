@@ -25,8 +25,13 @@ object LazyAppExample extends LazyApp {
       _ <- Lazy.println("There")
     } yield ()
 
+  val flattendEffect = Lazy
+    .fn(
+      Lazy.fn("42").debug("inner")
+    )
+    .flatten
+    .debug("outter")
+
   override def run: Lazy[Any] =
-    failApp.recover(e =>
-      Lazy.println(s"Failed with ${e.getMessage}")
-    ) *> bigPrint.flatMap(_ => recoveredEffect.forever)
+    flattendEffect.debug("The answer")
 }
