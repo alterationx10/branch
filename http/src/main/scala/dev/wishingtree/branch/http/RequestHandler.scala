@@ -6,23 +6,27 @@ import dev.wishingtree.branch.lzy.Lazy
 import java.net.URI
 import scala.jdk.CollectionConverters.*
 
-trait RequestHandler[I, O] {
-  given requestDecoder: Conversion[Array[Byte], I]
-  given responseEncoder: Conversion[O, Array[Byte]]
+trait RequestHandler[I, O](using
+    requestDecoder: Conversion[Array[Byte], I],
+    responseEncoder: Conversion[O, Array[Byte]]
+) {
 
   private def parseQueryParams(qpStr: String): Map[String, String] = {
-    qpStr.split("&").map {
-      case s"$key=$value" => key -> value
-    }.toMap
+    qpStr
+      .split("&")
+      .map { case s"$key=$value" =>
+        key -> value
+      }
+      .toMap
   }
-  
+
   case class Request[A](uri: URI, headers: Map[String, List[String]], body: A) {
     final lazy val queryParams = parseQueryParams(uri.getQuery)
   }
   case class Response[A](headers: Map[String, List[String]], body: A)
 
   def handle(request: Request[I]): Response[O]
-  
+
   private def decodeRequest(
       exchange: HttpExchange
   ): Lazy[Request[I]] =
@@ -66,13 +70,17 @@ trait RequestHandler[I, O] {
 
 object RequestHandler {
 
-  private [http] val unimplementedHandler: RequestHandler[Unit, Unit] = new RequestHandler[Unit, Unit] {
+  given Conversion[Array[Byte], Unit] = _ => ()
+  given Conversion[Unit, Array[Byte]] = _ => Array.empty
 
-    override def requestDecoder: Conversion[Array[Byte], Unit] = _ => ()
+  given Conversion[Array[Byte], String] = ba => new String(ba)
+  given Conversion[String, Array[Byte]] = _.getBytes()
 
-    override def responseEncoder: Conversion[Unit, Array[Byte]] = _ => Array.empty
+  private[http] val unimplementedHandler: RequestHandler[Unit, Unit] =
+    new RequestHandler[Unit, Unit] {
 
-    override def handle(request: Request[Unit]): Response[Unit] = throw new Exception("Not implemented")
-  }
+      override def handle(request: Request[Unit]): Response[Unit] =
+        throw new Exception("Not implemented")
+    }
 
 }

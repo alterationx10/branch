@@ -5,7 +5,7 @@ import dev.wishingtree.branch.lzy.{Lazy, LazyRuntime}
 
 import java.time.Duration
 
-trait RouteHandler(val route: String) {
+trait RouteHandler(val routeContext: String) {
 
   lazy val getHandler: RequestHandler[?, ?] =
     RequestHandler.unimplementedHandler
@@ -86,5 +86,5 @@ object RouteHandler {
       handler: H
   )(using httpServer: HttpServer): Unit =
     httpServer
-      .createContext(handler.route, handler.httpHandler)
+      .createContext(handler.routeContext, handler.httpHandler)
 }
