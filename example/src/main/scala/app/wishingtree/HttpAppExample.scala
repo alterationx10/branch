@@ -16,7 +16,7 @@ object HttpAppExample extends HttpApp {
   }
 
   val myhandler = new RouteHandler("/") {
-    override val getHandler: RequestHandler[_, _] = SubGetter()
+    override lazy val getHandler: RequestHandler[_, _] = SubGetter()
   }
 
   RouteHandler.registerHandler(myhandler)

@@ -12,7 +12,7 @@ sealed trait Lazy[+A] {
   final def map[B](f: A => B): Lazy[B] =
     flatMap(a => Lazy.value(f(a)))
 
-  final def flatten[B](using ev: A <:< Lazy[B] ) =
+  final def flatten[B](using ev: A <:< Lazy[B]) =
     this.flatMap(a => ev(a))
 
   final def recover[B >: A](f: Throwable => Lazy[B]): Lazy[B] =
