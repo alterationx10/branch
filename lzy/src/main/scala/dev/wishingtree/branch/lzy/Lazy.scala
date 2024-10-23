@@ -1,5 +1,6 @@
 package dev.wishingtree.branch.lzy
 
+import java.time.Instant
 import scala.annotation.targetName
 import scala.concurrent.Future
 import scala.util.Try
@@ -45,11 +46,15 @@ object Lazy {
     def runAsync(): Future[A] = LazyRuntime.runAsync(lzy)
   }
 
-  case class Fn[A](a: () => A)     extends Lazy[A]
-  case class Fail[A](e: Throwable) extends Lazy[A]
+  private[lzy] final case class Fn[A](a: () => A)     extends Lazy[A]
+  private[lzy] final case class Fail[A](e: Throwable) extends Lazy[A]
 
-  case class FlatMap[A, B](lzy: Lazy[A], f: A => Lazy[B])      extends Lazy[B]
-  case class Recover[A](lzy: Lazy[A], f: Throwable => Lazy[A]) extends Lazy[A]
+  private[lzy] final case class FlatMap[A, B](lzy: Lazy[A], f: A => Lazy[B])
+      extends Lazy[B]
+  private[lzy] final case class Recover[A](
+      lzy: Lazy[A],
+      f: Throwable => Lazy[A]
+  ) extends Lazy[A]
 
   def fn[A](a: => A): Lazy[A]                = Fn(() => a)
   def value[A](a: A): Lazy[A]                = Fn(() => a)
@@ -65,4 +70,7 @@ object Lazy {
 
   def println(str: String): Lazy[Unit] =
     fn(scala.Predef.println(str))
+
+  def now: Lazy[Instant] =
+    fn(Instant.now())
 }

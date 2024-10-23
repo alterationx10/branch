@@ -2,17 +2,27 @@ package dev.wishingtree.branch.http
 
 import com.sun.net.httpserver.HttpExchange
 import dev.wishingtree.branch.lzy.Lazy
+
+import java.net.URI
 import scala.jdk.CollectionConverters.*
 
 trait RequestHandler[I, O] {
   given requestDecoder: Conversion[Array[Byte], I]
   given responseEncoder: Conversion[O, Array[Byte]]
 
-  case class Request[A](headers: Map[String, List[String]], body: A)
+  private def parseQueryParams(qpStr: String): Map[String, String] = {
+    qpStr.split("&").map {
+      case s"$key=$value" => key -> value
+    }.toMap
+  }
+  
+  case class Request[A](uri: URI, headers: Map[String, List[String]], body: A) {
+    final lazy val queryParams = parseQueryParams(uri.getQuery)
+  }
   case class Response[A](headers: Map[String, List[String]], body: A)
 
   def handle(request: Request[I]): Response[O]
-
+  
   private def decodeRequest(
       exchange: HttpExchange
   ): Lazy[Request[I]] =
@@ -25,7 +35,7 @@ trait RequestHandler[I, O] {
                    }
       rawBody <- Lazy.fn(exchange.getRequestBody.readAllBytes())
       body    <- Lazy.fn(requestDecoder(rawBody))
-    } yield Request(headers, body)
+    } yield Request(exchange.getRequestURI, headers, body)
 
   private def sendResponse(response: Response[O])(
       exchange: HttpExchange
@@ -50,6 +60,19 @@ trait RequestHandler[I, O] {
       response <- Lazy.fn(this.handle(request))
       _        <- sendResponse(response)(exchange)
     } yield ()
+  }
+
+}
+
+object RequestHandler {
+
+  private [http] val unimplementedHandler: RequestHandler[Unit, Unit] = new RequestHandler[Unit, Unit] {
+
+    override def requestDecoder: Conversion[Array[Byte], Unit] = _ => ()
+
+    override def responseEncoder: Conversion[Unit, Array[Byte]] = _ => Array.empty
+
+    override def handle(request: Request[Unit]): Response[Unit] = throw new Exception("Not implemented")
   }
 
 }

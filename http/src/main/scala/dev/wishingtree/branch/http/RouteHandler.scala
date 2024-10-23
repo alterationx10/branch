@@ -3,35 +3,36 @@ package dev.wishingtree.branch.http
 import com.sun.net.httpserver.{HttpExchange, HttpHandler, HttpServer}
 import dev.wishingtree.branch.lzy.{Lazy, LazyRuntime}
 
+import java.time.Duration
+
 trait RouteHandler(val route: String) {
 
-  lazy val getHandler: RequestHandler[?, ?]     = throw new Exception(
-    s"GET for $route not implemented"
-  )
-  lazy val headHandler: RequestHandler[?, ?]    = throw new Exception(
-    s"HEAD for $route not implemented"
-  )
-  lazy val optionsHandler: RequestHandler[?, ?] = throw new Exception(
-    s"OPTIONS for $route not implemented"
-  )
-  lazy val traceHandler: RequestHandler[?, ?]   = throw new Exception(
-    s"TRACE for $route not implemented"
-  )
-  lazy val putHandler: RequestHandler[?, ?]     = throw new Exception(
-    s"PUT for $route not implemented"
-  )
-  lazy val deleteHandler: RequestHandler[?, ?]  = throw new Exception(
-    s"DELETE for $route not implemented"
-  )
-  lazy val postHandler: RequestHandler[?, ?]    = throw new Exception(
-    s"POST for $route not implemented"
-  )
-  lazy val patchHandler: RequestHandler[?, ?]   = throw new Exception(
-    s"PATCH for $route not implemented"
-  )
-  lazy val connectHandler: RequestHandler[?, ?] = throw new Exception(
-    s"CONNECT for $route not implemented"
-  )
+  lazy val getHandler: RequestHandler[?, ?] =
+    RequestHandler.unimplementedHandler
+
+  lazy val headHandler: RequestHandler[?, ?] =
+    RequestHandler.unimplementedHandler
+
+  lazy val optionsHandler: RequestHandler[?, ?] =
+    RequestHandler.unimplementedHandler
+
+  lazy val traceHandler: RequestHandler[?, ?] =
+    RequestHandler.unimplementedHandler
+
+  lazy val putHandler: RequestHandler[?, ?] =
+    RequestHandler.unimplementedHandler
+
+  lazy val deleteHandler: RequestHandler[?, ?] =
+    RequestHandler.unimplementedHandler
+
+  lazy val postHandler: RequestHandler[?, ?] =
+    RequestHandler.unimplementedHandler
+
+  lazy val patchHandler: RequestHandler[?, ?] =
+    RequestHandler.unimplementedHandler
+
+  lazy val connectHandler: RequestHandler[?, ?] =
+    RequestHandler.unimplementedHandler
 
   private[http] inline def httpHandler: HttpHandler = {
     (exchange: HttpExchange) =>
@@ -48,11 +49,31 @@ trait RouteHandler(val route: String) {
             case Some(HttpVerb.PATCH)   => patchHandler.lzyRun(exchange)
             case Some(HttpVerb.CONNECT) => connectHandler.lzyRun(exchange)
             case _                      =>
-              throw new Exception(
-                s"Unknown HTTP verb: ${exchange.getRequestMethod}"
+              Lazy.fail(
+                new Exception(
+                  s"Unknown HTTP verb: ${exchange.getRequestMethod}"
+                )
               )
           }
-        LazyRuntime.runSync(lzyHandle)
+        LazyRuntime.runSync {
+          for {
+            start    <- Lazy.now
+            response <- lzyHandle.recover { e =>
+                          Lazy.fn {
+                            val msg = e.getMessage.getBytes()
+                            exchange.sendResponseHeaders(500, msg.length)
+                            exchange.getResponseBody.write(msg)
+                            exchange.getResponseBody.close()
+                          }
+                        }
+            end      <- Lazy.now
+            _        <-
+              Lazy.println(
+                s"Handled ${exchange.getRequestMethod} ${exchange.getRequestURI} in ${Duration.between(start, end).getSeconds / 1000f} ms"
+              )
+          } yield ()
+
+        }
         exchange.close()
       }
   }
@@ -65,6 +86,5 @@ object RouteHandler {
       handler: H
   )(using httpServer: HttpServer): Unit =
     httpServer
-      .createContext(handler.route)
-      .setHandler(handler.httpHandler)
+      .createContext(handler.route, handler.httpHandler)
 }
