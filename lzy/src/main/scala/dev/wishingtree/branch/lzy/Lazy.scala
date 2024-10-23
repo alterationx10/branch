@@ -1,11 +1,17 @@
 package dev.wishingtree.branch.lzy
 
+import scala.annotation.targetName
 import scala.concurrent.Future
 import scala.util.Try
 
 sealed trait Lazy[+A] {
-  final def flatMap[B](f: A => Lazy[B]): Lazy[B]              = Lazy.FlatMap(this, f)
-  final def map[B](f: A => B): Lazy[B]                        = flatMap(a => Lazy.value(f(a)))
+
+  final def flatMap[B](f: A => Lazy[B]): Lazy[B] =
+    Lazy.FlatMap(this, f)
+
+  final def map[B](f: A => B): Lazy[B] =
+    flatMap(a => Lazy.value(f(a)))
+
   final def recover[B >: A](f: Throwable => Lazy[B]): Lazy[B] =
     Lazy.Recover(this, f)
 
@@ -23,6 +29,10 @@ sealed trait Lazy[+A] {
 
   final def unit: Lazy[Unit] =
     this.map(_ => ())
+
+  @targetName("flatMapIgnore")
+  final def *>[B](that: Lazy[B]): Lazy[B] =
+    this.flatMap(_ => that)
 }
 
 object Lazy {
@@ -49,4 +59,7 @@ object Lazy {
         x     <- f(curr)
       } yield soFar :+ x
     })
+
+  def println(str: String): Lazy[Unit] =
+    fn(scala.Predef.println(str))
 }

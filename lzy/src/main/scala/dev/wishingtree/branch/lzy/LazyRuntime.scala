@@ -30,12 +30,11 @@ object LazyRuntime extends LazyRuntime {
         lzy match
           case Lazy.Fn(a)                               =>
             Try(a())
-          case Lazy.FlatMap(lzy, f: (Any => Lazy[Any])) => {
+          case Lazy.FlatMap(lzy, f: (Any => Lazy[Any])) =>
             eval(lzy).get() match {
               case Success(a) => eval(f(a)).get()
               case Failure(e) => Failure(e)
             }
-          }
           case Lazy.Fail(e)                             =>
             Failure[A](e)
           case Lazy.Recover(lzy, f)                     =>

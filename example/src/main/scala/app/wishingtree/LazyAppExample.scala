@@ -2,7 +2,7 @@ package app.wishingtree
 
 import dev.wishingtree.branch.lzy.{Lazy, LazyApp}
 
-object LazyAppExample extends LazyApp{
+object LazyAppExample extends LazyApp {
 
   def myEffects: Lazy[Unit] =
     for {
@@ -18,6 +18,15 @@ object LazyAppExample extends LazyApp{
     loop
   }
 
+  val failApp =
+    for {
+      _ <- Lazy.println("Here")
+      _ <- Lazy.fail(new Exception("the app stops here"))
+      _ <- Lazy.println("There")
+    } yield ()
+
   override def run: Lazy[Any] =
-    bigPrint.flatMap(_ => recoveredEffect.forever)
+    failApp.recover(e =>
+      Lazy.println(s"Failed with ${e.getMessage}")
+    ) *> bigPrint.flatMap(_ => recoveredEffect.forever)
 }
