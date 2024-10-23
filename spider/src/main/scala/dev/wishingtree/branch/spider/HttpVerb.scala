@@ -1,4 +1,4 @@
-package dev.wishingtree.branch.http
+package dev.wishingtree.branch.spider
 
 // https: //developer.mozilla.org/en-US/docs/Web/HTTP/Methods
 enum HttpVerb {

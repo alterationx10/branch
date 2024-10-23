@@ -24,20 +24,20 @@ ThisBuild / developers             := List(
 lazy val root =
   project
     .in(file("."))
-    .aggregate(lzy, http)
+    .aggregate(lzy, spider)
 
 lazy val lzy =
   project.in(file("lzy"))
 
-lazy val http =
+lazy val spider =
   project
-    .in(file("http"))
+    .in(file("spider"))
     .dependsOn(lzy)
 
 lazy val example =
   project
     .in(file("example"))
-    .dependsOn(lzy, http)
+    .dependsOn(lzy, spider)
     .settings(
       fork := true
     )

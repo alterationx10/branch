@@ -1,6 +1,6 @@
 package app.wishingtree
 
-import dev.wishingtree.branch.http.{HttpApp, RequestHandler, RouteHandler}
+import dev.wishingtree.branch.spider.{HttpApp, RequestHandler, RouteHandler}
 
 object HttpAppExample extends HttpApp {
   

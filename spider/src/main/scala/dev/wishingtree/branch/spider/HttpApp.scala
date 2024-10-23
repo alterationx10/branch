@@ -1,4 +1,4 @@
-package dev.wishingtree.branch.http
+package dev.wishingtree.branch.spider
 
 import com.sun.net.httpserver.{HttpHandler, HttpServer}
 import dev.wishingtree.branch.lzy.LazyRuntime

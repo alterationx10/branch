@@ -1,4 +1,4 @@
-package dev.wishingtree.branch.http
+package dev.wishingtree.branch.spider
 
 import com.sun.net.httpserver.HttpExchange
 import dev.wishingtree.branch.lzy.Lazy
@@ -56,7 +56,7 @@ trait RequestHandler[I, O](using
     } yield ()
   }
 
-  private[http] inline def lzyRun(
+  private[spider] inline def lzyRun(
       exchange: HttpExchange
   ): Lazy[Unit] = {
     for {
@@ -76,7 +76,7 @@ object RequestHandler {
   given Conversion[Array[Byte], String] = ba => new String(ba)
   given Conversion[String, Array[Byte]] = _.getBytes()
 
-  private[http] val unimplementedHandler: RequestHandler[Unit, Unit] =
+  private[spider] val unimplementedHandler: RequestHandler[Unit, Unit] =
     new RequestHandler[Unit, Unit] {
 
       override def handle(request: Request[Unit]): Response[Unit] =

@@ -1,4 +1,4 @@
-package dev.wishingtree.branch.http
+package dev.wishingtree.branch.spider
 
 import com.sun.net.httpserver.{HttpExchange, HttpHandler, HttpServer}
 import dev.wishingtree.branch.lzy.{Lazy, LazyRuntime}
@@ -34,7 +34,7 @@ trait RouteHandler(val routeContext: String) {
   lazy val connectHandler: RequestHandler[?, ?] =
     RequestHandler.unimplementedHandler
 
-  private[http] inline def httpHandler: HttpHandler = {
+  private[spider] inline def httpHandler: HttpHandler = {
     (exchange: HttpExchange) =>
       {
         val lzyHandle: Lazy[Unit] =
