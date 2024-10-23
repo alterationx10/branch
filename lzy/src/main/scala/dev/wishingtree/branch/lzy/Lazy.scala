@@ -37,6 +37,12 @@ sealed trait Lazy[+A] {
   @targetName("flatMapIgnore")
   final def *>[B](that: Lazy[B]): Lazy[B] =
     this.flatMap(_ => that)
+
+  def as[B](b: B): Lazy[B] =
+    this.map(_ => b)
+
+  def ignore: Lazy[Unit] =
+    this.unit.recover(_ => Lazy.unit)
 }
 
 object Lazy {
@@ -73,4 +79,7 @@ object Lazy {
 
   def now: Lazy[Instant] =
     fn(Instant.now())
+
+  def unit: Lazy[Unit] =
+    Lazy.value(())
 }
