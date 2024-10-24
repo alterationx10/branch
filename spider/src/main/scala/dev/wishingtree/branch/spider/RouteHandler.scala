@@ -1,37 +1,37 @@
 package dev.wishingtree.branch.spider
 
-import com.sun.net.httpserver.{HttpExchange, HttpHandler, HttpServer}
+import com.sun.net.httpserver.{Filter, HttpExchange, HttpHandler, HttpServer}
 import dev.wishingtree.branch.lzy.{Lazy, LazyRuntime}
 
 import java.time.Duration
 
 trait RouteHandler(val routeContext: String) {
 
-  lazy val getHandler: RequestHandler[?, ?] =
+  val getHandler: RequestHandler[?, ?] =
     RequestHandler.unimplementedHandler
 
-  lazy val headHandler: RequestHandler[?, ?] =
+  val headHandler: RequestHandler[?, ?] =
     RequestHandler.unimplementedHandler
 
-  lazy val optionsHandler: RequestHandler[?, ?] =
+  val optionsHandler: RequestHandler[?, ?] =
     RequestHandler.unimplementedHandler
 
-  lazy val traceHandler: RequestHandler[?, ?] =
+  val traceHandler: RequestHandler[?, ?] =
     RequestHandler.unimplementedHandler
 
-  lazy val putHandler: RequestHandler[?, ?] =
+  val putHandler: RequestHandler[?, ?] =
     RequestHandler.unimplementedHandler
 
-  lazy val deleteHandler: RequestHandler[?, ?] =
+  val deleteHandler: RequestHandler[?, ?] =
     RequestHandler.unimplementedHandler
 
-  lazy val postHandler: RequestHandler[?, ?] =
+  val postHandler: RequestHandler[?, ?] =
     RequestHandler.unimplementedHandler
 
-  lazy val patchHandler: RequestHandler[?, ?] =
+  val patchHandler: RequestHandler[?, ?] =
     RequestHandler.unimplementedHandler
 
-  lazy val connectHandler: RequestHandler[?, ?] =
+  val connectHandler: RequestHandler[?, ?] =
     RequestHandler.unimplementedHandler
 
   private[spider] inline def httpHandler: HttpHandler = {
