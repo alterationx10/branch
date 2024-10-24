@@ -20,67 +20,31 @@ trait ContextHandler(val path: String) {
   val authenticator: Option[Authenticator] =
     Option.empty
 
-  val getHandler: RequestHandler[?, ?] =
-    RequestHandler.unimplementedHandler
-
-  val headHandler: RequestHandler[?, ?] =
-    RequestHandler.unimplementedHandler
-
-  val optionsHandler: RequestHandler[?, ?] =
-    RequestHandler.unimplementedHandler
-
-  val traceHandler: RequestHandler[?, ?] =
-    RequestHandler.unimplementedHandler
-
-  val putHandler: RequestHandler[?, ?] =
-    RequestHandler.unimplementedHandler
-
-  val deleteHandler: RequestHandler[?, ?] =
-    RequestHandler.unimplementedHandler
-
-  val postHandler: RequestHandler[?, ?] =
-    RequestHandler.unimplementedHandler
-
-  val patchHandler: RequestHandler[?, ?] =
-    RequestHandler.unimplementedHandler
-
-  val connectHandler: RequestHandler[?, ?] =
-    RequestHandler.unimplementedHandler
+  val contextRouter: PartialFunction[(HttpVerb, String), RequestHandler[?, ?]]
 
   private[spider] inline def httpHandler: HttpHandler = {
     (exchange: HttpExchange) =>
       {
-        val lzyHandle: Lazy[Unit] =
-          HttpVerb.fromString(exchange.getRequestMethod.toUpperCase) match {
-            case Some(HttpVerb.GET)     => getHandler.lzyRun(exchange)
-            case Some(HttpVerb.HEAD)    => headHandler.lzyRun(exchange)
-            case Some(HttpVerb.OPTIONS) => optionsHandler.lzyRun(exchange)
-            case Some(HttpVerb.TRACE)   => traceHandler.lzyRun(exchange)
-            case Some(HttpVerb.PUT)     => putHandler.lzyRun(exchange)
-            case Some(HttpVerb.DELETE)  => deleteHandler.lzyRun(exchange)
-            case Some(HttpVerb.POST)    => postHandler.lzyRun(exchange)
-            case Some(HttpVerb.PATCH)   => patchHandler.lzyRun(exchange)
-            case Some(HttpVerb.CONNECT) => connectHandler.lzyRun(exchange)
-            case _                      =>
-              Lazy.fail(
-                new Exception(
-                  s"Unknown HTTP verb: ${exchange.getRequestMethod}"
-                )
-              )
+        Lazy
+          .fn {
+            HttpVerb
+              .fromString(exchange.getRequestMethod.toUpperCase)
+              .map(v => v -> exchange.getRequestURI.getPath.toLowerCase)
+              .filter(contextRouter.isDefinedAt)
+              .map(contextRouter)
+              .getOrElse(RequestHandler.unimplementedHandler)
           }
-        LazyRuntime.runSync {
-          for {
-            response <- lzyHandle.recover { e =>
-                          Lazy.fn {
-                            val msg = e.getMessage.getBytes()
-                            exchange.sendResponseHeaders(500, msg.length)
-                            exchange.getResponseBody.write(msg)
-                            exchange.getResponseBody.close()
-                          }
-                        }
-          } yield ()
+          .flatMap(_.lzyRun(exchange))
+          .recover { e =>
+            Lazy.fn {
+              val msg = e.getMessage.getBytes()
+              exchange.sendResponseHeaders(500, msg.length)
+              exchange.getResponseBody.write(msg)
+              exchange.getResponseBody.close()
+            }
+          }
+          .runSync()
 
-        }
         exchange.close()
       }
   }
@@ -95,7 +59,7 @@ object ContextHandler {
       chain.doFilter(exchange)
       val end   = Instant.now()
       println(
-        s"Handled ${exchange.getRequestMethod} ${exchange.getRequestURI} in ${Duration.between(start, end).getSeconds / 1000f} ms"
+        f"Handled ${exchange.getRequestMethod} ${exchange.getRequestURI} in ${Duration.between(start, end).getSeconds / 1000f}%.2f ms"
       )
     }
 
@@ -113,7 +77,7 @@ object ContextHandler {
 
   inline def unregisterHandler[H <: ContextHandler](
       handler: H
-  )(using httpServer: HttpServer) = {
+  )(using httpServer: HttpServer): Unit = {
     httpServer.removeContext(handler.path)
   }
 

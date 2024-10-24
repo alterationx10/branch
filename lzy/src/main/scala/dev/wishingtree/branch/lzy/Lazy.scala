@@ -11,7 +11,7 @@ sealed trait Lazy[+A] {
     Lazy.FlatMap(this, f)
 
   final def map[B](f: A => B): Lazy[B] =
-    flatMap(a => Lazy.value(f(a)))
+    flatMap(a => Lazy.fn(f(a)))
 
   final def flatten[B](using ev: A <:< Lazy[B]) =
     this.flatMap(a => ev(a))
@@ -69,11 +69,10 @@ object Lazy {
   ) extends Lazy[A]
 
   def fn[A](a: => A): Lazy[A]                = Fn(() => a)
-  def value[A](a: => A): Lazy[A]             = Fn(() => a)
   def fail[A](throwable: Throwable): Lazy[A] = Fail(throwable)
 
   def forEach[A, B](xs: Iterable[A])(f: A => Lazy[B]): Lazy[Iterable[B]] =
-    xs.foldLeft(Lazy.value(Vector.empty[B]))((acc, curr) => {
+    xs.foldLeft(Lazy.fn(Vector.empty[B]))((acc, curr) => {
       for {
         soFar <- acc
         x     <- f(curr)
@@ -87,5 +86,5 @@ object Lazy {
     fn(Instant.now())
 
   def unit: Lazy[Unit] =
-    Lazy.value(())
+    Lazy.fn(())
 }

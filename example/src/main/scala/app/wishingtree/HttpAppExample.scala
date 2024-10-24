@@ -1,7 +1,12 @@
 package app.wishingtree
 
 import com.sun.net.httpserver.Filter
-import dev.wishingtree.branch.spider.{ContextHandler, HttpApp, RequestHandler}
+import dev.wishingtree.branch.spider.{
+  ContextHandler,
+  HttpApp,
+  HttpVerb,
+  RequestHandler
+}
 
 object HttpAppExample extends HttpApp {
 
@@ -17,7 +22,10 @@ object HttpAppExample extends HttpApp {
     override val filters: Seq[Filter] = Seq(
       ContextHandler.timingFilter
     )
-    override val getHandler: RequestHandler[?, ?] = SubGetter()
+    override val contextRouter
+        : PartialFunction[(HttpVerb, String), RequestHandler[?, ?]] = {
+      case HttpVerb.GET -> "/" => SubGetter()
+    }
   }
 
   ContextHandler.registerHandler(myhandler)
