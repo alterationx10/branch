@@ -3,9 +3,12 @@ package dev.wishingtree.branch.spider
 import com.sun.net.httpserver.{Filter, HttpExchange, HttpHandler, HttpServer}
 import dev.wishingtree.branch.lzy.{Lazy, LazyRuntime}
 
-import java.time.Duration
+import scala.jdk.CollectionConverters.*
+import java.time.{Duration, Instant}
 
-trait RouteHandler(val routeContext: String) {
+trait ContextHandler(val path: String) {
+
+  val filters: Seq[Filter] = Seq.empty
 
   val getHandler: RequestHandler[?, ?] =
     RequestHandler.unimplementedHandler
@@ -57,7 +60,6 @@ trait RouteHandler(val routeContext: String) {
           }
         LazyRuntime.runSync {
           for {
-            start    <- Lazy.now
             response <- lzyHandle.recover { e =>
                           Lazy.fn {
                             val msg = e.getMessage.getBytes()
@@ -66,11 +68,6 @@ trait RouteHandler(val routeContext: String) {
                             exchange.getResponseBody.close()
                           }
                         }
-            end      <- Lazy.now
-            _        <-
-              Lazy.println(
-                s"Handled ${exchange.getRequestMethod} ${exchange.getRequestURI} in ${Duration.between(start, end).getSeconds / 1000f} ms"
-              )
           } yield ()
 
         }
@@ -80,11 +77,27 @@ trait RouteHandler(val routeContext: String) {
 
 }
 
-object RouteHandler {
+object ContextHandler {
 
-  inline def registerHandler[H <: RouteHandler](
+  val timingFilter: Filter = new Filter {
+    override def doFilter(exchange: HttpExchange, chain: Filter.Chain): Unit = {
+      val start = Instant.now()
+      chain.doFilter(exchange)
+      val end   = Instant.now()
+      println(
+        s"Handled ${exchange.getRequestMethod} ${exchange.getRequestURI} in ${Duration.between(start, end).getSeconds / 1000f} ms"
+      )
+    }
+
+    override def description(): String = "Print timing for handling requests."
+  }
+
+  inline def registerHandler[H <: ContextHandler](
       handler: H
-  )(using httpServer: HttpServer): Unit =
-    httpServer
-      .createContext(handler.routeContext, handler.httpHandler)
+  )(using httpServer: HttpServer): Unit = {
+    val ctx = httpServer
+      .createContext(handler.path, handler.httpHandler)
+    ctx.getFilters.addAll(handler.filters.asJava)
+  }
+
 }
