@@ -19,6 +19,12 @@ sealed trait Lazy[+A] {
   final def recover[B >: A](f: Throwable => Lazy[B]): Lazy[B] =
     Lazy.Recover(this, f)
 
+  final def orElse[B >: A](default: => Lazy[B]): Lazy[B] =
+    this.recover(_ => default)
+
+  final def orElseValue[B >: A](default: B): Lazy[B] =
+    this.orElse(Lazy.fn(default))
+
   final def forever[A] = {
     lazy val loop: Lazy[A] = this.flatMap(_ => loop)
     loop
@@ -35,10 +41,10 @@ sealed trait Lazy[+A] {
     this.map(_ => ())
 
   @targetName("flatMapIgnore")
-  final def *>[B](that: Lazy[B]): Lazy[B] =
+  final def *>[B](that: => Lazy[B]): Lazy[B] =
     this.flatMap(_ => that)
 
-  def as[B](b: B): Lazy[B] =
+  def as[B](b: => B): Lazy[B] =
     this.map(_ => b)
 
   def ignore: Lazy[Unit] =
@@ -63,7 +69,7 @@ object Lazy {
   ) extends Lazy[A]
 
   def fn[A](a: => A): Lazy[A]                = Fn(() => a)
-  def value[A](a: A): Lazy[A]                = Fn(() => a)
+  def value[A](a: => A): Lazy[A]             = Fn(() => a)
   def fail[A](throwable: Throwable): Lazy[A] = Fail(throwable)
 
   def forEach[A, B](xs: Iterable[A])(f: A => Lazy[B]): Lazy[Iterable[B]] =

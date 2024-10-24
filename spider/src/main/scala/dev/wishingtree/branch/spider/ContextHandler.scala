@@ -1,6 +1,12 @@
 package dev.wishingtree.branch.spider
 
-import com.sun.net.httpserver.{Filter, HttpExchange, HttpHandler, HttpServer}
+import com.sun.net.httpserver.{
+  Filter,
+  HttpExchange,
+  HttpHandler,
+  HttpServer,
+  Authenticator
+}
 import dev.wishingtree.branch.lzy.{Lazy, LazyRuntime}
 
 import scala.jdk.CollectionConverters.*
@@ -8,7 +14,11 @@ import java.time.{Duration, Instant}
 
 trait ContextHandler(val path: String) {
 
-  val filters: Seq[Filter] = Seq.empty
+  val filters: Seq[Filter] =
+    Seq.empty
+
+  val authenticator: Option[Authenticator] =
+    Option.empty
 
   val getHandler: RequestHandler[?, ?] =
     RequestHandler.unimplementedHandler
@@ -98,6 +108,13 @@ object ContextHandler {
     val ctx = httpServer
       .createContext(handler.path, handler.httpHandler)
     ctx.getFilters.addAll(handler.filters.asJava)
+    handler.authenticator.foreach(a => ctx.setAuthenticator(a))
+  }
+
+  inline def unregisterHandler[H <: ContextHandler](
+      handler: H
+  )(using httpServer: HttpServer) = {
+    httpServer.removeContext(handler.path)
   }
 
 }
