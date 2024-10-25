@@ -1,16 +1,11 @@
 package dev.wishingtree.branch.spider
 
-import com.sun.net.httpserver.{
-  Filter,
-  HttpExchange,
-  HttpHandler,
-  HttpServer,
-  Authenticator
-}
-import dev.wishingtree.branch.lzy.{Lazy, LazyRuntime}
+import com.sun.net.httpserver.*
+import dev.wishingtree.branch.lzy.Lazy
+import dev.wishingtree.branch.spider.Paths.*
 
-import scala.jdk.CollectionConverters.*
 import java.time.{Duration, Instant}
+import scala.jdk.CollectionConverters.*
 
 trait ContextHandler(val path: String) {
 
@@ -20,7 +15,7 @@ trait ContextHandler(val path: String) {
   val authenticator: Option[Authenticator] =
     Option.empty
 
-  val contextRouter: PartialFunction[(HttpVerb, String), RequestHandler[?, ?]]
+  val contextRouter: PartialFunction[(HttpVerb, Path), RequestHandler[?, ?]]
 
   private[spider] inline def httpHandler: HttpHandler = {
     (exchange: HttpExchange) =>
@@ -29,7 +24,7 @@ trait ContextHandler(val path: String) {
           .fn {
             HttpVerb
               .fromString(exchange.getRequestMethod.toUpperCase)
-              .map(v => v -> exchange.getRequestURI.getPath.toLowerCase)
+              .map(v => v -> Path(exchange.getRequestURI.getPath.toLowerCase))
               .filter(contextRouter.isDefinedAt)
               .map(contextRouter)
               .getOrElse(RequestHandler.unimplementedHandler)
@@ -59,7 +54,7 @@ object ContextHandler {
       chain.doFilter(exchange)
       val end   = Instant.now()
       println(
-        f"Handled ${exchange.getRequestMethod} ${exchange.getRequestURI} in ${Duration.between(start, end).getSeconds / 1000f}%.2f ms"
+        f"${exchange.getResponseCode} ${exchange.getRequestMethod} ${exchange.getRequestURI} in ${Duration.between(start, end).getSeconds / 1000f}%.2f ms"
       )
     }
 

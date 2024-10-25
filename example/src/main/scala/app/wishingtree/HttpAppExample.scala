@@ -1,6 +1,7 @@
 package app.wishingtree
 
 import com.sun.net.httpserver.Filter
+import dev.wishingtree.branch.spider.Paths.*
 import dev.wishingtree.branch.spider.{
   ContextHandler,
   HttpApp,
@@ -23,8 +24,8 @@ object HttpAppExample extends HttpApp {
       ContextHandler.timingFilter
     )
     override val contextRouter
-        : PartialFunction[(HttpVerb, String), RequestHandler[?, ?]] = {
-      case HttpVerb.GET -> "/" => SubGetter()
+        : PartialFunction[(HttpVerb, Path), RequestHandler[?, ?]] = {
+      case HttpVerb.GET -> >> / "some" / "path" / s"$arg" => SubGetter()
     }
   }
 
