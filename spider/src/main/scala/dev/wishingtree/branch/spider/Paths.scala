@@ -28,7 +28,6 @@ object Paths {
 
   }
 
-  @targetName("appendExtractor")
   object / {
     def unapply(path: Path): Option[(Path, String)] =
       path match {
