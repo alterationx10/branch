@@ -7,14 +7,13 @@ import java.net.InetSocketAddress
 
 trait HttpApp {
 
+  val port: Int    = 9000
+  val backlog: Int = 0
+
   given server: HttpServer =
-    HttpServer.create(new InetSocketAddress(9000), 0)
+    HttpServer.create(new InetSocketAddress(port), backlog)
 
   server.setExecutor(LazyRuntime.executorService)
-  def registerHandler(path: String)(handler: HttpHandler) =
-    server
-      .createContext(path)
-      .setHandler(handler)
 
   final def main(args: Array[String]): Unit =
     server.start()

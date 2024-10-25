@@ -13,20 +13,32 @@ object HttpAppExample extends HttpApp {
 
   import RequestHandler.given
 
-  case class SubGetter() extends RequestHandler[Unit, String] {
+  case class GreeterGetter() extends RequestHandler[Unit, String] {
     override def handle(request: Request[Unit]): Response[String] = {
       Response(Map.empty, "Aloha")
     }
   }
 
+  val greet = GreeterGetter()
+
+  case class EchoGetter(msg: String) extends RequestHandler[Unit, String] {
+    override def handle(request: Request[Unit]): Response[String] = {
+      Response(Map.empty, msg)
+    }
+  }
+
   val myhandler = new ContextHandler("/") {
+
     override val filters: Seq[Filter] = Seq(
       ContextHandler.timingFilter
     )
+
     override val contextRouter
         : PartialFunction[(HttpVerb, Path), RequestHandler[?, ?]] = {
-      case HttpVerb.GET -> >> / "some" / "path" / s"$arg" => SubGetter()
+      case HttpVerb.GET -> >> / "some" / "path"           => greet
+      case HttpVerb.GET -> >> / "some" / "path" / s"$arg" => EchoGetter(arg)
     }
+
   }
 
   ContextHandler.registerHandler(myhandler)
