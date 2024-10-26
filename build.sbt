@@ -34,10 +34,18 @@ lazy val spider =
     .in(file("spider"))
     .dependsOn(lzy)
 
+lazy val piggy =
+  project
+    .in(file("piggy"))
+    .dependsOn(lzy)
+
 lazy val example =
   project
     .in(file("example"))
-    .dependsOn(lzy, spider)
+    .dependsOn(lzy, spider, piggy)
     .settings(
+      libraryDependencies ++= Seq( // Examples and tests are allowed to have dependencies :-)
+        "org.postgresql" % "postgresql" % "42.7.3"
+      ),
       fork := true
     )

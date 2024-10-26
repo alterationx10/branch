@@ -17,6 +17,7 @@ the ecosystem.
 
 - **lzy** - Lazy Futures or Tiny Effects?
 - **Spider** - A wrapper/framework around the Java HttpServer (bet you didn't even know there was one!)
+- **Piggy** - A SQL framework, probably focused on PostgreSQL.
 - **Scarecrow** - A Json framework, because Scala doesn't already have enough.
 
 ... and *more to come*!
@@ -24,7 +25,6 @@ the ecosystem.
 A list of other things important to this framework's goals are (but not limited to):
 
 - HTTP Client
-- SQL
 - Configuration
 - Web Sockets
 - Event Bus
