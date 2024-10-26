@@ -21,6 +21,8 @@ ThisBuild / developers             := List(
   )
 )
 
+ThisBuild / libraryDependencies += "org.scalameta" %% "munit" % "1.0.2" % Test
+
 lazy val root =
   project
     .in(file("."))
