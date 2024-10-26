@@ -24,19 +24,32 @@ ThisBuild / developers             := List(
 lazy val root =
   project
     .in(file("."))
+    .settings(
+      name := "branch"
+    )
     .aggregate(lzy, spider)
 
 lazy val lzy =
-  project.in(file("lzy"))
+  project
+    .in(file("lzy"))
+    .settings(
+      name := "lzy"
+    )
 
 lazy val spider =
   project
     .in(file("spider"))
+    .settings(
+      name := "spider"
+    )
     .dependsOn(lzy)
 
 lazy val piggy =
   project
     .in(file("piggy"))
+    .settings(
+      name := "piggy"
+    )
     .dependsOn(lzy)
 
 lazy val example =
@@ -44,6 +57,7 @@ lazy val example =
     .in(file("example"))
     .dependsOn(lzy, spider, piggy)
     .settings(
+      name := "example",
       libraryDependencies ++= Seq( // Examples and tests are allowed to have dependencies :-)
         "org.postgresql" % "postgresql" % "42.7.3"
       ),

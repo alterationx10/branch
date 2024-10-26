@@ -35,6 +35,7 @@ object PiggyExample {
       resource.isValid(5)
   }
 
+  // docker run --rm  -p 5432:5432 -e POSTGRES_HOST_AUTH_METHOD=trust postgres
   val pg = {
     val ds = new PGSimpleDataSource()
     ds.setURL("jdbc:postgresql://localhost:5432/postgres")

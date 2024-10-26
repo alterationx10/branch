@@ -1,9 +1,13 @@
 package dev.wishingtree.branch.piggy
 
 import java.util.concurrent.Semaphore
-import scala.collection.mutable.*
+import java.util.concurrent.atomic.AtomicBoolean
+import scala.collection.mutable
 
 trait ResourcePool[R] {
+
+  val isShuttingDown: AtomicBoolean =
+    new AtomicBoolean(false)
 
   val poolSize: Int =
     5
@@ -11,8 +15,8 @@ trait ResourcePool[R] {
   private val gate: Semaphore =
     new Semaphore(poolSize, true)
 
-  private val pool: Queue[R] =
-    Queue.empty[R]
+  private val pool: mutable.Queue[R] =
+    mutable.Queue.empty[R]
 
   def acquire: R
   def release(resource: R): Unit
@@ -20,18 +24,8 @@ trait ResourcePool[R] {
   def test(resource: R): Boolean =
     true
 
-  private def fillPool: Unit = {
-    gate.acquire(poolSize)
-    synchronized {
-      while (pool.size < poolSize) {
-        pool.enqueue(acquire)
-      }
-    }
-    gate.release(poolSize)
-  }
-
   def use[A](fn: R => A): A = {
-    val resource = borrow
+    val resource = borrowResource
     try {
       fn(resource)
     } finally {
@@ -39,7 +33,9 @@ trait ResourcePool[R] {
     }
   }
 
-  private def borrow: R = {
+  private def borrowResource: R = {
+    if isShuttingDown.get() then
+      throw new IllegalStateException("Pool is shutting down")
     gate.acquire()
     synchronized(pool.dequeue())
   }
@@ -51,11 +47,42 @@ trait ResourcePool[R] {
       } else {
         release(resource)
         pool.enqueue(acquire)
+        println("Replaced resource")
       }
     }
     gate.release()
   }
 
-  // fill the pool on create
-  fillPool
+  private def fillPool(): Unit = {
+    println("Filling pool")
+    gate.acquire(poolSize)
+    synchronized {
+      while (pool.size < poolSize) {
+        pool.enqueue(acquire)
+      }
+    }
+    gate.release(poolSize)
+  }
+
+  Runtime.getRuntime.addShutdownHook {
+    new Thread(() => {
+      // Prevent new resources from being acquired
+      isShuttingDown.set(true)
+      // Wait until all resources are returned
+      gate.acquire(poolSize)
+      // Release all resources
+      synchronized {
+        pool.dequeueAll { r =>
+          println("Cleaning up")
+          release(r)
+          true
+        }
+      }
+      // Release the gate
+      gate.release(poolSize)
+    })
+  }
+
+  // Fill the pool on startup
+  fillPool()
 }
