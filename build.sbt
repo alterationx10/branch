@@ -50,7 +50,10 @@ lazy val piggy =
   project
     .in(file("piggy"))
     .settings(
-      name := "piggy"
+      name := "piggy",
+      libraryDependencies ++= Seq(
+        "com.h2database" % "h2" % "2.3.232" % Test
+      )
     )
     .dependsOn(lzy)
 
