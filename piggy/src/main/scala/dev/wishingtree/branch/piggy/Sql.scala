@@ -3,25 +3,92 @@ package dev.wishingtree.branch.piggy
 import java.sql.{Connection, PreparedStatement, ResultSet}
 import scala.compiletime.*
 
+trait ResultSetGetter[A] {
+  def get(rs: ResultSet)(index: Int): A
+}
+
+object ResultSetGetter {
+
+  given ResultSetGetter[Int] = new ResultSetGetter[Int] {
+    def get(rs: ResultSet)(index: Int): Int = rs.getInt(index)
+  }
+
+  given ResultSetGetter[Long] = new ResultSetGetter[Long] {
+    def get(rs: ResultSet)(index: Int): Long = rs.getLong(index)
+  }
+
+  given ResultSetGetter[Float] = new ResultSetGetter[Float] {
+    def get(rs: ResultSet)(index: Int): Float = rs.getFloat(index)
+  }
+
+  given ResultSetGetter[Double] = new ResultSetGetter[Double] {
+    def get(rs: ResultSet)(index: Int): Double = rs.getDouble(index)
+  }
+
+  given ResultSetGetter[String] = new ResultSetGetter[String] {
+    def get(rs: ResultSet)(index: Int): String = rs.getString(index)
+  }
+
+  given ResultSetGetter[Boolean] = new ResultSetGetter[Boolean] {
+    def get(rs: ResultSet)(index: Int): Boolean = rs.getBoolean(index)
+  }
+
+}
+
+trait PreparedStatementSetter[A] {
+  def set(ps: PreparedStatement)(index: Int)(value: A): Unit
+}
+
+object PreparedStatementSetter {
+
+  given PreparedStatementSetter[Int] = new PreparedStatementSetter[Int] {
+    def set(ps: PreparedStatement)(index: Int)(value: Int): Unit =
+      ps.setInt(index, value)
+  }
+
+  given PreparedStatementSetter[Long] = new PreparedStatementSetter[Long] {
+    def set(ps: PreparedStatement)(index: Int)(value: Long): Unit =
+      ps.setLong(index, value)
+  }
+
+  given PreparedStatementSetter[Float] = new PreparedStatementSetter[Float] {
+    def set(ps: PreparedStatement)(index: Int)(value: Float): Unit =
+      ps.setFloat(index, value)
+  }
+
+  given PreparedStatementSetter[Double] = new PreparedStatementSetter[Double] {
+    def set(ps: PreparedStatement)(index: Int)(value: Double): Unit =
+      ps.setDouble(index, value)
+  }
+
+  given PreparedStatementSetter[String] = new PreparedStatementSetter[String] {
+    def set(ps: PreparedStatement)(index: Int)(value: String): Unit =
+      ps.setString(index, value)
+  }
+
+  given PreparedStatementSetter[Boolean] =
+    new PreparedStatementSetter[Boolean] {
+      def set(ps: PreparedStatement)(index: Int)(value: Boolean): Unit =
+        ps.setBoolean(index, value)
+    }
+
+}
+
 object Sql {
 
   private inline def parseRs[T <: Tuple](rs: ResultSet)(index: Int): Tuple =
     inline erasedValue[T] match
-      case _: EmptyTuple      =>
+      case _: EmptyTuple =>
         EmptyTuple
-      case _: (Int *: ts)     =>
-        rs.getInt(index) *: parseRs[ts](rs)(index + 1)
-      case _: (Long *: ts)    =>
-        rs.getLong(index) *: parseRs[ts](rs)(index + 1)
-      case _: (Float *: ts)   =>
-        rs.getFloat(index) *: parseRs[ts](rs)(index + 1)
-      case _: (Double *: ts)  =>
-        rs.getDouble(index) *: parseRs[ts](rs)(index + 1)
-      case _: (String *: ts)  =>
-        rs.getString(index) *: parseRs[ts](rs)(index + 1)
-      case _: (Boolean *: ts) =>
-        rs.getBoolean(index) *: parseRs[ts](rs)(index + 1)
-      case _                  => error("Unsupported type")
+      case _: (t *: ts)  =>
+        summonInline[ResultSetGetter[t]].get(rs)(index) *: parseRs[ts](rs)(
+          index + 1
+        )
+
+  private inline def setPs[A](ps: PreparedStatement)(index: Int)(
+      value: A
+  ): Unit =
+    summonInline[PreparedStatementSetter[A]].set(ps)(index)(value)
 
   extension (rs: ResultSet) {
 

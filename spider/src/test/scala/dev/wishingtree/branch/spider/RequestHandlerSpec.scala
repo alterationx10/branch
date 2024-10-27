@@ -13,15 +13,11 @@ class RequestHandlerSpec extends HttpFunSuite {
       Response(Map.empty, "Aloha")
     }
   }
-  
-  val alohaPf : PF = {
-    case HttpVerb.GET -> >> / "aloha" => AlohaGreeter()
-  }
 
   contextFixture.test("RequestHandler") { (server, fn) =>
-  
-    val testHandler = fn {
-        case HttpVerb.GET -> >> / "aloha" => AlohaGreeter()
+
+    val testHandler = fn { case HttpVerb.GET -> >> / "aloha" =>
+      AlohaGreeter()
     }
 
     ContextHandler.registerHandler(testHandler)(using server)
@@ -32,7 +28,7 @@ class RequestHandlerSpec extends HttpFunSuite {
 
     val response = client.send(
       HttpRequest.newBuilder
-        .uri(URI.create(s"http://localhost:${server.getAddress.getPort}"))
+        .uri(URI.create(s"http://localhost:${server.getAddress.getPort}/aloha"))
         .build,
       HttpResponse.BodyHandlers.ofString
     )

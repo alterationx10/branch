@@ -5,11 +5,11 @@ import dev.wishingtree.branch.piggy.ResourcePool
 import dev.wishingtree.branch.piggy.Sql.ps
 import org.postgresql.ds.PGSimpleDataSource
 
-import java.sql.Connection
+import java.sql.{Connection, PreparedStatement}
 import javax.sql.DataSource
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
-
+import dev.wishingtree.branch.piggy.Sql.*
 object PiggyExample {
 
   val ddl =
@@ -56,42 +56,26 @@ object PiggyExample {
 
   def main(args: Array[String]): Unit = {
 
-    // Clear out previous rus
-    connPool.use(conn => {
-      val stmt = conn.createStatement()
-      stmt.execute(ddl)
-      stmt.execute(s"TRUNCATE TABLE person")
-      stmt.close()
-    })
-
-    // Insert 100 records sequentially
-    (1 to 100).foreach { i =>
-      println(s"Hello from ${i}")
-      connPool.use[Unit] { conn =>
-        println(s"Creating person ${i}")
-        val name = s"Mark-$i"
-        val age  = i
-        val ins  =
-          ps"INSERT INTO person (name, age) VALUES ($name, $age)" (using conn)
-        ins.execute()
-        println(s"Created person ${i}")
-      }
+    connPool.use { conn =>
+      given Connection           = conn
+      val name                   = "Alterationx10"
+      val age                    = 1234
+      val ins: PreparedStatement =
+        ps"INSERT INTO person (name, age) VALUES ($name, $age)"
+        // Turns into INSERT INTO person (name, age) VALUES (?, ?)
+        // and then provides the values to the PreparedStatement
+      ins.execute()
+      val q                      =
+        ps"SELECT name, age FROM person where name = $name"
+      val resultSet              = q.executeQuery()
+      val (dbName, dbAge)        =
+        resultSet.tupledList[(String, Int)].head
+        // Iterates through the result sets and
+        // pulls out values based in the type and
+        // length of the Tuple type argument.
+        // use tupledList[T <: Tuple] for multiple rows
+      println(s"Name: $dbName, Age: $dbAge")
     }
-
-    // Insert 100 records in parallel
-    val futures = (1 to 100).map { i =>
-      Future {
-        println(s"Hello from ${i}")
-        connPool.use[Unit] { conn =>
-          println(s"Creating person ${i}")
-          Person(-1, s"Mark-$i", i).prepareInsert(using conn).execute()
-          println(s"Created person ${i}")
-        }
-      }
-    }
-
-    // Wait for all futures to complete, so we don't terminate early
-    Await.result(Future.sequence(futures), Duration.Inf)
 
   }
 }
