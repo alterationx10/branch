@@ -47,14 +47,12 @@ trait ResourcePool[R] {
       } else {
         release(resource)
         pool.enqueue(acquire)
-        println("Replaced resource")
       }
     }
     gate.release()
   }
 
   private def fillPool(): Unit = {
-    println("Filling pool")
     gate.acquire(poolSize)
     synchronized {
       while (pool.size < poolSize) {
@@ -73,7 +71,6 @@ trait ResourcePool[R] {
       // Release all resources
       synchronized {
         pool.dequeueAll { r =>
-          println("Cleaning up")
           release(r)
           true
         }
