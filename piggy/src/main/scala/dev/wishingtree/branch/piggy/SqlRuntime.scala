@@ -5,7 +5,7 @@ import dev.wishingtree.branch.lzy.LazyRuntime
 import java.sql.{Connection, PreparedStatement}
 import java.util.concurrent.{CompletableFuture, ExecutorService}
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Try, Using}
+import scala.util.*
 import scala.jdk.FutureConverters.*
 
 trait SqlRuntime {
@@ -42,7 +42,7 @@ object SqlRuntime extends SqlRuntime {
     CompletableFuture.supplyAsync(
       () => {
         sql match
-          case Sql.StmntRs(sql, fn)              =>
+          case Sql.StmntRs(sql, fn)                   =>
             Try {
               pool.use { conn =>
                 Using.Manager { use =>
@@ -53,7 +53,7 @@ object SqlRuntime extends SqlRuntime {
                 }
               }
             }.flatten
-          case Sql.StmntCount(sql)               =>
+          case Sql.StmntCount(sql)                    =>
             Try {
               pool.use { conn =>
                 Using.Manager { use =>
@@ -63,7 +63,7 @@ object SqlRuntime extends SqlRuntime {
                 }
               }
             }.flatten
-          case Sql.PrepExec(sqlFn, args)         =>
+          case Sql.PrepExec(sqlFn, args)              =>
             Try {
               pool.use { conn =>
                 Using.Manager { use =>
@@ -74,7 +74,7 @@ object SqlRuntime extends SqlRuntime {
                 }
               }
             }.flatten
-          case Sql.PrepUpdate(sqlFn, args)       =>
+          case Sql.PrepUpdate(sqlFn, args)            =>
             Try {
               pool.use { conn =>
                 Using.Manager { use =>
@@ -85,7 +85,7 @@ object SqlRuntime extends SqlRuntime {
                 }
               }
             }.flatten
-          case Sql.PrepQuery(sqlFn, rsFun, args) =>
+          case Sql.PrepQuery(sqlFn, rsFun, args)      =>
             Try {
               pool.use { conn =>
                 Using.Manager { use =>
@@ -98,6 +98,20 @@ object SqlRuntime extends SqlRuntime {
                 }
               }
             }.flatten
+          case Sql.FlatMap(sql, f: (Any => Sql[Any])) =>
+            eval(sql).get() match {
+              case Success(a) => eval(f(a)).get()
+              case Failure(e) => Failure(e)
+            }
+          case Sql.Recover(sql, f)                    => {
+            eval(sql).get match {
+              case Failure(e) => eval(f(e)).get
+              case success    => success
+            }
+          }
+          case Sql.MappedValue(a)                     => {
+            Try(a)
+          }
       },
       executorService
     )

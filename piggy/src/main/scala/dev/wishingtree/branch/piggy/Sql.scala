@@ -4,7 +4,21 @@ import java.sql.{Connection, PreparedStatement, ResultSet}
 import scala.compiletime.*
 import scala.util.*
 
-sealed trait Sql[+A] {}
+sealed trait Sql[+A] {
+   
+  final def flatMap[B](f: A => Sql[B]): Sql[B] =
+    Sql.FlatMap(this, f)
+
+  final def map[B](f: A => B): Sql[B] =
+    this.flatMap(a => Sql.MappedValue(f(a)))
+
+  final def flatten[B](using ev: A <:< Sql[B]) =
+    this.flatMap(a => ev(a))
+
+  final def recover[B >: A](f: Throwable => Sql[B]): Sql[B] =
+    Sql.Recover(this, f)
+
+}
 
 object Sql {
 
@@ -121,6 +135,8 @@ object Sql {
       sql: Sql[A],
       fm: Throwable => Sql[A]
   ) extends Sql[A]
+
+  private[piggy] final case class MappedValue[A](a: A) extends Sql[A]
 
   def statement[A](sql: String, fn: ResultSet => A): Sql[A] =
     Sql.StmntRs(sql, fn)
