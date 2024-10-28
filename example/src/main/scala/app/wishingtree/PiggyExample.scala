@@ -1,12 +1,12 @@
 package app.wishingtree
 
-import dev.wishingtree.branch.piggy.{ResourcePool, Sql, SqlRuntime}
 import dev.wishingtree.branch.piggy.Sql.*
+import dev.wishingtree.branch.piggy.{ResourcePool, Sql}
 import org.postgresql.ds.PGSimpleDataSource
-import scala.util.*
 
 import java.sql.Connection
 import javax.sql.DataSource
+import scala.util.*
 object PiggyExample {
 
   val ddl =
@@ -49,7 +49,7 @@ object PiggyExample {
     val ins = (p: Person) =>
       ps"INSERT INTO person (name, age) values (${p.name}, ${p.age})"
 
-    val find: Tuple1[String] => PsHelper = a =>
+    val find: Tuple1[String] => PsArgHolder = a =>
       ps"SELECT id, name, age from person where name like $a"
 
     val tenPeople = (1 to 10).map(i => Person(0, s"Mark-$i", i))
@@ -61,7 +61,7 @@ object PiggyExample {
       fetchedPeople <- Sql.prepareQuery[Tuple1[String], (Int, String, Int)](
                          find,
                          Tuple1("Mark%")
-                       )
+                       ).map(_.map(Person.apply))
     } yield (nIns, fetchedPeople)
 
     lazyPiggy.execute match {

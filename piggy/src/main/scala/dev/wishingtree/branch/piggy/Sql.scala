@@ -5,7 +5,7 @@ import scala.compiletime.*
 import scala.util.*
 
 sealed trait Sql[+A] {
-   
+
   final def flatMap[B](f: A => Sql[B]): Sql[B] =
     Sql.FlatMap(this, f)
 
@@ -23,7 +23,7 @@ sealed trait Sql[+A] {
 object Sql {
 
   extension (sc: StringContext) {
-    def ps(args: Any*): PsHelper = PsHelper(
+    def ps(args: Any*): PsArgHolder = PsArgHolder(
       sc.s(args.map(_ => "?")*),
       args*
     )
@@ -63,16 +63,16 @@ object Sql {
 
   }
 
-  private[piggy] final case class StmntRs[A](
+  private[piggy] final case class StatementRs[A](
       sql: String,
       fn: ResultSet => A
   ) extends Sql[A]
 
-  private[piggy] final case class StmntCount(
+  private[piggy] final case class StatementCount(
       sql: String
   ) extends Sql[Int]
 
-  final case class PsHelper(
+  final case class PsArgHolder(
       psStr: String,
       psArgs: Any*
   ) {
@@ -110,18 +110,18 @@ object Sql {
 
   }
 
-  private[piggy] final case class PrepExec[A, P <: Product](
-      sqlFn: P => PsHelper,
+  private[piggy] final case class PreparedExec[A, P <: Product](
+      sqlFn: P => PsArgHolder,
       args: Seq[P]
   ) extends Sql[Unit]
 
-  private[piggy] final case class PrepUpdate[A, P <: Product](
-      sqlFn: P => PsHelper,
+  private[piggy] final case class PreparedUpdate[A, P <: Product](
+      sqlFn: P => PsArgHolder,
       args: Seq[P]
   ) extends Sql[Int]
 
-  private[piggy] final case class PrepQuery[A, P, R <: Tuple](
-      sqlFn: P => PsHelper,
+  private[piggy] final case class PreparedQuery[A, P, R <: Tuple](
+      sqlFn: P => PsArgHolder,
       rsFn: ResultSet => Seq[R],
       args: Seq[P]
   ) extends Sql[Seq[R]]
@@ -139,21 +139,21 @@ object Sql {
   private[piggy] final case class MappedValue[A](a: A) extends Sql[A]
 
   def statement[A](sql: String, fn: ResultSet => A): Sql[A] =
-    Sql.StmntRs(sql, fn)
+    Sql.StatementRs(sql, fn)
 
   def statement(sql: String): Sql[Int] =
-    Sql.StmntCount(sql)
+    Sql.StatementCount(sql)
 
-  def prepare[I <: Product](q: I => PsHelper, args: I*): Sql[Unit] =
-    Sql.PrepExec(q, args.toSeq)
+  def prepare[I <: Product](q: I => PsArgHolder, args: I*): Sql[Unit] =
+    Sql.PreparedExec(q, args.toSeq)
 
-  def prepareUpdate[I <: Product](q: I => PsHelper, args: I*): Sql[Int] =
-    Sql.PrepUpdate(q, args.toSeq)
+  def prepareUpdate[I <: Product](q: I => PsArgHolder, args: I*): Sql[Int] =
+    Sql.PreparedUpdate(q, args.toSeq)
 
   inline def prepareQuery[I <: Product, R <: Tuple](
-      q: I => PsHelper,
+      q: I => PsArgHolder,
       args: I*
   ): Sql[Seq[R]] =
-    Sql.PrepQuery(q, rs => rs.tupledList[R], args.toSeq)
+    Sql.PreparedQuery(q, rs => rs.tupledList[R], args.toSeq)
 
 }
