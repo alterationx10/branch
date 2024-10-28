@@ -1,15 +1,11 @@
 package app.wishingtree
 
-import dev.wishingtree.branch.lzy.LazyRuntime
-import dev.wishingtree.branch.piggy.ResourcePool
-import dev.wishingtree.branch.piggy.Sql.ps
+import dev.wishingtree.branch.piggy.{ResourcePool, Sql, SqlRuntime}
+import dev.wishingtree.branch.piggy.Sql.*
 import org.postgresql.ds.PGSimpleDataSource
 
-import java.sql.{Connection, PreparedStatement}
+import java.sql.Connection
 import javax.sql.DataSource
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, ExecutionContext, Future}
-import dev.wishingtree.branch.piggy.Sql.*
 object PiggyExample {
 
   val ddl =
@@ -43,39 +39,24 @@ object PiggyExample {
     ds
   }
 
-  val connPool = PgConnectionPool(pg)
-
-  // Run everything on virtual threads
-  given ExecutionContext = LazyRuntime.executionContext
-
-  // sql modeling lite :tm:
-  case class Person(id: Int, name: String, age: Int) {
-    def prepareInsert(using connection: Connection) =
-      ps"INSERT INTO person (name, age) VALUES (${this.name}, ${this.age})"
-  }
-
   def main(args: Array[String]): Unit = {
 
-    connPool.use { conn =>
-      given Connection           = conn
-      val name                   = "Alterationx10"
-      val age                    = 1234
-      val ins: PreparedStatement =
-        ps"INSERT INTO person (name, age) VALUES ($name, $age)"
-        // Turns into INSERT INTO person (name, age) VALUES (?, ?)
-        // and then provides the values to the PreparedStatement
-      ins.execute()
-      val q                      =
-        ps"SELECT name, age FROM person where name = $name"
-      val resultSet              = q.executeQuery()
-      val (dbName, dbAge)        =
-        resultSet.tupledList[(String, Int)].head
-        // Iterates through the result sets and
-        // pulls out values based in the type and
-        // length of the Tuple type argument.
-        // use tupledList[T <: Tuple] for multiple rows
-      println(s"Name: $dbName, Age: $dbAge")
+    given PgConnectionPool(pg)
+
+    println(Sql.statement(ddl).execute)
+    println(Sql.statement("insert into person (name, age) values ('Mark', 123)").execute)
+    println(Sql.statement("select * from person where name = 'Mark'", rs => rs.tupled[(Int, String, Int)]).execute)
+    println(Sql.statement("truncate table person").execute)
+
+    println(Sql.prepare[(String, Int)]((a: String, b: Int) => ps"insert into person (name, age) values ($a, $b)", ("Mark", 1234)).execute)
+    println(Sql.prepareUpdate[(String, Int)]((a: String, b: Int) => ps"insert into person (name, age) values ($a, $b)", ("Mark", 1234)).execute)
+    println(Sql.prepareUpdate[(String, Int)]((a: String, b: Int) => ps"insert into person (name, age) values ($a, $b)", ("Mark", 1234), ("Mark", 1234), ("Mark", 1234)).execute)
+    
+
+    println {
+      Sql.prepareQuery[Tuple1[String], (String, Int)](a => ps"select name, age from person where name = $a", Tuple1("Mark")).execute
     }
+
 
   }
 }

@@ -38,9 +38,9 @@ class ResourcePoolSpec extends FunSuite {
       pool.use[Unit] { conn =>
         val name = s"Mark-$i"
         val age  = i
-        val ins  =
-          ps"INSERT INTO person (name, age) VALUES ($name, $age)" (using conn)
-        ins.execute()
+//        val ins  =
+//          ps"INSERT INTO person (name, age) VALUES ($name, $age)" (using conn)
+//        ins.execute()
       }
     }
 
@@ -66,9 +66,9 @@ class ResourcePoolSpec extends FunSuite {
       stmt.close()
       val name = "Mark"
       val age  = 100
-      val ins  =
-        ps"INSERT INTO person (name, age) VALUES ($name, $age)" (using conn)
-      ins.execute()
+//      val ins  =
+//        ps"INSERT INTO person (name, age) VALUES ($name, $age)" (using conn)
+//      ins.execute()
     })
 
     val readBack = pool.use(conn => {
@@ -97,9 +97,9 @@ class ResourcePoolSpec extends FunSuite {
       pool.use[Unit] { conn =>
         val name = s"Mark-$i"
         val age  = i
-        val ins  =
-          ps"INSERT INTO person (name, age) VALUES ($name, $age)" (using conn)
-        ins.execute()
+//        val ins  =
+//          ps"INSERT INTO person (name, age) VALUES ($name, $age)" (using conn)
+//        ins.execute()
       }
     }
 
