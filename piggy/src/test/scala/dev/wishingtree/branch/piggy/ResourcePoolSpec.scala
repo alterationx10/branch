@@ -4,6 +4,8 @@ import munit.FunSuite
 import Sql.*
 
 import java.sql.{Connection, DriverManager}
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
 
 class ResourcePoolSpec extends FunSuite {
 
@@ -25,94 +27,55 @@ class ResourcePoolSpec extends FunSuite {
   """
 
   test("ResourcePool") {
-    val pool = H2Pool()
+    given pool: ResourcePool[Connection] = H2Pool()
 
-    pool.use(conn => {
-      val stmt = conn.createStatement()
-      stmt.execute(ddl)
-      stmt.execute(s"TRUNCATE TABLE person")
-      stmt.close()
-    })
-
-    (1 to 100).foreach { i =>
-      pool.use[Unit] { conn =>
-        val name = s"Mark-$i"
-        val age  = i
-        val ins  =
-          ps"INSERT INTO person (name, age) VALUES ($name, $age)" (using conn)
-        ins.execute()
-      }
+    val asyncSum = (1 to 100).map { _ =>
+      Sql.statement(s"SELECT 1", rs => { rs.next(); rs.getInt(1) }).executeAsync
     }
 
-    val nRecords = pool.use(conn => {
-      val stmt  = conn.createStatement()
-      val rs    = stmt.executeQuery("SELECT count(1) FROM person")
-      rs.next()
-      val count = rs.tupled[Tuple1[Int]]
-      stmt.close()
-      count
-    })
+    val sum = Await
+      .result(
+        Future.sequence(asyncSum)(implicitly, SqlRuntime.executionContext),
+        Duration.Inf
+      )
+      .sum
 
-    assertEquals(nRecords._1, 100)
+    assertEquals(sum, 100)
   }
 
   test("ResultSet Tupled") {
-    val pool = H2Pool()
+    given pool: ResourcePool[Connection] = H2Pool()
 
-    pool.use(conn => {
-      val stmt = conn.createStatement()
-      stmt.execute(ddl)
-      stmt.execute(s"TRUNCATE TABLE person")
-      stmt.close()
-      val name = "Mark"
-      val age  = 100
-      val ins  =
-        ps"INSERT INTO person (name, age) VALUES ($name, $age)" (using conn)
-      ins.execute()
-    })
+    val tple =
+      Sql.statement(s"SELECT 1, 'two'", _.tupled[(Int, String)]).execute
 
-    val readBack = pool.use(conn => {
-      val stmt    = conn.createStatement()
-      val rs      = stmt.executeQuery("SELECT name, age FROM person limit 1")
-      val results = rs.tupled[(String, Int)]
-      stmt.close()
-      results
-    })
-
-    assertEquals(readBack._1, "Mark")
-    assertEquals(readBack._2, 100)
+    assertEquals(tple.get, (1, "two"))
   }
 
   test("ResultSet TupledList") {
-    val pool = H2Pool()
+    given pool: ResourcePool[Connection] = H2Pool()
 
-    pool.use(conn => {
-      val stmt = conn.createStatement()
-      stmt.execute(ddl)
-      stmt.execute(s"TRUNCATE TABLE person")
-      stmt.close()
-    })
+    case class Person(id: Int, name: String, age: Int)
 
-    (1 to 100).foreach { i =>
-      pool.use[Unit] { conn =>
-        val name = s"Mark-$i"
-        val age  = i
-        val ins  =
-          ps"INSERT INTO person (name, age) VALUES ($name, $age)" (using conn)
-        ins.execute()
-      }
-    }
+    val ins = (p: Person) =>
+      ps"INSERT INTO person (name, age) values (${p.name}, ${p.age})"
 
-    val readBack = pool.use(conn => {
-      val stmt    = conn.createStatement()
-      val rs      = stmt.executeQuery("SELECT name, age FROM person limit 10")
-      val results = rs.tupledList[(String, Int)]
-      stmt.close()
-      results
-    })
+    val tenPeople = (1 to 10).map(i => Person(0, s"Mark-$i", i))
+
+    val readBack = {
+      for {
+        _             <- Sql.statement(ddl)
+        _             <- Sql.statement("truncate table person")
+        _             <- Sql.prepareUpdate(ins, tenPeople*)
+        fetchedPeople <- Sql.statement(
+                           "select * from person where name like 'Mark%'",
+                           _.tupledList[(Int, String, Int)]
+                         )
+      } yield fetchedPeople
+    }.execute.get
 
     assert(readBack.size == 10)
-    assert(readBack.forall(_._1.startsWith("Mark")))
+    assert(readBack.forall(_._2.startsWith("Mark")))
   }
 
 }

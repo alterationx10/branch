@@ -2,79 +2,40 @@ package dev.wishingtree.branch.piggy
 
 import java.sql.{Connection, PreparedStatement, ResultSet}
 import scala.compiletime.*
+import scala.concurrent.Future
+import scala.util.*
 
-trait ResultSetGetter[A] {
-  def get(rs: ResultSet)(index: Int): A
-}
+sealed trait Sql[+A] {
 
-object ResultSetGetter {
+  final def flatMap[B](f: A => Sql[B]): Sql[B] =
+    Sql.FlatMap(this, f)
 
-  given ResultSetGetter[Int] = new ResultSetGetter[Int] {
-    def get(rs: ResultSet)(index: Int): Int = rs.getInt(index)
-  }
+  final def map[B](f: A => B): Sql[B] =
+    this.flatMap(a => Sql.MappedValue(f(a)))
 
-  given ResultSetGetter[Long] = new ResultSetGetter[Long] {
-    def get(rs: ResultSet)(index: Int): Long = rs.getLong(index)
-  }
+  final def flatten[B](using ev: A <:< Sql[B]) =
+    this.flatMap(a => ev(a))
 
-  given ResultSetGetter[Float] = new ResultSetGetter[Float] {
-    def get(rs: ResultSet)(index: Int): Float = rs.getFloat(index)
-  }
-
-  given ResultSetGetter[Double] = new ResultSetGetter[Double] {
-    def get(rs: ResultSet)(index: Int): Double = rs.getDouble(index)
-  }
-
-  given ResultSetGetter[String] = new ResultSetGetter[String] {
-    def get(rs: ResultSet)(index: Int): String = rs.getString(index)
-  }
-
-  given ResultSetGetter[Boolean] = new ResultSetGetter[Boolean] {
-    def get(rs: ResultSet)(index: Int): Boolean = rs.getBoolean(index)
-  }
-
-}
-
-trait PreparedStatementSetter[A] {
-  def set(ps: PreparedStatement)(index: Int)(value: A): Unit
-}
-
-object PreparedStatementSetter {
-
-  given PreparedStatementSetter[Int] = new PreparedStatementSetter[Int] {
-    def set(ps: PreparedStatement)(index: Int)(value: Int): Unit =
-      ps.setInt(index, value)
-  }
-
-  given PreparedStatementSetter[Long] = new PreparedStatementSetter[Long] {
-    def set(ps: PreparedStatement)(index: Int)(value: Long): Unit =
-      ps.setLong(index, value)
-  }
-
-  given PreparedStatementSetter[Float] = new PreparedStatementSetter[Float] {
-    def set(ps: PreparedStatement)(index: Int)(value: Float): Unit =
-      ps.setFloat(index, value)
-  }
-
-  given PreparedStatementSetter[Double] = new PreparedStatementSetter[Double] {
-    def set(ps: PreparedStatement)(index: Int)(value: Double): Unit =
-      ps.setDouble(index, value)
-  }
-
-  given PreparedStatementSetter[String] = new PreparedStatementSetter[String] {
-    def set(ps: PreparedStatement)(index: Int)(value: String): Unit =
-      ps.setString(index, value)
-  }
-
-  given PreparedStatementSetter[Boolean] =
-    new PreparedStatementSetter[Boolean] {
-      def set(ps: PreparedStatement)(index: Int)(value: Boolean): Unit =
-        ps.setBoolean(index, value)
-    }
+  final def recover[B >: A](f: Throwable => Sql[B]): Sql[B] =
+    Sql.Recover(this, f)
 
 }
 
 object Sql {
+
+  extension (sc: StringContext) {
+    def ps(args: Any*): PsArgHolder = PsArgHolder(
+      sc.s(args.map(_ => "?")*),
+      args*
+    )
+  }
+
+  extension [A](a: Sql[A]) {
+    def execute(using pool: ResourcePool[Connection]): Try[A]         =
+      SqlRuntime.execute(a)
+    def executeAsync(using pool: ResourcePool[Connection]): Future[A] =
+      SqlRuntime.executeAsync(a)
+  }
 
   private inline def parseRs[T <: Tuple](rs: ResultSet)(index: Int): Tuple =
     inline erasedValue[T] match
@@ -105,21 +66,97 @@ object Sql {
 
   }
 
-  extension (sc: StringContext) {
-    def ps(args: Any*)(using connection: Connection): PreparedStatement = {
-      val sql = sc.s(args.map(_ => "?")*)
-      val ps  = connection.prepareStatement(sql)
-      args.zipWithIndex.map({ case (a, i) => a -> (i + 1) }).foreach {
-        case (a: Int, i)     => ps.setInt(i, a)
-        case (a: Long, i)    => ps.setLong(i, a)
-        case (a: Float, i)   => ps.setFloat(i, a)
-        case (a: Double, i)  => ps.setDouble(i, a)
-        case (a: String, i)  => ps.setString(i, a)
-        case (a: Boolean, i) => ps.setBoolean(i, a)
-        case _               => throw new IllegalArgumentException("Unsupported type")
+  private[piggy] final case class StatementRs[A](
+      sql: String,
+      fn: ResultSet => A
+  ) extends Sql[A]
+
+  private[piggy] final case class StatementCount(
+      sql: String
+  ) extends Sql[Int]
+
+  final case class PsArgHolder(
+      psStr: String,
+      psArgs: Any*
+  ) {
+
+    private def set(preparedStatement: PreparedStatement): Unit = {
+      psArgs.zipWithIndex.map({ case (a, i) => a -> (i + 1) }).foreach {
+        case (a: Int, i)            => preparedStatement.setInt(i, a)
+        case (a: Long, i)           => preparedStatement.setLong(i, a)
+        case (a: Float, i)          => preparedStatement.setFloat(i, a)
+        case (a: Double, i)         => preparedStatement.setDouble(i, a)
+        case (a: String, i)         => preparedStatement.setString(i, a)
+        case (a: Tuple1[String], i) => preparedStatement.setString(i, a._1)
+        case (a: Boolean, i)        => preparedStatement.setBoolean(i, a)
+        case (u, i)                 =>
+          throw new IllegalArgumentException(s"Unsupported type $u")
       }
-      ps
     }
+
+    def setAndExecute(preparedStatement: PreparedStatement): Unit = {
+      this.set(preparedStatement)
+      preparedStatement.execute()
+    }
+
+    def setAndExecuteUpdate(preparedStatement: PreparedStatement): Int = {
+      this.set(preparedStatement)
+      preparedStatement.executeUpdate()
+    }
+
+    inline def setAndExecuteQuery(
+        preparedStatement: PreparedStatement
+    ): ResultSet = {
+      this.set(preparedStatement)
+      preparedStatement.executeQuery()
+    }
+
   }
+
+  private[piggy] final case class PreparedExec[A, P <: Product](
+      sqlFn: P => PsArgHolder,
+      args: Seq[P]
+  ) extends Sql[Unit]
+
+  private[piggy] final case class PreparedUpdate[A, P <: Product](
+      sqlFn: P => PsArgHolder,
+      args: Seq[P]
+  ) extends Sql[Int]
+
+  private[piggy] final case class PreparedQuery[A, P, R <: Tuple](
+      sqlFn: P => PsArgHolder,
+      rsFn: ResultSet => Seq[R],
+      args: Seq[P]
+  ) extends Sql[Seq[R]]
+
+  private[piggy] final case class FlatMap[A, B](
+      sql: Sql[A],
+      fn: A => Sql[B]
+  ) extends Sql[B]
+
+  private[piggy] final case class Recover[A](
+      sql: Sql[A],
+      fm: Throwable => Sql[A]
+  ) extends Sql[A]
+
+  private[piggy] final case class MappedValue[A](a: A) extends Sql[A]
+
+  def statement[A](sql: String, fn: ResultSet => A): Sql[A] =
+    Sql.StatementRs(sql, fn)
+
+  def statement(sql: String): Sql[Int] =
+    Sql.StatementCount(sql)
+
+  def prepare[I <: Product](q: I => PsArgHolder, args: I*): Sql[Unit] =
+    Sql.PreparedExec(q, args.toSeq)
+
+  def prepareUpdate[I <: Product](q: I => PsArgHolder, args: I*): Sql[Int] =
+    Sql.PreparedUpdate(q, args.toSeq)
+
+  inline def prepareQuery[I <: Product, R <: Tuple](
+      q: I => PsArgHolder,
+      args: I*
+  ): Sql[Seq[R]] =
+    Sql.PreparedQuery(q, rs => rs.tupledList[R], args.toSeq)
 
 }
