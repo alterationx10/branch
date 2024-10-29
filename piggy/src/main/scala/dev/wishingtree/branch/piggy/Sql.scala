@@ -2,6 +2,7 @@ package dev.wishingtree.branch.piggy
 
 import java.sql.{Connection, PreparedStatement, ResultSet}
 import scala.compiletime.*
+import scala.concurrent.Future
 import scala.util.*
 
 sealed trait Sql[+A] {
@@ -30,8 +31,10 @@ object Sql {
   }
 
   extension [A](a: Sql[A]) {
-    def execute(using pool: ResourcePool[Connection]): Try[A] =
+    def execute(using pool: ResourcePool[Connection]): Try[A]         =
       SqlRuntime.execute(a)
+    def executeAsync(using pool: ResourcePool[Connection]): Future[A] =
+      SqlRuntime.executeAsync(a)
   }
 
   private inline def parseRs[T <: Tuple](rs: ResultSet)(index: Int): Tuple =
