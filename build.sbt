@@ -31,6 +31,13 @@ lazy val root =
     )
     .aggregate(lzy, spider)
 
+lazy val macaroni =
+  project
+    .in(file("macaroni"))
+    .settings(
+      name := "macaroni"
+    )
+
 lazy val lzy =
   project
     .in(file("lzy"))
@@ -54,6 +61,14 @@ lazy val piggy =
       libraryDependencies ++= Seq(
         "com.h2database" % "h2" % "2.3.232" % Test
       )
+    )
+    .dependsOn(lzy)
+
+lazy val friday =
+  project
+    .in(file("friday"))
+    .settings(
+      name := "friday"
     )
     .dependsOn(lzy)
 

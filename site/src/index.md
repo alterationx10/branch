@@ -18,7 +18,8 @@ the ecosystem.
 - **lzy** - Lazy Futures or Tiny Effects?
 - **Spider** - A wrapper/framework around the Java HttpServer (bet you didn't even know there was one!)
 - **Piggy** - A SQL framework, probably focused on PostgreSQL.
-- **Scarecrow** - A Json framework, because Scala doesn't already have enough.
+- **Friday** - A Json framework, because Scala doesn't already have enough.
+- **Macaroni** - Some re-usable helpers and meta-programming utilities.
 
 ... and *more to come*!
 
