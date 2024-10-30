@@ -49,7 +49,8 @@ object PiggyExample {
     val ins = (p: Person) =>
       ps"INSERT INTO person (name, age) values (${p.name}, ${p.age})"
 
-    val find: Tuple1[String] => PsArgHolder = a =>
+    
+    val find: PsArg[Tuple1[String]] = a =>
       ps"SELECT id, name, age from person where name like $a"
 
     val tenPeople = (1 to 10).map(i => Person(0, s"Mark-$i", i))
