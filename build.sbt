@@ -29,7 +29,7 @@ lazy val root =
     .settings(
       name := "branch"
     )
-    .aggregate(lzy, spider)
+    .aggregate(macaroni, lzy, spider, piggy, friday)
 
 lazy val macaroni =
   project

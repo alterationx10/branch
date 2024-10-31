@@ -1,12 +1,58 @@
 package dev.wishingtree.branch.friday
 
-import dev.wishingtree.branch.friday.Json.*
-
+import java.util.regex.Pattern
 import scala.annotation.targetName
 import scala.language.postfixOps
 import scala.util.matching.Regex
 
 trait Parsers[Parser[+_]] {
+
+  def string(s: String): Parser[String]
+
+  def char(c: Char): Parser[Char] =
+    string(c.toString).map(_.charAt(0))
+
+  def defaultSucceed[A](a: A): Parser[A] =
+    string("").map(_ => a)
+
+  def succeed[A](a: A): Parser[A]
+
+  def fail(msg: String): Parser[Nothing]
+
+  def regex(r: Regex): Parser[String]
+
+  def whitespace: Parser[String] = regex("\\s*".r)
+
+  /** Parser which consumes 1 or more digits. */
+  def digits: Parser[String] = regex("\\d+".r)
+
+  /** Parser which consumes reluctantly until it encounters the given string. */
+  def thru(s: String): Parser[String] = regex((".*?" + Pattern.quote(s)).r)
+
+  /** Unescaped string literals, like "foo" or "bar". */
+  def quoted: Parser[String] = string("\"") *> thru("\"").map(_.dropRight(1))
+
+  /** Unescaped or escaped string literals, like "An \n important \"Quotation\""
+    * or "bar".
+    */
+  def escapedQuoted: Parser[String] =
+    // rather annoying to write, left as an exercise
+    // we'll just use quoted (unescaped literals) for now
+    quoted.label("string literal").token
+
+  /** C/Java style floating point literals, e.g .1, -1.0, 1e9, 1E-23, etc.
+    * Result is left as a string to keep full precision
+    */
+  def doubleString: Parser[String] =
+    regex("[-+]?([0-9]*\\.)?[0-9]+([eE][-+]?[0-9]+)?".r).token
+
+  /** Floating point literals, converted to a `Double`. */
+  def double: Parser[Double] =
+    doubleString.map(_.toDouble).label("double literal")
+
+  /** A parser that succeeds when given empty input. */
+  def eof: Parser[String] =
+    regex("\\z".r).label("unexpected trailing characters")
 
   extension [A](p: Parser[A]) {
 
@@ -35,15 +81,15 @@ trait Parsers[Parser[+_]] {
     def map2[B, C](p2: => Parser[B])(f: (A, B) => C): Parser[C] =
       p.product(p2).map(f.tupled)
 
-    def run(input: String): Either[ParseError, A] = ???
+    def run(input: String): Either[ParseError, A]
 
-    infix def or(p2: => Parser[A]): Parser[A] = ???
+    infix def or(p2: => Parser[A]): Parser[A]
     @targetName("symbolicOr")
-    def |(p2: Parser[A]): Parser[A]           = p.or(p2)
+    def |(p2: Parser[A]): Parser[A] = p.or(p2)
 
-    def flatMap[B](f: A => Parser[B]): Parser[B] = ???
+    def flatMap[B](f: A => Parser[B]): Parser[B]
 
-    def slice: Parser[String] = ???
+    def slice: Parser[String]
 
     @targetName("keepRight")
     def *>[B](p2: => Parser[B]): Parser[B] =
@@ -63,69 +109,14 @@ trait Parsers[Parser[+_]] {
       p.map(_ => b)
 
     def label(msg: String): Parser[A]
-    def scope(msg: String):  Parser[A]
+    def scope(msg: String): Parser[A]
 
+    def attempt: Parser[A]
+
+    def token: Parser[A] = p.attempt <* whitespace
+
+    def root: Parser[A] =
+      p <* eof
   }
-
-  // Extension above
-
-  case class Location(input: String, offset: Int = 0) {
-    lazy val line = input.slice(0, offset + 1).count(_ == '\n') + 1
-    lazy val col  = input.slice(0, offset + 1).lastIndexOf('\n') match {
-      case -1        => offset + 1
-      case lineStart => offset - lineStart
-    }
-  }
-  
-  case class ParseError(stack: List[(Location, String)])
-
-  def errorLocation(e: ParseError): Location
-  def errorMessage(e: ParseError): String
-
-  def succeed[A](a: A): Parser[A] =
-    string("").map(_ => a)
-
-  def char(c: Char): Parser[Char] =
-    string(c.toString).map(_.charAt(0))
-
-  def string(s: String): Parser[String] = ???
-
-  def regex(r: Regex): Parser[String] = ???
-
-  def eof: Parser[String] =
-    regex("\\z".r) // .label("unexpected trailing characters")
-
-
-  val value: Parser[Json] = ???
-
-  def keyVal: Parser[(String, Json)] =
-    escapedQuote ** (token(":") *> value)
-
-  def obj: Parser[Json] =
-    token("{") *> keyVal.sep(token(",")).map { kvs =>
-      JsonObject(kvs.toMap)
-    } <* token("}")
-
-  def token(s: String): Parser[String] =
-    string(s) <* whitespace
-
-  def array: Parser[Json] =
-    token("[") *>
-      value.sep(token(",")).map(vs => JsonArray(vs.toIndexedSeq))
-      <* token("]")
-
-  def double: Parser[Double]       = ???
-  def escapedQuote: Parser[String] = ???
-
-  def literal: Parser[Json] = {
-    token("null").as(JsonNull) |
-      double.map(JsonNumber.apply) |
-      escapedQuote.map(JsonString.apply) |
-      token("true").as(JsonBool(true)) |
-      token("false").as(JsonBool(false))
-  }
-
-  def whitespace: Parser[String] = regex("\\s*".r)
-  def document: Parser[Json]     = whitespace *> (array | obj) <* eof
 
 }
