@@ -75,7 +75,7 @@ lazy val friday =
 lazy val example =
   project
     .in(file("example"))
-    .dependsOn(lzy, spider, piggy)
+    .dependsOn(macaroni, lzy, spider, piggy, friday)
     .settings(
       name := "example",
       libraryDependencies ++= Seq( // Examples and tests are allowed to have dependencies :-)
@@ -83,3 +83,6 @@ lazy val example =
       ),
       fork := true
     )
+
+addCommandAlias("fmtCheck", ";scalafmtCheckAll;scalafmtSbtCheck")
+addCommandAlias("fmt", ";scalafmtAll;scalafmtSbt")

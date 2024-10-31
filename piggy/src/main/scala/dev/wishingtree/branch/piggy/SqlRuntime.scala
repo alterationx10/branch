@@ -42,7 +42,7 @@ object SqlRuntime extends SqlRuntime {
     CompletableFuture.supplyAsync(
       () => {
         sql match
-          case Sql.StatementRs(sql, fn)                   =>
+          case Sql.StatementRs(sql, fn)               =>
             Try {
               pool.use { conn =>
                 Using.Manager { use =>
@@ -53,7 +53,7 @@ object SqlRuntime extends SqlRuntime {
                 }
               }
             }.flatten
-          case Sql.StatementCount(sql)                    =>
+          case Sql.StatementCount(sql)                =>
             Try {
               pool.use { conn =>
                 Using.Manager { use =>
@@ -63,7 +63,7 @@ object SqlRuntime extends SqlRuntime {
                 }
               }
             }.flatten
-          case Sql.PreparedExec(sqlFn, args)              =>
+          case Sql.PreparedExec(sqlFn, args)          =>
             Try {
               pool.use { conn =>
                 Using.Manager { use =>
@@ -74,7 +74,7 @@ object SqlRuntime extends SqlRuntime {
                 }
               }
             }.flatten
-          case Sql.PreparedUpdate(sqlFn, args)            =>
+          case Sql.PreparedUpdate(sqlFn, args)        =>
             Try {
               pool.use { conn =>
                 Using.Manager { use =>
@@ -85,7 +85,7 @@ object SqlRuntime extends SqlRuntime {
                 }
               }
             }.flatten
-          case Sql.PreparedQuery(sqlFn, rsFun, args)      =>
+          case Sql.PreparedQuery(sqlFn, rsFun, args)  =>
             Try {
               pool.use { conn =>
                 Using.Manager { use =>

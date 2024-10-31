@@ -24,7 +24,7 @@ sealed trait Sql[+A] {
 object Sql {
 
   type PsArg[X] = X => PsArgHolder
-  
+
   extension (sc: StringContext) {
     def ps(args: Any*): PsArgHolder = PsArgHolder(
       sc.s(args.map(_ => "?")*),
