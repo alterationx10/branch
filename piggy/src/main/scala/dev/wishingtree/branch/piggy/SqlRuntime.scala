@@ -41,7 +41,7 @@ object SqlRuntime extends SqlRuntime {
   ): CompletableFuture[Try[A]] = {
     CompletableFuture.supplyAsync(
       () => {
-        sql match
+        sql match {
           case Sql.StatementRs(sql, fn)               =>
             Try {
               pool.use { conn =>
@@ -112,6 +112,7 @@ object SqlRuntime extends SqlRuntime {
           case Sql.MappedValue(a)                     => {
             Try(a)
           }
+        }
       },
       executorService
     )

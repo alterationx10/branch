@@ -15,7 +15,7 @@ case class ParseError(stack: List[(Location, String)] = List.empty) {
   
   override def toString =
     if stack.isEmpty then "no error message"
-    else
+    else {
       val collapsed = collapseStack(stack)
       val context   =
         collapsed.lastOption.map("\n\n" + _._1.currentLine).getOrElse("") +
@@ -23,6 +23,7 @@ case class ParseError(stack: List[(Location, String)] = List.empty) {
       collapsed
         .map((loc, msg) => s"${formatLoc(loc)} $msg")
         .mkString("\n") + context
+    }
   
   def collapseStack(s: List[(Location, String)]): List[(Location, String)] =
     s.groupBy(_._1)

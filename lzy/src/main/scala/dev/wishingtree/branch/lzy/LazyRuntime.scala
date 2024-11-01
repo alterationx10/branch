@@ -27,7 +27,7 @@ object LazyRuntime extends LazyRuntime {
   private def eval[A](lzy: Lazy[A]): CompletableFuture[Try[A]] = {
     CompletableFuture.supplyAsync(
       () => {
-        lzy match
+        lzy match {
           case Lazy.Fn(a)                               =>
             Try(a())
           case Lazy.FlatMap(lzy, f: (Any => Lazy[Any])) =>
@@ -42,6 +42,7 @@ object LazyRuntime extends LazyRuntime {
               case Failure(e) => eval(f(e)).get
               case success    => success
             }
+        }
       },
       executorService
     )

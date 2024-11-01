@@ -9,9 +9,10 @@ object Reference extends Parsers[Reference.Parser] {
 
   def firstNonmatchingIndex(s1: String, s2: String, offset: Int): Int = {
     var i = 0
-    while i + offset < s1.length && i < s2.length do
+    while i + offset < s1.length && i < s2.length do {
       if s1.charAt(i + offset) != s2.charAt(i) then return i
       i += 1
+    }
     if s1.length - offset >= s2.length then -1
     else s1.length - offset
   }
@@ -30,9 +31,10 @@ object Reference extends Parsers[Reference.Parser] {
     l => Failure(l.toError(msg), true)
 
   override def regex(r: Regex): Parser[String] = { l =>
-    r.findPrefixOf(l.remaining) match
+    r.findPrefixOf(l.remaining) match {
       case None    => Failure(l.toError(s"regex $r"), false)
       case Some(m) => Success(m, m.length)
+    }
   }
 
   extension [A](p: Parser[A]) {
@@ -43,24 +45,27 @@ object Reference extends Parsers[Reference.Parser] {
       l => p(l).uncommit
 
     override infix def or(p2: => Parser[A]): Parser[A] = { l =>
-      p(l) match
+      p(l) match {
         case Failure(e, false) => p2(l)
         case r                 => r 
+      }
     }
 
     override def flatMap[B](f: A => Parser[B]): Parser[B] = { l =>
-      p(l) match
+      p(l) match {
         case Success(a, n)     =>
           f(a)(l.advanceBy(n))
             .addCommit(n != 0)
             .advanceSuccess(n)
         case f @ Failure(_, _) => f
+      }
     }
 
     override def slice: Parser[String] = { l =>
-      p(l) match
+      p(l) match {
         case Success(_, n)     => Success(l.slice(n), n)
         case f @ Failure(_, _) => f
+      }
     }
 
     override def label(msg: String): Parser[A] =

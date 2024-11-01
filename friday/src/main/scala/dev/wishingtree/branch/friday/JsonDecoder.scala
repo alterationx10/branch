@@ -20,27 +20,31 @@ trait JsonDecoder[+A] {
 
 object JsonDecoder {
 
-  given JsonDecoder[String] with
+  given JsonDecoder[String] with {
     def decode(json: Json): Try[String] =
       Try(json.strVal)
+  }
 
-  given JsonDecoder[Int] with
+  given JsonDecoder[Int] with {
     def decode(json: Json): Try[Int] =
       Try(json.numVal.toInt)
+  }
 
   private inline def summonDecoders[A <: Tuple]: List[JsonDecoder[?]] = {
-    inline erasedValue[A] match
+    inline erasedValue[A] match {
       case _: EmptyTuple => Nil
       case _: (t *: ts)  =>
         summonInline[JsonDecoder[t]] :: summonDecoders[ts]
+    }
   }
 
   private[friday] inline def summonLabels[A <: Tuple]: List[String] = {
-    inline erasedValue[A] match
+    inline erasedValue[A] match {
       case _: EmptyTuple => Nil
       case _: (t *: ts)  =>
         summonInline[ValueOf[t]].value
           .asInstanceOf[String] :: summonLabels[ts]
+    }
   }
 
   private[friday] inline def buildJsonProduct[A](

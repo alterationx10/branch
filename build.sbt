@@ -21,6 +21,11 @@ ThisBuild / developers             := List(
   )
 )
 
+ThisBuild / scalacOptions ++= Seq(
+  "-rewrite",
+  "-no-indent"
+)
+
 ThisBuild / libraryDependencies += "org.scalameta" %% "munit" % "1.0.2" % Test
 
 lazy val root =

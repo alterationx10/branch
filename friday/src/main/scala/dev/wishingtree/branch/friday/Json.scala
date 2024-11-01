@@ -5,13 +5,14 @@ import dev.wishingtree.branch.friday.Reference.Parser
 import scala.annotation.targetName
 import scala.util.Try
 
-enum Json:
+enum Json {
   case JsonNull
   case JsonBool(value: Boolean)
   case JsonNumber(value: Double)
   case JsonString(value: String)
   case JsonArray(value: IndexedSeq[Json])
   case JsonObject(value: Map[String, Json])
+}
 
 object Json {
 

@@ -21,26 +21,33 @@ trait JsonEncoder[-A] {
 }
 
 object JsonEncoder {
-  given JsonEncoder[String] with
+  given JsonEncoder[String] with {
     def encode(a: String): Json = Json.JsonString(a)
+  }
 
-  given JsonEncoder[Double] with
+  given JsonEncoder[Double] with {
     def encode(a: Double): Json = Json.JsonNumber(a)
+  }
 
-  given JsonEncoder[Boolean] with
+  given JsonEncoder[Boolean] with {
     def encode(a: Boolean): Json = Json.JsonBool(a)
+  }
 
-  given JsonEncoder[IndexedSeq[Json]] with
+  given JsonEncoder[IndexedSeq[Json]] with {
     def encode(a: IndexedSeq[Json]): Json = Json.JsonArray(a)
+  }
 
-  given JsonEncoder[Map[String, Json]] with
+  given JsonEncoder[Map[String, Json]] with {
     def encode(a: Map[String, Json]): Json = Json.JsonObject(a)
+  }
 
-  given JsonEncoder[Int] with
+  given JsonEncoder[Int] with {
     def encode(a: Int): Json = Json.JsonNumber(a.toDouble)
+  }
 
-  given JsonEncoder[Instant] with
+  given JsonEncoder[Instant] with {
     def encode(a: Instant): Json = JsonString(a.toString)
+  }
 
   private inline def summonEncoders[T <: Tuple]: List[JsonEncoder[?]] = {
     inline erasedValue[T] match {
