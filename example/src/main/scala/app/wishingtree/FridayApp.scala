@@ -1,7 +1,7 @@
 package app.wishingtree
 
-import dev.wishingtree.branch.friday.{Json, JsonCodec, JsonDecoder, JsonEncoder, Reference}
 import dev.wishingtree.branch.friday.Reference.*
+import dev.wishingtree.branch.friday.{Json, JsonCodec, JsonDecoder}
 
 import scala.language.postfixOps
 

@@ -2,6 +2,7 @@ package dev.wishingtree.branch.friday
 
 import dev.wishingtree.branch.friday.Json.JsonObject
 
+import java.time.Instant
 import scala.compiletime.*
 import scala.deriving.Mirror
 import scala.util.*
@@ -25,9 +26,24 @@ object JsonDecoder {
       Try(json.strVal)
   }
 
+  given JsonDecoder[Double] with {
+    def decode(json: Json): Try[Double] =
+      Try(json.numVal)
+  }
+
+  given JsonDecoder[Boolean] with {
+    def decode(json: Json): Try[Boolean] =
+      Try(json.boolVal)
+  }
+
   given JsonDecoder[Int] with {
     def decode(json: Json): Try[Int] =
       Try(json.numVal.toInt)
+  }
+
+  given JsonDecoder[Instant] with {
+    def decode(json: Json): Try[Instant] =
+      Try(Instant.parse(json.strVal))
   }
 
   private inline def summonDecoders[A <: Tuple]: List[JsonDecoder[?]] = {
