@@ -1,5 +1,7 @@
 package dev.wishingtree.branch.friday
 
+import dev.wishingtree.branch.friday.Reference.Parser
+
 import scala.annotation.targetName
 import scala.util.Try
 
@@ -61,6 +63,19 @@ object Json {
     infix def objOpt: Option[Map[String, Json]] =
       Try(objVal).toOption
 
+    infix def toJsonString: String = j match {
+      case JsonNull          => "null"
+      case JsonBool(value)   => value.toString
+      case JsonNumber(value) => value.toString
+      case JsonString(value) => "\"" + value + "\""
+      case JsonArray(value)  =>
+        "[" + value.map(_.toJsonString).mkString(", ") + "]"
+      case JsonObject(value) =>
+        "{" + value
+          .map { case (k, v) => "\"" + k + "\": " + v.toJsonString }
+          .mkString(", ") + "}"
+    }
+
   }
 
   extension (jo: Option[Json]) {
@@ -82,6 +97,9 @@ object Json {
 
     infix def objOpt: Option[Map[String, Json]] =
       jo.flatMap(_.objOpt)
+
+    infix def toJsonString: Option[String] =
+      jo.map(_.toJsonString)
 
   }
 
@@ -117,5 +135,7 @@ object Json {
 
     (whitespace *> (obj | array)).root
   }
+
+  val defaultParser: Parser[Json] = parser(Reference)
 
 }
