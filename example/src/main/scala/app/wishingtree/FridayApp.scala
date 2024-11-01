@@ -1,6 +1,6 @@
 package app.wishingtree
 
-import dev.wishingtree.branch.friday.{Json, JsonDecoder, JsonEncoder, Reference}
+import dev.wishingtree.branch.friday.{Json, JsonCodec, JsonDecoder, JsonEncoder, Reference}
 import dev.wishingtree.branch.friday.Reference.*
 
 import scala.language.postfixOps
@@ -21,7 +21,7 @@ object FridayApp {
         |}
         |""".stripMargin
 
-    val parser = Json.parser(Reference)
+    val parser = Json.defaultParser
 
     println {
       parser.run(json)
@@ -39,8 +39,7 @@ object FridayApp {
       parser.run(json).map(js => js ? ("totally") ? ("not") ? ("there"))
     }
 
-    import JsonDecoder.given 
-    case class Person(name: String, age: Int) derives JsonEncoder, JsonDecoder
+    case class Person(name: String, age: Int) derives JsonCodec
 
     println {
       Person("Alice", 42).toJson

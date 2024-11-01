@@ -103,7 +103,7 @@ object Json {
 
   }
 
-  def parser[Parser[+_]](P: Parsers[Parser]): Parser[Json] = {
+  private def parser[Parser[+_]](P: Parsers[Parser]): Parser[Json] = {
     import P.*
 
     def token(s: String) = string(s).token
