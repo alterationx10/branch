@@ -144,4 +144,10 @@ object Json {
   def parse(json: String): Either[ParseError, Json] =
     defaultParser.run(json)
   
+  def decode[A](json: Json)(using JsonDecoder[A]): Try[A] =
+    summon[JsonDecoder[A]].decode(json)
+    
+  def decode[A](json: String)(using JsonDecoder[A]): Try[A] =
+    parse(json).left.map(e => new Exception(e.toString)).toTry.flatMap(decode[A])
+
 }

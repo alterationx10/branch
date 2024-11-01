@@ -53,7 +53,7 @@ object FridayApp {
         |""".stripMargin
     
     println {
-      summon[JsonDecoder[Person]].decode(personJson)
+      Json.decode[Person](personJson)
     }
     
   }
