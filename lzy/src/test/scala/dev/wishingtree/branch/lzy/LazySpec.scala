@@ -54,5 +54,5 @@ class LazySpec extends FunSuite {
       l <- Lazy.fail(new Exception("error")).orElseValue("abc")
     } yield assertEquals(l, "abc")
   }
-  
+
 }

@@ -21,6 +21,11 @@ ThisBuild / developers             := List(
   )
 )
 
+ThisBuild / scalacOptions ++= Seq(
+  "-rewrite",
+  "-no-indent"
+)
+
 ThisBuild / libraryDependencies += "org.scalameta" %% "munit" % "1.0.2" % Test
 
 lazy val root =
@@ -29,7 +34,14 @@ lazy val root =
     .settings(
       name := "branch"
     )
-    .aggregate(lzy, spider)
+    .aggregate(macaroni, lzy, spider, piggy, friday)
+
+lazy val macaroni =
+  project
+    .in(file("macaroni"))
+    .settings(
+      name := "macaroni"
+    )
 
 lazy val lzy =
   project
@@ -57,10 +69,18 @@ lazy val piggy =
     )
     .dependsOn(lzy)
 
+lazy val friday =
+  project
+    .in(file("friday"))
+    .settings(
+      name := "friday"
+    )
+    .dependsOn(lzy)
+
 lazy val example =
   project
     .in(file("example"))
-    .dependsOn(lzy, spider, piggy)
+    .dependsOn(macaroni, lzy, spider, piggy, friday)
     .settings(
       name := "example",
       libraryDependencies ++= Seq( // Examples and tests are allowed to have dependencies :-)
@@ -68,3 +88,6 @@ lazy val example =
       ),
       fork := true
     )
+
+addCommandAlias("fmtCheck", ";scalafmtCheckAll;scalafmtSbtCheck")
+addCommandAlias("fmt", ";scalafmtAll;scalafmtSbt")

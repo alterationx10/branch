@@ -24,7 +24,7 @@ sealed trait Sql[+A] {
 object Sql {
 
   type PsArg[X] = X => PsArgHolder
-  
+
   extension (sc: StringContext) {
     def ps(args: Any*): PsArgHolder = PsArgHolder(
       sc.s(args.map(_ => "?")*),
@@ -40,13 +40,14 @@ object Sql {
   }
 
   private inline def parseRs[T <: Tuple](rs: ResultSet)(index: Int): Tuple =
-    inline erasedValue[T] match
+    inline erasedValue[T] match {
       case _: EmptyTuple =>
         EmptyTuple
       case _: (t *: ts)  =>
         summonInline[ResultSetGetter[t]].get(rs)(index) *: parseRs[ts](rs)(
           index + 1
         )
+    }
 
   private inline def setPs[A](ps: PreparedStatement)(index: Int)(
       value: A

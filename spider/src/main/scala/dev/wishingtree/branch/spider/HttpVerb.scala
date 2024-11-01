@@ -8,7 +8,7 @@ enum HttpVerb {
 }
 
 object HttpVerb {
-  
+
   def fromString(method: String): Option[HttpVerb] =
     Try(HttpVerb.valueOf(method)).toOption
 
