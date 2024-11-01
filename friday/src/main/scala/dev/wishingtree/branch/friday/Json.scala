@@ -136,6 +136,11 @@ object Json {
     (whitespace *> (obj | array)).root
   }
 
-  val defaultParser: Parser[Json] = parser(Reference)
+  private val defaultParser: Parser[Json] = 
+    parser(Reference)
 
+  import Reference.*
+  def parse(json: String): Either[ParseError, Json] =
+    defaultParser.run(json)
+  
 }

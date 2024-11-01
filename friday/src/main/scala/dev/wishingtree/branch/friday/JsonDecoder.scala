@@ -7,13 +7,11 @@ import scala.deriving.Mirror
 import scala.util.*
 
 trait JsonDecoder[+A] {
-
-  import Reference.*
-
+  
   def decode(json: Json): Try[A]
 
   def decode(json: String): Try[A] =
-    decode(Json.defaultParser.run(json).toOption.get)
+    decode(Json.parse(json).toOption.get)
 
   def map[B](f: A => B): JsonDecoder[B] =
     json => decode(json).map(f)

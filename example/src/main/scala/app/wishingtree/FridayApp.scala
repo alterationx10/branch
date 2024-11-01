@@ -21,22 +21,21 @@ object FridayApp {
         |}
         |""".stripMargin
 
-    val parser = Json.defaultParser
 
     println {
-      parser.run(json)
+      Json.parse(json)
     }
 
     println {
-      parser.run(json).map(js => js ? ("name"))
+      Json.parse(json).map(js => js ? ("name"))
     }
 
     println {
-      parser.run(json).map(js => js ? ("some") ? ("nested") ? ("key"))
+      Json.parse(json).map(js => js ? ("some") ? ("nested") ? ("key"))
     }
 
     println {
-      parser.run(json).map(js => js ? ("totally") ? ("not") ? ("there"))
+      Json.parse(json).map(js => js ? "totally" ? "not" ? "there")
     }
 
     case class Person(name: String, age: Int) derives JsonCodec
