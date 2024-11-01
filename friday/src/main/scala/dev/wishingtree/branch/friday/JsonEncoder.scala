@@ -70,7 +70,7 @@ object JsonEncoder {
     JsonObject(js.toMap)
   }
 
-  inline given derived[A](using m: Mirror.Of[A]): JsonEncoder[A] = {
+  inline def derived[A](using m: Mirror.Of[A]): JsonEncoder[A] = {
     lazy val encoders = summonEncoders[m.MirroredElemTypes]
     inline m match {
       case p: Mirror.ProductOf[A] =>
@@ -87,14 +87,6 @@ trait JsonDecoder[+A] {
 
   import Reference.*
 
-  given JsonDecoder[String] with
-    def decode(json: Json): Try[String] =
-      Try(json.strVal)
-
-  given JsonDecoder[Int] with
-    def decode(json: Json): Try[Int] =
-      Try(json.numVal.toInt)
-
   def decode(json: Json): Try[A]
 
   def decode(json: String): Try[A] =
@@ -106,6 +98,14 @@ trait JsonDecoder[+A] {
 }
 
 object JsonDecoder {
+
+  given JsonDecoder[String] with
+    def decode(json: Json): Try[String] =
+      Try(json.strVal)
+
+  given JsonDecoder[Int] with
+    def decode(json: Json): Try[Int] =
+      Try(json.numVal.toInt)
 
   private inline def summonDecoders[A <: Tuple]: List[JsonDecoder[?]] = {
     inline erasedValue[A] match
@@ -125,8 +125,6 @@ object JsonDecoder {
   private inline def buildJsonProduct[A](
       p: Mirror.ProductOf[A],
       b: Json
-//      labels: List[String],
-//      decodersz: List[JsonDecoder[?]]
   ): A = {
     {
       val productLabels     = summonLabels[p.MirroredElemLabels]
@@ -144,9 +142,7 @@ object JsonDecoder {
     }
   }
 
-  inline given derived[A](using m: Mirror.Of[A]): JsonDecoder[A] = {
-//    lazy val decoders = summonDecoders[m.MirroredElemTypes]
-//    lazy val labels = summonLabels[m.MirroredElemLabels]
+  inline def derived[A](using m: Mirror.Of[A]): JsonDecoder[A] = {
     inline m match {
       case _: Mirror.SumOf[A]     =>
         error(
