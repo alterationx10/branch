@@ -23,34 +23,22 @@ trait Parsers[Parser[+_]] {
 
   def whitespace: Parser[String] = regex("\\s*".r)
 
-  /** Parser which consumes 1 or more digits. */
   def digits: Parser[String] = regex("\\d+".r)
 
-  /** Parser which consumes reluctantly until it encounters the given string. */
   def thru(s: String): Parser[String] = regex((".*?" + Pattern.quote(s)).r)
 
-  /** Unescaped string literals, like "foo" or "bar". */
   def quoted: Parser[String] = string("\"") *> thru("\"").map(_.dropRight(1))
 
-  /** Unescaped or escaped string literals, like "An \n important \"Quotation\""
-    * or "bar".
-    */
+  
   def escapedQuoted: Parser[String] =
-    // rather annoying to write, left as an exercise
-    // we'll just use quoted (unescaped literals) for now
     quoted.label("string literal").token
-
-  /** C/Java style floating point literals, e.g .1, -1.0, 1e9, 1E-23, etc.
-    * Result is left as a string to keep full precision
-    */
+  
   def doubleString: Parser[String] =
     regex("[-+]?([0-9]*\\.)?[0-9]+([eE][-+]?[0-9]+)?".r).token
 
-  /** Floating point literals, converted to a `Double`. */
   def double: Parser[Double] =
     doubleString.map(_.toDouble).label("double literal")
 
-  /** A parser that succeeds when given empty input. */
   def eof: Parser[String] =
     regex("\\z".r).label("unexpected trailing characters")
 

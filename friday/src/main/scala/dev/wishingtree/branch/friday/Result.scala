@@ -7,18 +7,15 @@ enum Result[+A] {
   def extract: Either[ParseError, A] = this match
     case Failure(e, _) => Left(e)
     case Success(a, _) => Right(a)
-
-  /* Used by `attempt`. */
+  
   def uncommit: Result[A] = this match
     case Failure(e, true) => Failure(e, false)
     case _                => this
-
-  /* Used by `flatMap`. */
+  
   def addCommit(isCommitted: Boolean): Result[A] = this match
     case Failure(e, c) => Failure(e, c || isCommitted)
     case _             => this
-
-  /* Used by `scope`, `label`. */
+  
   def mapError(f: ParseError => ParseError): Result[A] = this match
     case Failure(e, c) => Failure(f(e), c)
     case _             => this

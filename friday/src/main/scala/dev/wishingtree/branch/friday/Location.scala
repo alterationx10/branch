@@ -16,7 +16,6 @@ case class Location(input: String, offset: Int = 0) {
 
   def slice(n: Int) = input.substring(offset, offset + n)
 
-  /* Returns the line corresponding to this location */
   def currentLine: String =
     if input.length > 1
     then
