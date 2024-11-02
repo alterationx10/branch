@@ -13,9 +13,9 @@ object FridayApp {
         |{
         |  "name": "Branch",
         |  "some" : {
-        |   "nested": {
-        |    "key": "value"
-        |   }
+        |    "nested": {
+        |      "key": "value"
+        |    }
         |  }
         |}
         |""".stripMargin
@@ -30,7 +30,7 @@ object FridayApp {
     }
 
     println {
-      Json.parse(json).map(js => js ? ("some") ? ("nested") ? ("key"))
+      Json.parse(json).map(js => js ? "some" ? "nested" ? "key")
     }
 
     println {

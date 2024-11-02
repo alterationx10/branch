@@ -60,3 +60,7 @@ recovery strategies used in various places.
 ## Building an Effect System
 
 ...
+
+## Other Libraries
+
+If you like *Lzy*, you should check out [ZIO](https://zio.dev/)
