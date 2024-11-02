@@ -70,6 +70,8 @@ trait RequestHandler[I, O](using
 
 object RequestHandler {
 
+  given Conversion[Array[Byte], Array[Byte]] = identity
+
   given Conversion[Array[Byte], Unit] = _ => ()
   given Conversion[Unit, Array[Byte]] = _ => Array.empty
 
