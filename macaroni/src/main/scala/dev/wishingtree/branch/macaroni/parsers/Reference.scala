@@ -1,6 +1,6 @@
-package dev.wishingtree.branch.friday
+package dev.wishingtree.branch.macaroni.parsers
 
-import dev.wishingtree.branch.friday.Result.{Failure, Success}
+import Result.{Failure, Success}
 
 import scala.util.matching.Regex
 

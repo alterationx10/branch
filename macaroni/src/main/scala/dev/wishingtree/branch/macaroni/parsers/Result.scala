@@ -1,4 +1,4 @@
-package dev.wishingtree.branch.friday
+package dev.wishingtree.branch.macaroni.parsers
 
 enum Result[+A] {
   case Success(get: A, length: Int)

@@ -1,4 +1,4 @@
-package dev.wishingtree.branch.friday
+package dev.wishingtree.branch.macaroni.parsers
 
 import java.util.regex.Pattern
 import scala.annotation.targetName

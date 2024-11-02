@@ -1,6 +1,7 @@
 package dev.wishingtree.branch.friday
 
-import dev.wishingtree.branch.friday.Reference.Parser
+import dev.wishingtree.branch.macaroni.parsers.Reference.Parser
+import dev.wishingtree.branch.macaroni.parsers.{ParseError, Parsers, Reference}
 
 import scala.annotation.targetName
 import scala.util.Try

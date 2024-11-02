@@ -1,4 +1,4 @@
-package dev.wishingtree.branch.friday
+package dev.wishingtree.branch.macaroni.parsers
 
 case class Location(input: String, offset: Int = 0) {
   lazy val line = input.slice(0, offset + 1).count(_ == '\n') + 1

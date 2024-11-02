@@ -1,4 +1,4 @@
-package dev.wishingtree.branch.friday
+package dev.wishingtree.branch.macaroni.parsers
 
 case class ParseError(stack: List[(Location, String)] = List.empty) {
   def push(loc: Location, msg: String): ParseError =
