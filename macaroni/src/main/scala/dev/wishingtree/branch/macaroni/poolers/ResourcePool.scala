@@ -1,4 +1,4 @@
-package dev.wishingtree.branch.piggy
+package dev.wishingtree.branch.macaroni.poolers
 
 import java.util.concurrent.Semaphore
 import java.util.concurrent.atomic.AtomicBoolean

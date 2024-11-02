@@ -1,6 +1,7 @@
 package dev.wishingtree.branch.piggy
 
 import dev.wishingtree.branch.lzy.LazyRuntime
+import dev.wishingtree.branch.macaroni.poolers.ResourcePool
 
 import java.sql.{Connection, PreparedStatement}
 import java.util.concurrent.{CompletableFuture, ExecutorService}

@@ -1,7 +1,8 @@
 package app.wishingtree
 
+import dev.wishingtree.branch.macaroni.poolers.ResourcePool
 import dev.wishingtree.branch.piggy.Sql.*
-import dev.wishingtree.branch.piggy.{ResourcePool, Sql}
+import dev.wishingtree.branch.piggy.Sql
 import org.postgresql.ds.PGSimpleDataSource
 
 import java.sql.Connection

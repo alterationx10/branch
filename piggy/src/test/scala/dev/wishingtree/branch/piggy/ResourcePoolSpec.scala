@@ -2,6 +2,7 @@ package dev.wishingtree.branch.piggy
 
 import munit.FunSuite
 import Sql.*
+import dev.wishingtree.branch.macaroni.poolers.ResourcePool
 
 import java.sql.{Connection, DriverManager}
 import scala.concurrent.duration.Duration
