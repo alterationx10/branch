@@ -9,6 +9,9 @@ The library provides an AST to convert JSON to/from, as well as type-classes for
 There is also an emphasis on Json AST helper methods to easily work with JSON, without having to convert to/from an
 explicit schema.
 
+Great uses of this library are for encoding/decoding JSON with the [Spider](../spider/index.md) http server/client
+project, or simple JSON driven configuration files.
+
 ## Working with the AST
 
 The Json AST is described fully as
@@ -60,12 +63,12 @@ To quickly parse through possible sub-fields on a JsonObject, there is a `?` ext
 def ?(field: String): Option[Json]
 ```
 
-With this, if we had some JSON 
+With this, if we had some JSON
 
 ```json
 {
   "name": "Branch",
-  "some" : {
+  "some": {
     "nested": {
       "key": "value"
     }
@@ -82,12 +85,121 @@ val maybeName: Option[Json] = js ? "name" // It's there!
 val deepField: Option[Json] = js ? "some" ? "nested" ? "key" // This too!
 
 // Not present, but doesn't throw an exception attempting to access deeper fields!
-val probablyNot: Option[String] = js ? "totally" ? "not" ? "there" /
+val probablyNot: Option[String] = js ? "totally" ? "not" ? "there"
 ```
 
 ## Encoder, Decoders, and Codecs
 
+*Friday* provides type-classes to convert Json to/from Scala models.
 
+## Decoders
+
+For some type `A`, we can define a `JsonEncoder[A]` that can convert `Json` to `A` by providing an implementation of
+
+```scala 3
+  def decode(json: Json): Try[A]
+  ````
+
+For example, the following decoder can convert `Json` to `String`
+
+```scala 3
+given JsonDecoder[String] with {
+  def decode(json: Json): Try[String] =
+    Try(json.strVal)
+}
+```
+
+Some decoders for common types like this are provided and can accessed by importing
+
+```scala 3
+import dev.wishingtree.branch.friday.JsonDecoder.given
+```
+
+Auto derivation is also supported for `Product` types (`Sum` types soon™️). We can use `derives` on case classes as
+
+```scala 3
+case class Person(name: String, age: Int)derives JsonDecoder
+```
+
+With the proper decoder in scope, we can decode JSON (or JSON that is still in String form) with
+
+```scala 3
+val personJson =
+  """
+    |{
+    |  "name": "Mark",
+    |  "age": 42
+    |}
+    |""".stripMargin
+
+println {
+  Json.decode[Person](personJson) // returns a Try[Person]
+}
+```
+
+## Encoders
+
+For some type `A`, we can define an encoder that can convert `A` to `Json` by providing an implementation of
+
+```scala 3
+  def encode(a: A): Json
+```
+
+For example, the following encoder can convert `String` to `Json`
+
+```scala 3
+given JsonEncoder[String] with {
+  def encode(a: String): Json = Json.JsonString(a)
+}
+```
+
+Some encoders for common types are provided and can accessed by importing
+
+```scala 3
+import dev.wishingtree.branch.friday.JsonEncoder.given
+```
+
+Auto derivation is also supported for `Product` types (`Sum` types soon™️). We can use `derives` on case classes as
+
+```scala 3
+case class Person(name: String, age: Int)derives JsonEncoder
+```
+
+With the proper encoder in scope, we can use the extension method provided by the type class, or the method on the Json
+companion object to convert to `Json`
+
+```scala 3
+Person("Mark", 42).toJson
+Json.encode(Person("Mark", 42))
+```
+
+## Codecs
+
+We often want to be able to go both ways, so this library provides a codec which has the ability to encode and decode.
+
+```scala 3
+trait JsonCodec[A] extends JsonDecoder[A], JsonEncoder[A]
+```
+
+This also supports auto derivation for `Product` types (`Sum` types soon™️). We can use `derives` on case classes as
+
+```scala 3
+case class Person(name: String, age: Int)derives JsonCodec
+```
+
+With both an encoder and decoder, there is also the `JsonCodec.apply` method to easily create an instance
+
+```scala 3
+def apply[A](using
+             encoder: JsonEncoder[A],
+             decoder: JsonDecoder[A]
+            ): JsonCodec[A] =
+  new JsonCodec[A] {
+    override def decode(json: Json): Try[A] = decoder.decode(json)
+
+    override def encode(a: A): Json = encoder.encode(a)
+  }
+```
 
 ## Other Libraries
 

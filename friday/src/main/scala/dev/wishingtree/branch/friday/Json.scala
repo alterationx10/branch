@@ -151,4 +151,6 @@ object Json {
   def decode[A](json: String)(using JsonDecoder[A]): Try[A] =
     parse(json).left.map(e => new Exception(e.toString)).toTry.flatMap(decode[A])
 
+  def encode[A](a: A)(using JsonEncoder[A]): Json =
+    summon[JsonEncoder[A]].encode(a)
 }

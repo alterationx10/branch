@@ -42,6 +42,8 @@ object FridayApp {
     println {
       Person("Alice", 42).toJson
     }
+    
+    Json.encode(Person("Mark", 42))
 
     val personJson =
       """
