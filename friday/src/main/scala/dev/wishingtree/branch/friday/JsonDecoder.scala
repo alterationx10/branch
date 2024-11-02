@@ -1,6 +1,7 @@
 package dev.wishingtree.branch.friday
 
 import dev.wishingtree.branch.friday.Json.JsonObject
+import dev.wishingtree.branch.macaroni.meta.Summons.{summonHigherListOf, summonListOfValuesAs}
 
 import java.time.Instant
 import scala.compiletime.*
@@ -46,32 +47,15 @@ object JsonDecoder {
       Try(Instant.parse(json.strVal))
   }
 
-  private inline def summonDecoders[A <: Tuple]: List[JsonDecoder[?]] = {
-    inline erasedValue[A] match {
-      case _: EmptyTuple => Nil
-      case _: (t *: ts)  =>
-        summonInline[JsonDecoder[t]] :: summonDecoders[ts]
-    }
-  }
-
-  private[friday] inline def summonLabels[A <: Tuple]: List[String] = {
-    inline erasedValue[A] match {
-      case _: EmptyTuple => Nil
-      case _: (t *: ts)  =>
-        summonInline[ValueOf[t]].value
-          .asInstanceOf[String] :: summonLabels[ts]
-    }
-  }
-
   private[friday] inline def buildJsonProduct[A](
       p: Mirror.ProductOf[A],
       b: Json
   ): A = {
     {
-      val productLabels     = summonLabels[p.MirroredElemLabels]
-      val decoders          = summonDecoders[p.MirroredElemTypes]
+      val productLabels     = summonListOfValuesAs[p.MirroredElemLabels, String]
+      val decoders          = summonHigherListOf[p.MirroredElemTypes, JsonDecoder]
       val underlying        = b.asInstanceOf[JsonObject].value
-      val consArr: Array[?] = productLabels
+      val consArr: Array[Any] = productLabels
         .zip(decoders)
         .map { case (label, decoder) =>
           val json = underlying(label)

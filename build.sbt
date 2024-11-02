@@ -56,7 +56,7 @@ lazy val spider =
     .settings(
       name := "spider"
     )
-    .dependsOn(lzy)
+    .dependsOn(macaroni, lzy)
 
 lazy val piggy =
   project
@@ -67,7 +67,7 @@ lazy val piggy =
         "com.h2database" % "h2" % "2.3.232" % Test
       )
     )
-    .dependsOn(lzy)
+    .dependsOn(macaroni, lzy)
 
 lazy val friday =
   project
@@ -75,7 +75,7 @@ lazy val friday =
     .settings(
       name := "friday"
     )
-    .dependsOn(lzy)
+    .dependsOn(macaroni, lzy)
 
 lazy val example =
   project

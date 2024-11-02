@@ -1,6 +1,7 @@
 package dev.wishingtree.branch.friday
 
 import dev.wishingtree.branch.friday.Json.{JsonObject, JsonString}
+import dev.wishingtree.branch.macaroni.meta.Summons.summonHigherListOf
 
 import java.time.Instant
 import scala.compiletime.*
@@ -49,18 +50,10 @@ object JsonEncoder {
     def encode(a: Instant): Json = JsonString(a.toString)
   }
 
-  private inline def summonEncoders[T <: Tuple]: List[JsonEncoder[?]] = {
-    inline erasedValue[T] match {
-      case _: EmptyTuple => Nil
-      case _: (t *: ts)  =>
-        summonInline[JsonEncoder[t]] :: summonEncoders[ts]
-    }
-  }
-
   private[friday] inline def buildJsonProduct[A](
       a: A
   )(using m: Mirror.Of[A]): Json = {
-    lazy val encoders = summonEncoders[m.MirroredElemTypes]
+    lazy val encoders = summonHigherListOf[m.MirroredElemTypes, JsonEncoder]
 
     val jsLabels: Iterator[String] =
       a.asInstanceOf[Product].productElementNames
