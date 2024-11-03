@@ -2,19 +2,14 @@ package app.wishingtree
 
 import com.sun.net.httpserver.Filter
 import dev.wishingtree.branch.spider.Paths.*
-import dev.wishingtree.branch.spider.{
-  ContextHandler,
-  HttpApp,
-  HttpVerb,
-  RequestHandler
-}
+import dev.wishingtree.branch.spider.*
 
 object HttpAppExample extends HttpApp {
 
   import RequestHandler.given
   case class GreeterGetter() extends RequestHandler[Unit, String] {
     override def handle(request: Request[Unit]): Response[String] = {
-      Response(Map.empty, "Aloha")
+      Response("Aloha")
     }
   }
 
@@ -22,7 +17,9 @@ object HttpAppExample extends HttpApp {
 
   case class EchoGetter(msg: String) extends RequestHandler[Unit, String] {
     override def handle(request: Request[Unit]): Response[String] = {
-      Response(Map.empty, msg)
+      Response(msg)
+        .textContent
+        .withHeader("this" -> "that")
     }
   }
 

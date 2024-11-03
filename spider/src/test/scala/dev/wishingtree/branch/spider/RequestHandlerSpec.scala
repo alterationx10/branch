@@ -10,7 +10,7 @@ class RequestHandlerSpec extends HttpFunSuite {
 
   case class AlohaGreeter() extends RequestHandler[Unit, String] {
     override def handle(request: Request[Unit]): Response[String] = {
-      Response(Map.empty, "Aloha")
+      Response("Aloha")
     }
   }
 

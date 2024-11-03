@@ -3,27 +3,12 @@ package dev.wishingtree.branch.spider
 import com.sun.net.httpserver.HttpExchange
 import dev.wishingtree.branch.lzy.Lazy
 
-import java.net.URI
 import scala.jdk.CollectionConverters.*
 
 trait RequestHandler[I, O](using
     requestDecoder: Conversion[Array[Byte], I],
     responseEncoder: Conversion[O, Array[Byte]]
 ) {
-
-  private def parseQueryParams(qpStr: String): Map[String, String] = {
-    qpStr
-      .split("&")
-      .map { case s"$key=$value" =>
-        key -> value
-      }
-      .toMap
-  }
-
-  case class Request[A](uri: URI, headers: Map[String, List[String]], body: A) {
-    final lazy val queryParams = parseQueryParams(uri.getQuery)
-  }
-  case class Response[A](headers: Map[String, List[String]], body: A)
 
   def handle(request: Request[I]): Response[O]
 
@@ -46,12 +31,12 @@ trait RequestHandler[I, O](using
   ): Lazy[Unit] = {
     for {
       rawResponse <- Lazy.fn(responseEncoder(response.body))
-      _           <- Lazy.fn(exchange.sendResponseHeaders(200, rawResponse.length))
       _           <- Lazy.fn {
                        response.headers.foreach { (k, v) =>
                          exchange.getResponseHeaders.set(k, v.mkString(","))
                        }
                      }
+      _           <- Lazy.fn(exchange.sendResponseHeaders(200, rawResponse.length))
       _           <- Lazy.fn(exchange.getResponseBody.write(rawResponse))
     } yield ()
   }
