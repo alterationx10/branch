@@ -12,14 +12,13 @@ import dev.wishingtree.branch.spider.{
 object HttpAppExample extends HttpApp {
 
   import RequestHandler.given
-
   case class GreeterGetter() extends RequestHandler[Unit, String] {
     override def handle(request: Request[Unit]): Response[String] = {
       Response(Map.empty, "Aloha")
     }
   }
 
-  val greet = GreeterGetter()
+  val alohaGreeter = GreeterGetter()
 
   case class EchoGetter(msg: String) extends RequestHandler[Unit, String] {
     override def handle(request: Request[Unit]): Response[String] = {
@@ -35,7 +34,7 @@ object HttpAppExample extends HttpApp {
 
     override val contextRouter
         : PartialFunction[(HttpVerb, Path), RequestHandler[?, ?]] = {
-      case HttpVerb.GET -> >> / "some" / "path"           => greet
+      case HttpVerb.GET -> >> / "some" / "path"           => alohaGreeter
       case HttpVerb.GET -> >> / "some" / "path" / s"$arg" => EchoGetter(arg)
     }
 
