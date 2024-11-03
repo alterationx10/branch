@@ -64,7 +64,7 @@ Here is an example:
 
 case class EchoGetter(msg: String) extends RequestHandler[Unit, String] {
   override def handle(request: Request[Unit]): Response[String] = {
-    Response(Map.empty, msg)
+    Response(msg)
   }
 }
 
@@ -98,7 +98,7 @@ object HttpAppExample extends HttpApp {
 
   case class GreeterGetter() extends RequestHandler[Unit, String] {
     override def handle(request: Request[Unit]): Response[String] = {
-      Response(Map.empty, "Aloha")
+      Response("Aloha")
     }
   }
 
@@ -106,7 +106,7 @@ object HttpAppExample extends HttpApp {
 
   case class EchoGetter(msg: String) extends RequestHandler[Unit, String] {
     override def handle(request: Request[Unit]): Response[String] = {
-      Response(Map.empty, msg)
+      Response(msg)
     }
   }
 
