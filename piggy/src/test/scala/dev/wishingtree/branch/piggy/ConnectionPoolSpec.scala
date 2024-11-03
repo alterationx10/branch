@@ -8,7 +8,7 @@ import java.sql.{Connection, DriverManager}
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 
-class ResourcePoolSpec extends FunSuite {
+class ConnectionPoolSpec extends FunSuite {
 
   case class H2Pool() extends ResourcePool[Connection] {
 
