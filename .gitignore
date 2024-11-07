@@ -3,3 +3,4 @@
 .bsp
 target
 site/book
+.scala-build
