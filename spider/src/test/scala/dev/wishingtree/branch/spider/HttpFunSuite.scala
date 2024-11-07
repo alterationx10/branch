@@ -3,13 +3,13 @@ package dev.wishingtree.branch.spider
 import com.sun.net.httpserver.HttpServer
 import dev.wishingtree.branch.lzy.LazyRuntime
 import munit.FunSuite
-import Paths.*
+import OpaqueSegments.*
 
 import java.net.InetSocketAddress
 
 trait HttpFunSuite extends FunSuite {
 
-  type PF = PartialFunction[(HttpVerb, Path), RequestHandler[?, ?]]
+  type PF = PartialFunction[(HttpVerb, Segments), RequestHandler[?, ?]]
 
   val httpFixture = FunFixture[HttpServer](
     setup = { test =>
@@ -35,7 +35,7 @@ trait HttpFunSuite extends FunSuite {
         val genContextHandler: PF => ContextHandler = (pf: PF) =>
           new ContextHandler("/") {
             override val contextRouter
-                : PartialFunction[(HttpVerb, Path), RequestHandler[?, ?]] = pf
+                : PartialFunction[(HttpVerb, Segments), RequestHandler[?, ?]] = pf
           }
 
         (server, genContextHandler)

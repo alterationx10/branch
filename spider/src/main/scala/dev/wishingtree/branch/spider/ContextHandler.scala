@@ -2,7 +2,8 @@ package dev.wishingtree.branch.spider
 
 import com.sun.net.httpserver.*
 import dev.wishingtree.branch.lzy.Lazy
-import dev.wishingtree.branch.spider.Paths.*
+import dev.wishingtree.branch.lzy.abstractions.Semigroup
+import dev.wishingtree.branch.spider.OpaqueSegments.*
 
 import java.time.{Duration, Instant}
 import scala.jdk.CollectionConverters.*
@@ -15,7 +16,7 @@ trait ContextHandler(val path: String) {
   val authenticator: Option[Authenticator] =
     Option.empty
 
-  val contextRouter: PartialFunction[(HttpVerb, Path), RequestHandler[?, ?]]
+  val contextRouter: PartialFunction[(HttpVerb, Segments), RequestHandler[?, ?]]
 
   private[spider] inline def httpHandler: HttpHandler = {
     (exchange: HttpExchange) =>
@@ -24,7 +25,7 @@ trait ContextHandler(val path: String) {
           .fn {
             HttpVerb
               .fromString(exchange.getRequestMethod.toUpperCase)
-              .map(v => v -> Path(exchange.getRequestURI.getPath.toLowerCase))
+              .map(v => v -> Segments(exchange.getRequestURI.getPath.toLowerCase))
               .filter(contextRouter.isDefinedAt)
               .map(contextRouter)
               .getOrElse(RequestHandler.unimplementedHandler)
@@ -48,6 +49,16 @@ trait ContextHandler(val path: String) {
 
 object ContextHandler {
 
+  given Semigroup[ContextHandler] = (a: ContextHandler, b: ContextHandler) => {
+    new ContextHandler(a.path) {
+      override val filters: Seq[Filter] = (a.filters ++ b.filters).distinct
+      override val authenticator: Option[Authenticator] = a.authenticator.orElse(b.authenticator)
+      override val contextRouter: PartialFunction[(HttpVerb, Segments), RequestHandler[_, _]] =
+        a.contextRouter orElse b.contextRouter
+    }
+  }
+  
+  
   val timingFilter: Filter = new Filter {
     override def doFilter(exchange: HttpExchange, chain: Filter.Chain): Unit = {
       val start = Instant.now()

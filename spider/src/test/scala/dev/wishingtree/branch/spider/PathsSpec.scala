@@ -1,6 +1,6 @@
 package dev.wishingtree.branch.spider
 
-import dev.wishingtree.branch.spider.Paths.*
+import dev.wishingtree.branch.spider.OpaqueSegments.*
 import munit.FunSuite
 
 class PathsSpec extends FunSuite {
@@ -8,27 +8,27 @@ class PathsSpec extends FunSuite {
   test("appendStr") {
     assertEquals(
       >> / "a" / "b",
-      Path("a/b")
+      Segments("a/b")
     )
   }
 
   test("appendPath") {
     assertEquals(
-      Path("a/b") / Path("c"),
-      Path("a/b/c")
+      Segments("a/b") / Segments("c"),
+      Segments("a/b/c")
     )
   }
 
   test("string interpolation") {
     assertEquals(
       p"a/b",
-      Path("a/b")
+      Segments("a/b")
     )
   }
 
   test("partial function matching") {
 
-    val pf: PartialFunction[Path, String] = {
+    val pf: PartialFunction[Segments, String] = {
       // `
       case >> / "a" / "b" / s"$arg" => arg
     }

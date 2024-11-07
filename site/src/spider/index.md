@@ -54,8 +54,8 @@ trait ContextHandler(val path: String)
 ```
 
 The main thing to implement here is the `contextRouter`. The `contextRouter` is a `PartialFunction` that matches the
-http method/verb and request path and maps to a specific `Requesthandler`. The `Path` type is an opaque type over a
-`Seq[String]` with some helper methods. Most importantly and differently from the java documentation, the `Path` we're
+http method/verb and request path and maps to a specific `Requesthandler`. The `Segments` type is an opaque type over a
+`Seq[String]` with some helper methods. Most importantly and differently from the java documentation, the `Segments` we're
 matching against has been lower cases, so the case sensitivity won't be as impacting to our routing.
 
 Here is an example:
@@ -71,7 +71,7 @@ case class EchoGetter(msg: String) extends RequestHandler[Unit, String] {
 val myhandler = new ContextHandler("/") {
 
   override val contextRouter
-  : PartialFunction[(HttpVerb, Path), RequestHandler[?, ?]] = {
+  : PartialFunction[(HttpVerb, Segments), RequestHandler[?, ?]] = {
     case HttpVerb.GET -> >> / "some" / "path" => alohaGreeter
     case HttpVerb.GET -> >> / "some" / "path" / s"$arg" => EchoGetter(arg)
   }
@@ -117,7 +117,7 @@ object HttpAppExample extends HttpApp {
     )
 
     override val contextRouter
-    : PartialFunction[(HttpVerb, Path), RequestHandler[?, ?]] = {
+    : PartialFunction[(HttpVerb, Segments), RequestHandler[?, ?]] = {
       case HttpVerb.GET -> >> / "some" / "path" => alohaGreeter
       case HttpVerb.GET -> >> / "some" / "path" / s"$arg" => EchoGetter(arg)
     }
