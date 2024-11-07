@@ -27,3 +27,12 @@ private[spider] case class FileHandler(rootFilePath: Segments)
     ).autoContent(filePath)
   }
 }
+
+private[spider] case class DefaultFilerHandler(file: File)
+    extends RequestHandler[Unit, File] {
+
+  override def handle(request: Request[Unit]): Response[File] =
+    Response(
+      body = file
+    ).autoContent(file.getName)
+}
