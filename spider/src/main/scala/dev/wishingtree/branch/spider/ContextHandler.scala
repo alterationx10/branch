@@ -2,6 +2,7 @@ package dev.wishingtree.branch.spider
 
 import com.sun.net.httpserver.*
 import dev.wishingtree.branch.lzy.Lazy
+import dev.wishingtree.branch.lzy.abstractions.Semigroup
 import dev.wishingtree.branch.spider.Paths.*
 
 import java.time.{Duration, Instant}
@@ -48,6 +49,16 @@ trait ContextHandler(val path: String) {
 
 object ContextHandler {
 
+  given Semigroup[ContextHandler] = (a: ContextHandler, b: ContextHandler) => {
+    new ContextHandler(a.path) {
+      override val filters: Seq[Filter] = (a.filters ++ b.filters).distinct
+      override val authenticator: Option[Authenticator] = a.authenticator.orElse(b.authenticator)
+      override val contextRouter: PartialFunction[(HttpVerb, Path), RequestHandler[_, _]] =
+        a.contextRouter orElse b.contextRouter
+    }
+  }
+  
+  
   val timingFilter: Filter = new Filter {
     override def doFilter(exchange: HttpExchange, chain: Filter.Chain): Unit = {
       val start = Instant.now()
