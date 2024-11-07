@@ -1,5 +1,5 @@
 package dev.wishingtree.branch.spider
-import dev.wishingtree.branch.spider.Paths.*
+import dev.wishingtree.branch.spider.OpaqueSegments.*
 import dev.wishingtree.branch.spider.RequestHandler.given
 
 import java.net.URI

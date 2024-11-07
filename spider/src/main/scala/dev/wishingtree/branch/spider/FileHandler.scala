@@ -1,6 +1,6 @@
 package dev.wishingtree.branch.spider
 
-import Paths.*
+import OpaqueSegments.*
 import FileHandler.given
 import RequestHandler.given
 
@@ -17,7 +17,7 @@ object FileHandler {
         .getOrElse(throw new Exception("Not found"))
 }
 
-private[spider] case class FileHandler(rootFilePath: Path)
+private[spider] case class FileHandler(rootFilePath: Segments)
     extends RequestHandler[Unit, File] {
 
   override def handle(request: Request[Unit]): Response[File] = {
