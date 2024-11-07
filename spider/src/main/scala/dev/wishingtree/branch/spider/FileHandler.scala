@@ -17,13 +17,13 @@ object FileHandler {
         .getOrElse(throw new Exception("Not found"))
 }
 
-private[spider] case class FileHandler(rootDir: Path)
+private[spider] case class FileHandler(rootFilePath: Path)
     extends RequestHandler[Unit, File] {
 
   override def handle(request: Request[Unit]): Response[File] = {
-    val filePath = request.uri.getPath.toLowerCase
+    val filePath = (rootFilePath / request.uri.getPath.toLowerCase).toPathString
     Response(
       body = new File(filePath)
-    )
+    ).autoContent(filePath)
   }
 }

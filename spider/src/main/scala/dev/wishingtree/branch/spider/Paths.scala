@@ -26,7 +26,7 @@ object Paths {
     @targetName("appendPath")
     def /(subPath: Path): Path = path ++ subPath
 
-    def toString = "/" + path.mkString("/")
+    def toPathString = "/" + path.mkString("/")
     def segments: Seq[String] = path
   }
 

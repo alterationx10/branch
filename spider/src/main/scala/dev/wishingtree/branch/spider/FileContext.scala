@@ -7,7 +7,8 @@ case class FileContext(rootFilePath: Path, rootPath: String = "/")
     extends ContextHandler(rootPath) {
 
   private def fileExists(path: Path) = {
-    val file = new File((rootFilePath / path).toString)
+    val filePath = (rootFilePath / path).toPathString
+    val file = new File(filePath)
     file.exists() && file.isFile
   }
 

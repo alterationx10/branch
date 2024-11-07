@@ -3,7 +3,7 @@ package dev.wishingtree.branch.spider
 case class Response[A](
     body: A,
     headers: Map[String, List[String]] = Map(
-      ContentType.octetStream.toHeader
+      ContentType.bin.toHeader
     )
 )
 
@@ -21,8 +21,16 @@ object Response {
       withContentType(ContentType(contentType))
 
     def textContent: Response[A] =
-      r.withContentType(ContentType.plainText)
+      r.withContentType(ContentType.txt)
 
+    def htmlContent: Response[A] =
+      r.withContentType(ContentType.html)
+
+    def autoContent(ext: String): Response[A] = {
+      val sanitized   = ext.split("\\.").toList.last
+      val contentType = ContentType.contentPF(sanitized)
+      r.withContentType(contentType)
+    }
   }
 
 }
