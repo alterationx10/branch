@@ -77,6 +77,14 @@ lazy val friday =
     )
     .dependsOn(macaroni, lzy)
 
+lazy val veil =
+  project
+    .in(file("veil"))
+    .settings(
+      name := "veil"
+    )
+    .dependsOn(macaroni, lzy, friday)
+
 lazy val example =
   project
     .in(file("example"))
