@@ -8,7 +8,8 @@ import scala.jdk.CollectionConverters.*
 
 object VeilExample {
 
-  case class AppConfig(host: String, port: Int) derives JsonDecoder, Config
+  case class AppConfig(host: String, port: Int) derives Config
+  case class AppConfig2(host: String, port: Int)
 
   def main(args: Array[String]): Unit = {
 
@@ -36,6 +37,10 @@ object VeilExample {
 
     println {
       summon[Config[AppConfig]].fromFile(filePath)
+    }
+
+    println {
+      summon[Config[AppConfig2]].fromResource("app-config.json")
     }
   }
 

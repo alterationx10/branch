@@ -70,7 +70,7 @@ object JsonDecoder {
     }
   }
 
-  inline def derived[A](using m: Mirror.Of[A]): JsonDecoder[A] = {
+  inline given derived[A](using m: Mirror.Of[A]): JsonDecoder[A] = {
     inline m match {
       case _: Mirror.SumOf[A]     =>
         error(

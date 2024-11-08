@@ -71,7 +71,7 @@ object JsonEncoder {
     JsonObject(js.toMap)
   }
 
-  inline def derived[A](using m: Mirror.Of[A]): JsonEncoder[A] = {
+  inline given derived[A](using m: Mirror.Of[A]): JsonEncoder[A] = {
     inline m match {
       case p: Mirror.ProductOf[A] =>
         (a: A) => {

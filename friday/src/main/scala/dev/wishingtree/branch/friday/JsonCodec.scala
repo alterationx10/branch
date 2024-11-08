@@ -18,7 +18,7 @@ object JsonCodec {
       override def encode(a: A): Json = encoder.encode(a)
     }
 
-  inline def derived[A](using m: Mirror.Of[A]): JsonCodec[A] = {
+  inline given derived[A](using m: Mirror.Of[A]): JsonCodec[A] = {
     inline m match {
       case _: Mirror.SumOf[A]     => error("")
       case p: Mirror.ProductOf[A] =>

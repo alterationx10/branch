@@ -13,7 +13,7 @@ trait Config[T] {
 
 object Config {
 
-  inline def derived[T](using JsonDecoder[T]): Config[T] =
+  inline given derived[T](using JsonDecoder[T]): Config[T] =
     new Config[T] {
 
       override def fromFile(file: String): Try[T] =
