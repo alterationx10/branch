@@ -138,18 +138,21 @@ object Json {
     (whitespace *> (obj | array)).root
   }
 
-  private val defaultParser: Parser[Json] = 
+  private val defaultParser: Parser[Json] =
     parser(Reference)
 
   import Reference.*
   def parse(json: String): Either[ParseError, Json] =
     defaultParser.run(json)
-  
+
   def decode[A](json: Json)(using JsonDecoder[A]): Try[A] =
     summon[JsonDecoder[A]].decode(json)
-    
+
   def decode[A](json: String)(using JsonDecoder[A]): Try[A] =
-    parse(json).left.map(e => new Exception(e.toString)).toTry.flatMap(decode[A])
+    parse(json).left
+      .map(e => new Exception(e.toString))
+      .toTry
+      .flatMap(decode[A])
 
   def encode[A](a: A)(using JsonEncoder[A]): Json =
     summon[JsonEncoder[A]].encode(a)

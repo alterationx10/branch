@@ -25,7 +25,9 @@ trait ContextHandler(val path: String) {
           .fn {
             HttpVerb
               .fromString(exchange.getRequestMethod.toUpperCase)
-              .map(v => v -> Segments(exchange.getRequestURI.getPath.toLowerCase))
+              .map(v =>
+                v -> Segments(exchange.getRequestURI.getPath.toLowerCase)
+              )
               .filter(contextRouter.isDefinedAt)
               .map(contextRouter)
               .getOrElse(RequestHandler.unimplementedHandler)
@@ -51,14 +53,15 @@ object ContextHandler {
 
   given Semigroup[ContextHandler] = (a: ContextHandler, b: ContextHandler) => {
     new ContextHandler(a.path) {
-      override val filters: Seq[Filter] = (a.filters ++ b.filters).distinct
-      override val authenticator: Option[Authenticator] = a.authenticator.orElse(b.authenticator)
-      override val contextRouter: PartialFunction[(HttpVerb, Segments), RequestHandler[_, _]] =
+      override val filters: Seq[Filter]                 = (a.filters ++ b.filters).distinct
+      override val authenticator: Option[Authenticator] =
+        a.authenticator.orElse(b.authenticator)
+      override val contextRouter
+          : PartialFunction[(HttpVerb, Segments), RequestHandler[_, _]] =
         a.contextRouter orElse b.contextRouter
     }
   }
-  
-  
+
   val timingFilter: Filter = new Filter {
     override def doFilter(exchange: HttpExchange, chain: Filter.Chain): Unit = {
       val start = Instant.now()

@@ -1,7 +1,10 @@
 package dev.wishingtree.branch.friday
 
 import dev.wishingtree.branch.friday.Json.JsonObject
-import dev.wishingtree.branch.macaroni.meta.Summons.{summonHigherListOf, summonListOfValuesAs}
+import dev.wishingtree.branch.macaroni.meta.Summons.{
+  summonHigherListOf,
+  summonListOfValuesAs
+}
 
 import java.time.Instant
 import scala.compiletime.*
@@ -9,7 +12,7 @@ import scala.deriving.Mirror
 import scala.util.*
 
 trait JsonDecoder[+A] {
-  
+
   def decode(json: Json): Try[A]
 
   def decode(json: String): Try[A] =
@@ -52,9 +55,9 @@ object JsonDecoder {
       b: Json
   ): A = {
     {
-      val productLabels     = summonListOfValuesAs[p.MirroredElemLabels, String]
-      val decoders          = summonHigherListOf[p.MirroredElemTypes, JsonDecoder]
-      val underlying        = b.asInstanceOf[JsonObject].value
+      val productLabels       = summonListOfValuesAs[p.MirroredElemLabels, String]
+      val decoders            = summonHigherListOf[p.MirroredElemTypes, JsonDecoder]
+      val underlying          = b.asInstanceOf[JsonObject].value
       val consArr: Array[Any] = productLabels
         .zip(decoders)
         .map { case (label, decoder) =>

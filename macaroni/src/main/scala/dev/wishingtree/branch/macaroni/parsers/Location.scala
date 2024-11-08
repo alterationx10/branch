@@ -21,8 +21,7 @@ case class Location(input: String, offset: Int = 0) {
     then {
       val itr = input.linesIterator.drop(line - 1)
       if (itr.hasNext) itr.next() else ""
-    }
-    else ""
+    } else ""
 
   def columnCaret = (" " * (col - 1)) + "^"
 }
