@@ -88,7 +88,7 @@ lazy val veil =
 lazy val example =
   project
     .in(file("example"))
-    .dependsOn(macaroni, lzy, spider, piggy, friday)
+    .dependsOn(macaroni, lzy, spider, piggy, friday, veil)
     .settings(
       name := "example",
       libraryDependencies ++= Seq( // Examples and tests are allowed to have dependencies :-)

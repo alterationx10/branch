@@ -1,7 +1,7 @@
 package dev.wishingtree.branch.macaroni.meta
 
 object Types {
-  
+
   /** An Intersection type, but with the default of Any if empty. Useful for
     * turning CaseClass(a: A, b: B, ...) into a type A & B & ... via a Mirror.
     */

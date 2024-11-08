@@ -12,7 +12,7 @@ case class ParseError(stack: List[(Location, String)] = List.empty) {
 
   def latestLoc: Option[Location] =
     latest map (_._1)
-  
+
   override def toString =
     if stack.isEmpty then "no error message"
     else {
@@ -24,7 +24,7 @@ case class ParseError(stack: List[(Location, String)] = List.empty) {
         .map((loc, msg) => s"${formatLoc(loc)} $msg")
         .mkString("\n") + context
     }
-  
+
   def collapseStack(s: List[(Location, String)]): List[(Location, String)] =
     s.groupBy(_._1)
       .view

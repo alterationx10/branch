@@ -35,7 +35,8 @@ trait HttpFunSuite extends FunSuite {
         val genContextHandler: PF => ContextHandler = (pf: PF) =>
           new ContextHandler("/") {
             override val contextRouter
-                : PartialFunction[(HttpVerb, Segments), RequestHandler[?, ?]] = pf
+                : PartialFunction[(HttpVerb, Segments), RequestHandler[?, ?]] =
+              pf
           }
 
         (server, genContextHandler)

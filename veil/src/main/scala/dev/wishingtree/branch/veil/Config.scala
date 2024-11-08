@@ -4,6 +4,7 @@ import dev.wishingtree.branch.friday.JsonDecoder
 
 import scala.util.*
 import java.nio.file.{Files, Path}
+import scala.io.Source
 
 trait Config[T] {
   def fromFile(file: String): Try[T]
@@ -19,12 +20,13 @@ object Config {
         Try(Files.readString(Path.of(file)))
           .flatMap(json => summon[JsonDecoder[T]].decode(json))
 
-      override def fromResource(path: String): Try[T] =
+      override def fromResource(path: String): Try[T] = {
         scala.util
-          .Using(getClass.getResourceAsStream(path)) { iStream =>
-            val json = new String(iStream.readAllBytes())
+          .Using(Source.fromResource(path)) { iter =>
+            val json = iter.mkString
             summon[JsonDecoder[T]].decode(json)
           }
           .flatten
+      }
     }
 }

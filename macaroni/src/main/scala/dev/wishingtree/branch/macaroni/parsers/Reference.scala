@@ -19,8 +19,7 @@ object Reference extends Parsers[Reference.Parser] {
 
   override def string(s: String): Parser[String] = { l =>
     val i = firstNonmatchingIndex(l.input, s, l.offset)
-    if i == -1 then 
-      Success(s, s.length)
+    if i == -1 then Success(s, s.length)
     else Failure(l.advanceBy(i).toError(s"'$s'"), i != 0)
   }
 
@@ -47,7 +46,7 @@ object Reference extends Parsers[Reference.Parser] {
     override infix def or(p2: => Parser[A]): Parser[A] = { l =>
       p(l) match {
         case Failure(e, false) => p2(l)
-        case r                 => r 
+        case r                 => r
       }
     }
 
