@@ -10,10 +10,11 @@
 
 //> using repository sonatype:public
 
-//> using dep dev.wishingtree::macaroni:0.0.0+42-3c7dc55d+20241106-1705-SNAPSHOT
-//> using dep dev.wishingtree::lzy:0.0.0+42-3c7dc55d+20241106-1705-SNAPSHOT
-//> using dep dev.wishingtree::spider:0.0.0+42-3c7dc55d+20241106-1705-SNAPSHOT
-//> using dep dev.wishingtree::piggy:0.0.0+42-3c7dc55d+20241106-1705-SNAPSHOT
-//> using dep dev.wishingtree::friday:0.0.0+42-3c7dc55d+20241106-1705-SNAPSHOT
+//> using dep dev.wishingtree::macaroni:0.0.0+45-508385a7+20241108-2245-SNAPSHOT
+//> using dep dev.wishingtree::lzy:0.0.0+45-508385a7+20241108-2245-SNAPSHOT
+//> using dep dev.wishingtree::spider:0.0.0+45-508385a7+20241108-2245-SNAPSHOT
+//> using dep dev.wishingtree::piggy:0.0.0+45-508385a7+20241108-2245-SNAPSHOT
+//> using dep dev.wishingtree::friday:0.0.0+45-508385a7+20241108-2245-SNAPSHOT
+//> using dep dev.wishingtree::veil:0.0.0+45-508385a7+20241108-2245-SNAPSHOT
 
 //> using publish.version 0.0.1-SNAPSHOT
