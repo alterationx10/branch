@@ -17,6 +17,6 @@ case class JsonFormatter() extends Formatter {
         "jsonMessage" -> Json.parse(record.getMessage).getOrElse(JsonNull),
         "error"       -> Json.throwable(record.getThrown)
       )
-      .toJsonString
+      .toJsonString + System.lineSeparator()
   }
 }
