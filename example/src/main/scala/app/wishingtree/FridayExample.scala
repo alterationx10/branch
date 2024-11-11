@@ -3,8 +3,9 @@ package app.wishingtree
 import dev.wishingtree.branch.friday.{Json, JsonCodec, JsonDecoder}
 
 import scala.language.postfixOps
+import scala.util.*
 
-object FridayApp {
+object FridayExample {
 
   def main(args: Array[String]): Unit = {
 
@@ -55,6 +56,13 @@ object FridayApp {
     
     println {
       Json.decode[Person](personJson)
+    }
+
+    Try(1 / 0) match {
+      case Failure(exception) => println {
+        Json.throwable(exception).toJsonString
+      }
+      case _ => ()
     }
     
   }
