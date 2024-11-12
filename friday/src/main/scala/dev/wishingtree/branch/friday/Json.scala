@@ -17,6 +17,34 @@ enum Json {
 
 object Json {
 
+  def obj(fields: (String, Json)*): JsonObject = {
+    JsonObject(fields.toMap)
+  }
+
+  inline def jsonOrNull[A](a: => A)(using encoder: JsonEncoder[A]): Json = {
+    Try(encoder.encode(a)).getOrElse(JsonNull)
+  }
+
+  def stackTraceElement(ste: StackTraceElement): Json = {
+    Json.obj(
+      "fileName"   -> jsonOrNull(ste.getFileName),
+      "className"  -> jsonOrNull(ste.getClassName),
+      "methodName" -> jsonOrNull(ste.getMethodName),
+      "lineNumber" -> jsonOrNull(ste.getLineNumber)
+    )
+  }
+
+  def throwable[E <: Throwable](e: E): Json = Try {
+    Json.obj(
+      "message"    -> jsonOrNull(e.getMessage),
+      "cause"      -> Json.throwable(e.getCause),
+      "suppressed" -> JsonArray(e.getSuppressed.map(e => Json.throwable(e))),
+      "stackTrace" -> JsonArray(
+        e.getStackTrace.map(e => Json.stackTraceElement(e))
+      )
+    )
+  }.getOrElse(JsonNull)
+
   extension (j: Json) {
 
     @targetName("exists")
