@@ -16,5 +16,6 @@
 //> using dep dev.wishingtree::piggy:0.0.0+45-508385a7+20241108-2245-SNAPSHOT
 //> using dep dev.wishingtree::friday:0.0.0+45-508385a7+20241108-2245-SNAPSHOT
 //> using dep dev.wishingtree::veil:0.0.0+45-508385a7+20241108-2245-SNAPSHOT
+//> using dep dev.wishingtree::blammo:0.0.0+45-508385a7+20241108-2245-SNAPSHOT
 
 //> using publish.version 0.0.1-SNAPSHOT
