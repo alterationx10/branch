@@ -1,6 +1,4 @@
-package dev.wishingtree.branch.spider.server
-
-import dev.wishingtree.branch.spider.server.ContentType
+package dev.wishingtree.branch.spider
 
 case class ContentType(content: String)
 

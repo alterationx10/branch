@@ -25,7 +25,7 @@ case class FileContext(rootFilePath: Segments, rootPath: String = "/")
   private def defaultExists(path: Segments): Boolean = {
     !path.toSeq.lastOption.exists(_.contains("\\.")) &&
     FileContext.defaultFiles.foldLeft(false) { (b, d) =>
-      val file = new File((rootFilePath / d).toPathString)
+      val file = new File((rootFilePath / path / d).toPathString)
       b || (file.exists() && file.isFile)
     }
   }

@@ -3,7 +3,7 @@ package dev.wishingtree.branch.spider
 import com.sun.net.httpserver.HttpServer
 import dev.wishingtree.branch.lzy.LazyRuntime
 import dev.wishingtree.branch.spider.server.OpaqueSegments.*
-import dev.wishingtree.branch.spider.server.{ContextHandler, HttpVerb, RequestHandler}
+import dev.wishingtree.branch.spider.server.{ContextHandler, RequestHandler}
 import munit.FunSuite
 
 import java.net.InetSocketAddress

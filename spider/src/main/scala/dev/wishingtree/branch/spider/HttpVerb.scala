@@ -1,6 +1,4 @@
-package dev.wishingtree.branch.spider.server
-
-import dev.wishingtree.branch.spider.server.HttpVerb
+package dev.wishingtree.branch.spider
 
 import scala.util.Try
 

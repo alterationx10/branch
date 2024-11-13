@@ -1,6 +1,6 @@
 package dev.wishingtree.branch.spider.server
 
-import dev.wishingtree.branch.spider.server.Response
+import dev.wishingtree.branch.spider.ContentType
 
 case class Response[A](
     body: A,
