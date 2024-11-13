@@ -9,18 +9,19 @@ things done quickly! Think of it as the framework for your side-project, not you
 *Branch* is made up of a collection of modules, each focusing on different parts:
 
 - **Lzy** - Lazy Futures or Tiny Effects?
-- **Spider** - A wrapper/framework around the Java HttpServer (I bet you didn't even know there was one!)
+- **Spider** - A wrapper/framework around the Java HttpServer (I bet you didn't even know there was one!), as well as
+  HttpClient helpers.
 - **Piggy** - A SQL framework, probably focused on PostgreSQL.
 - **Friday** - A Json library, because Scala doesn't already have enough.
 - **Macaroni** - Some re-usable helpers and meta-programming utilities.
+- **Veil** - `.env` / (Json based) Config utilities.
+- **Blammo** - It's better than bad, it's (Json) logging!
 
 ... and *more to come*!
 
 A list of other things important to this framework's goals are (but not limited to):
 
-- HTTP Client
-- Configuration
 - Web Sockets
 - Event Bus
-- Forms/Validations
+- Actors, even if it kills me.
 - (HTML) Templating

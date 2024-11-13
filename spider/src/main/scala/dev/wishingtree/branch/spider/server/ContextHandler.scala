@@ -1,9 +1,10 @@
-package dev.wishingtree.branch.spider
+package dev.wishingtree.branch.spider.server
 
 import com.sun.net.httpserver.*
 import dev.wishingtree.branch.lzy.Lazy
 import dev.wishingtree.branch.lzy.abstractions.Semigroup
-import dev.wishingtree.branch.spider.OpaqueSegments.*
+import dev.wishingtree.branch.spider.HttpVerb
+import dev.wishingtree.branch.spider.server.OpaqueSegments.*
 
 import java.time.{Duration, Instant}
 import scala.jdk.CollectionConverters.*

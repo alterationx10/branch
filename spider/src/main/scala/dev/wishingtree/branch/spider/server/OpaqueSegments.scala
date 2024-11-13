@@ -1,4 +1,4 @@
-package dev.wishingtree.branch.spider
+package dev.wishingtree.branch.spider.server
 
 import java.net.URLEncoder
 import java.nio.file.Path
