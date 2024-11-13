@@ -7,3 +7,5 @@
 - [Piggy](./piggy/index.md)
 - [Friday](./friday/index.md)
 - [Macaroni](./macaroni/index.md)
+- [Veil](./veil/index.md)
+- [Blammo](./blammo/index.md)
