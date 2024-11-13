@@ -7,8 +7,10 @@ import java.net.http.HttpRequest.BodyPublishers
 
 object JsonBodyPublisher {
 
-  inline def of[I](i: I)(using jsonEncoder: JsonEncoder[I]): HttpRequest.BodyPublisher = {
+  inline def of[I](
+      i: I
+  )(using jsonEncoder: JsonEncoder[I]): HttpRequest.BodyPublisher = {
     BodyPublishers.ofString(jsonEncoder.encode(i).toJsonString)
   }
-  
+
 }
