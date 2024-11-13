@@ -1,4 +1,6 @@
-package dev.wishingtree.branch.spider
+package dev.wishingtree.branch.spider.server
+
+import dev.wishingtree.branch.spider.server.Response
 
 case class Response[A](
     body: A,

@@ -1,6 +1,6 @@
 package dev.wishingtree.branch.spider
 
-import dev.wishingtree.branch.spider.OpaqueSegments.*
+import dev.wishingtree.branch.spider.server.OpaqueSegments.*
 import munit.FunSuite
 
 class PathsSpec extends FunSuite {

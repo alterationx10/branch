@@ -1,7 +1,8 @@
-package dev.wishingtree.branch.spider
+package dev.wishingtree.branch.spider.server
 
 import com.sun.net.httpserver.HttpExchange
 import dev.wishingtree.branch.lzy.Lazy
+import dev.wishingtree.branch.spider.server.{RequestHandler, Response}
 
 import scala.jdk.CollectionConverters.*
 

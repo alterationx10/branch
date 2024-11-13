@@ -1,5 +1,7 @@
-package dev.wishingtree.branch.spider
-import dev.wishingtree.branch.spider.OpaqueSegments.*
+package dev.wishingtree.branch.spider.server
+
+import OpaqueSegments.*
+import dev.wishingtree.branch.spider.*
 
 import java.io.File
 

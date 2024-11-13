@@ -1,8 +1,9 @@
-package dev.wishingtree.branch.spider
+package dev.wishingtree.branch.spider.server
 
-import OpaqueSegments.*
-import FileHandler.given
-import RequestHandler.given
+import dev.wishingtree.branch.spider.server.FileHandler.given
+import dev.wishingtree.branch.spider.server.OpaqueSegments.*
+import dev.wishingtree.branch.spider.server.RequestHandler.given
+import dev.wishingtree.branch.spider.server.{Request, RequestHandler, Response}
 
 import java.io.{File, FileInputStream}
 

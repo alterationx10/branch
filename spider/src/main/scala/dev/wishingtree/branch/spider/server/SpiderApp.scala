@@ -1,11 +1,11 @@
-package dev.wishingtree.branch.spider
+package dev.wishingtree.branch.spider.server
 
 import com.sun.net.httpserver.{HttpHandler, HttpServer}
 import dev.wishingtree.branch.lzy.LazyRuntime
 
 import java.net.InetSocketAddress
 
-trait HttpApp {
+trait SpiderApp {
 
   val port: Int =
     9000
