@@ -16,12 +16,12 @@ things done quickly! Think of it as the framework for your side-project, not you
 - **Macaroni** - Some re-usable helpers and meta-programming utilities.
 - **Veil** - `.env` / (Json based) Config utilities.
 - **Blammo** - It's better than bad, it's (Json) logging!
+- **Keanu** - A simple *typed* EventBus implementation, and where Actors will eventually live
 
 ... and *more to come*!
 
 A list of other things important to this framework's goals are (but not limited to):
 
 - Web Sockets
-- Event Bus
 - Actors, even if it kills me.
 - (HTML) Templating
