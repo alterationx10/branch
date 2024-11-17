@@ -17,14 +17,14 @@ object KeanuExample extends Subscriber[Int] { self =>
   def main(args: Array[String]): Unit = {
 
     case class SampleActor() extends Actor {
-
+      println("starting actor")
       var counter = 0
 
       override def onMsg: PartialFunction[Any, Any] = {
         case n: Int  => {
           counter += n
-          println(counter)
         }
+        case "boom"  => 1 / 0
         case "count" => counter
         case "print" => println(s"Counter is $counter")
         case _       => println("Unhandled")
@@ -42,11 +42,11 @@ object KeanuExample extends Subscriber[Int] { self =>
     IntEventBus.publish(EventMessage("", 2))
     IntEventBus.publish(EventMessage("", 3))
     IntEventBus.publish(EventMessage("", 4))
+    counterActor.tell("boom") // counterActor reference now has good mailbox, but stale future :-(
     IntEventBus.publish(EventMessage("", 5))
     counterActor.tell("print")
 
     as.shutdownAwait
-
 
   }
 

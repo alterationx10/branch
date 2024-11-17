@@ -14,7 +14,7 @@ trait ActorContext[A <: Actor: ClassTag] {
 }
 
 object ActorContext {
-  inline def props[A <: Actor: ClassTag](args: Any*): ActorContext[A] = {
+  def props[A <: Actor: ClassTag](args: Any*): ActorContext[A] = {
     new ActorContext[A] {
       override private[actors] val ctorArgs: Seq[Any] = args
     }

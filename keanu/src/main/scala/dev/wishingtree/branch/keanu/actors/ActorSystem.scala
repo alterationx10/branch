@@ -1,5 +1,7 @@
 package dev.wishingtree.branch.keanu.actors
 
+import dev.wishingtree.branch.keanu.eventbus.{EventBus, EventMessage}
+
 import java.util.concurrent.{
   BlockingQueue,
   CompletableFuture,
@@ -9,10 +11,23 @@ import java.util.concurrent.{
 }
 import scala.collection.mutable
 import scala.reflect.{ClassTag, classTag}
+import scala.util.*
 
 trait ActorSystem {
-  
-  
+
+  private object LifecycleEventBus extends EventBus[LifecycleEvent]
+
+  LifecycleEventBus.subscribe {
+    case PoisonPill                    => ()
+    case InterruptedTermination(refId) => ()
+    case OnMsgTermination(refId, e)    => {
+      val currentRef = actors(refId)
+      currentRef.actorFuture.cancel(true)
+      val newFuture  = submitActor(refId._1, refId._2, currentRef.mailBox)
+      actors += (refId -> currentRef.restart(newFuture))
+    }
+  }
+
   val executorService: ExecutorService =
     Executors.newVirtualThreadPerTaskExecutor()
 
@@ -34,6 +49,7 @@ trait ActorSystem {
     actors -= (name -> nameOf[A])
 
   private def submitActor(
+      name: String,
       propId: String,
       mailbox: BlockingQueue[Any]
   ): CompletableFuture[Any] = {
@@ -50,7 +66,14 @@ trait ActorSystem {
           }
         } catch {
           case PoisonPillException => ()
-          case e: InterruptedException => Thread.currentThread().interrupt()
+          case e: InterruptedException => {
+            Thread.currentThread().interrupt()
+          }
+          case e                       => {
+            LifecycleEventBus.publish(
+              EventMessage("", OnMsgTermination(name -> propId, e))
+            )
+          }
         }
       },
       executorService
@@ -65,7 +88,7 @@ trait ActorSystem {
           new LinkedBlockingQueue[Any]()
 
         val submission =
-          submitActor(nameOf[A], mailbox)
+          submitActor(name, nameOf[A], mailbox)
         ActorRef(mailbox, submission)
       }
     )
@@ -73,8 +96,9 @@ trait ActorSystem {
 
   def shutdownAwait: Unit = {
     actors.values.foreach { ref =>
+      println(s"Shutting dow ${actors.size} actors")
       ref.tell(PoisonPill)
-      ref.actorFuture.get()
+      Try(ref.actorFuture.get())
     }
   }
 

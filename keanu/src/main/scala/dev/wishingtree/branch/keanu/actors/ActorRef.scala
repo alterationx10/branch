@@ -8,4 +8,7 @@ case class ActorRef(
 ) {
 
   def tell(msg: Any): Unit = mailBox.put(msg)
+
+  private[actors] def restart(actorFuture: CompletableFuture[Any]): ActorRef =
+    ActorRef(mailBox, actorFuture)
 }
