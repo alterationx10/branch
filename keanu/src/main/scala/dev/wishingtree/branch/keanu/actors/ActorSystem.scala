@@ -34,9 +34,10 @@ trait ActorSystem {
     props += (prop.identifier -> prop)
   }
 
-  private def registerActor(refId: ActorRefId, actor: ActorRef): ActorRef = synchronized {
-    actorRefs.getOrElseUpdate(refId, actor)
-  }
+  private def registerActor(refId: ActorRefId, actor: ActorRef): ActorRef =
+    synchronized {
+      actorRefs.getOrElseUpdate(refId, actor)
+    }
 
   private def submitActor(
       refId: ActorRefId,
@@ -69,18 +70,19 @@ trait ActorSystem {
     )
   }
 
-  def actorForName[A <: Actor: ClassTag](name: String): ActorRef = synchronized {
-    val refId = ActorRefId[A](name)
-    val ar    = actorRefs.getOrElseUpdate(
-      refId,
-      ActorRef(new LinkedBlockingQueue[Any]())
-    )
-    runningActors.getOrElseUpdate(
-      refId,
-      submitActor(refId, ar.mailBox)
-    )
-    ar
-  }
+  def actorForName[A <: Actor: ClassTag](name: String): ActorRef =
+    synchronized {
+      val refId = ActorRefId[A](name)
+      val ar    = actorRefs.getOrElseUpdate(
+        refId,
+        ActorRef(new LinkedBlockingQueue[Any]())
+      )
+      runningActors.getOrElseUpdate(
+        refId,
+        submitActor(refId, ar.mailBox)
+      )
+      ar
+    }
 
   def shutdownAwait: Unit = synchronized {
     println(s"Finalizing ${actorRefs.size} actors")
