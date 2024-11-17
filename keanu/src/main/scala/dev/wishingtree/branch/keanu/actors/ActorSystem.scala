@@ -15,6 +15,9 @@ import scala.util.*
 
 trait ActorSystem {
 
+  val executorService: ExecutorService =
+    Executors.newVirtualThreadPerTaskExecutor()
+
   private object LifecycleEventBus extends EventBus[LifecycleEvent]
 
   LifecycleEventBus.subscribe {
@@ -23,40 +26,36 @@ trait ActorSystem {
     case OnMsgTermination(refId, e)    => {
       val currentRef = actors(refId)
       currentRef.actorFuture.cancel(true)
-      val newFuture  = submitActor(refId._1, refId._2, currentRef.mailBox)
+      val newFuture  = submitActor(refId, currentRef.mailBox)
       actors += (refId -> currentRef.restart(newFuture))
     }
   }
 
-  val executorService: ExecutorService =
-    Executors.newVirtualThreadPerTaskExecutor()
-
   private def nameOf[A <: Actor: ClassTag]: String =
     classTag[A].getClass.getCanonicalName
 
-  val actors: mutable.Map[(String, String), ActorRef] = mutable.Map.empty
-  val props: mutable.Map[String, ActorContext[?]]     = mutable.Map.empty
+  val actors: mutable.Map[ActorRefId, ActorRef]   = mutable.Map.empty
+  val props: mutable.Map[String, ActorContext[?]] = mutable.Map.empty
 
   def registerProp(prop: ActorContext[?]): Unit = {
     props += (prop.identifier -> prop)
   }
 
-  private def registerActor(id: (String, String), actor: ActorRef): ActorRef = {
-    actors.getOrElseUpdate(id, actor)
+  private def registerActor(refId: ActorRefId, actor: ActorRef): ActorRef = {
+    actors.getOrElseUpdate(refId, actor)
   }
 
   def unregisterActor[A <: Actor: ClassTag](name: String): Unit =
-    actors -= (name -> nameOf[A])
+    actors -= ActorRefId[A](name)
 
   private def submitActor(
-      name: String,
-      propId: String,
+      refId: ActorRefId,
       mailbox: BlockingQueue[Any]
   ): CompletableFuture[Any] = {
     CompletableFuture.supplyAsync[Any](
       () => {
         val newActor: Actor =
-          props(propId).create()
+          props(refId.propId).create()
         try {
           while (true) {
             mailbox.take() match {
@@ -71,7 +70,7 @@ trait ActorSystem {
           }
           case e                       => {
             LifecycleEventBus.publish(
-              EventMessage("", OnMsgTermination(name -> propId, e))
+              EventMessage("", OnMsgTermination(refId, e))
             )
           }
         }
@@ -81,14 +80,14 @@ trait ActorSystem {
   }
 
   def actorForName[A <: Actor: ClassTag](name: String): ActorRef = {
-    val key = name -> nameOf[A]
+    val refId = ActorRefId[A](name)
     actors.getOrElseUpdate(
-      key, {
+      refId, {
         val mailbox: BlockingQueue[Any] =
           new LinkedBlockingQueue[Any]()
 
         val submission =
-          submitActor(name, nameOf[A], mailbox)
+          submitActor(refId, mailbox)
         ActorRef(mailbox, submission)
       }
     )
