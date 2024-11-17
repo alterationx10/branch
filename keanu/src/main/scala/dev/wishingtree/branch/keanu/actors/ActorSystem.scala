@@ -2,15 +2,9 @@ package dev.wishingtree.branch.keanu.actors
 
 import dev.wishingtree.branch.keanu.eventbus.{EventBus, EventMessage}
 
-import java.util.concurrent.{
-  BlockingQueue,
-  CompletableFuture,
-  ExecutorService,
-  Executors,
-  LinkedBlockingQueue
-}
+import java.util.concurrent.*
 import scala.collection.mutable
-import scala.reflect.{ClassTag, classTag}
+import scala.reflect.ClassTag
 import scala.util.*
 
 trait ActorSystem {
@@ -24,29 +18,25 @@ trait ActorSystem {
     case PoisonPill                    => ()
     case InterruptedTermination(refId) => ()
     case OnMsgTermination(refId, e)    => {
-      val currentRef = actors(refId)
-      currentRef.actorFuture.cancel(true)
-      val newFuture  = submitActor(refId, currentRef.mailBox)
-      actors += (refId -> currentRef.restart(newFuture))
+      val currentRef   = actorRefs(refId)
+      val runningActor = runningActors(refId)
+      runningActor.cancel(true)
+      runningActors += refId -> submitActor(refId, currentRef.mailBox)
     }
   }
 
-  private def nameOf[A <: Actor: ClassTag]: String =
-    classTag[A].getClass.getCanonicalName
+  val props: mutable.Map[String, ActorContext[?]]                    = mutable.Map.empty
+  val actorRefs: mutable.Map[ActorRefId, ActorRef]                   = mutable.Map.empty
+  val runningActors: mutable.Map[ActorRefId, CompletableFuture[Any]] =
+    mutable.Map.empty
 
-  val actors: mutable.Map[ActorRefId, ActorRef]   = mutable.Map.empty
-  val props: mutable.Map[String, ActorContext[?]] = mutable.Map.empty
-
-  def registerProp(prop: ActorContext[?]): Unit = {
+  def registerProp(prop: ActorContext[?]): Unit = synchronized {
     props += (prop.identifier -> prop)
   }
 
-  private def registerActor(refId: ActorRefId, actor: ActorRef): ActorRef = {
-    actors.getOrElseUpdate(refId, actor)
+  private def registerActor(refId: ActorRefId, actor: ActorRef): ActorRef = synchronized {
+    actorRefs.getOrElseUpdate(refId, actor)
   }
-
-  def unregisterActor[A <: Actor: ClassTag](name: String): Unit =
-    actors -= ActorRefId[A](name)
 
   private def submitActor(
       refId: ActorRefId,
@@ -79,26 +69,29 @@ trait ActorSystem {
     )
   }
 
-  def actorForName[A <: Actor: ClassTag](name: String): ActorRef = {
+  def actorForName[A <: Actor: ClassTag](name: String): ActorRef = synchronized {
     val refId = ActorRefId[A](name)
-    actors.getOrElseUpdate(
-      refId, {
-        val mailbox: BlockingQueue[Any] =
-          new LinkedBlockingQueue[Any]()
-
-        val submission =
-          submitActor(refId, mailbox)
-        ActorRef(mailbox, submission)
-      }
+    val ar    = actorRefs.getOrElseUpdate(
+      refId,
+      ActorRef(new LinkedBlockingQueue[Any]())
     )
+    runningActors.getOrElseUpdate(
+      refId,
+      submitActor(refId, ar.mailBox)
+    )
+    ar
   }
 
-  def shutdownAwait: Unit = {
-    actors.values.foreach { ref =>
-      println(s"Shutting dow ${actors.size} actors")
+  def shutdownAwait: Unit = synchronized {
+    println(s"Finalizing ${actorRefs.size} actors")
+    actorRefs.values.foreach { ref =>
       ref.tell(PoisonPill)
-      Try(ref.actorFuture.get())
     }
+    println(s"Shutting down ${runningActors.size} actors")
+    runningActors.values.foreach { a =>
+      Try(a.get())
+    }
+
   }
 
 }
