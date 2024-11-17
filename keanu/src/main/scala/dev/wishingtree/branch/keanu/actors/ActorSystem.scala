@@ -14,15 +14,16 @@ trait ActorSystem {
 
   private object LifecycleEventBus extends EventBus[LifecycleEvent]
 
+  private def startOrRestartActor(refId: ActorRefId): Unit = {
+    val currentRef = actorRefs(refId)
+    runningActors.get(refId).foreach(_.cancel(true))
+    runningActors += (refId -> submitActor(refId, currentRef.mailBox))
+  }
+
   LifecycleEventBus.subscribe {
-    case PoisonPill                    => ()
-    case InterruptedTermination(refId) => ()
-    case OnMsgTermination(refId, e)    => {
-      val currentRef   = actorRefs(refId)
-      val runningActor = runningActors(refId)
-      runningActor.cancel(true)
-      runningActors += refId -> submitActor(refId, currentRef.mailBox)
-    }
+    case InterruptedTermination(refId) => startOrRestartActor(refId)
+    case OnMsgTermination(refId, e)    => startOrRestartActor(refId)
+    case _                             => ()
   }
 
   val props: mutable.Map[String, ActorContext[?]]                    = mutable.Map.empty
@@ -70,7 +71,7 @@ trait ActorSystem {
     )
   }
 
-  def actorForName[A <: Actor: ClassTag](name: String): ActorRef =
+  private def actorForName[A <: Actor: ClassTag](name: String): ActorRef =
     synchronized {
       val refId = ActorRefId[A](name)
       val ar    = actorRefs.getOrElseUpdate(
@@ -96,6 +97,9 @@ trait ActorSystem {
 
   }
 
+  def tell[A <: Actor : ClassTag](name: String, msg: Any): Unit =
+    actorForName[A](name).tell(msg)
+  
 }
 
 object ActorSystem {

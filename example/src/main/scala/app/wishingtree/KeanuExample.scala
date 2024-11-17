@@ -35,16 +35,16 @@ object KeanuExample extends Subscriber[Int] { self =>
     val as      = new ActorSystem {}
     as.registerProp(saProps)
 
-    val counterActor = as.actorForName[SampleActor]("counter")
+    val counterActor = as.tell[SampleActor]("counter", _)
 
-    IntEventBus.subscribe((msg: Int) => counterActor.tell(msg))
+    IntEventBus.subscribe((msg: Int) => counterActor(msg))
     IntEventBus.publish(EventMessage("", 1))
     IntEventBus.publish(EventMessage("", 2))
     IntEventBus.publish(EventMessage("", 3))
     IntEventBus.publish(EventMessage("", 4))
-    counterActor.tell("boom") // counterActor reference now has good mailbox, but stale future :-(
+//    counterActor("boom")
     IntEventBus.publish(EventMessage("", 5))
-    counterActor.tell("print")
+    counterActor("print")
 
     as.shutdownAwait
 
