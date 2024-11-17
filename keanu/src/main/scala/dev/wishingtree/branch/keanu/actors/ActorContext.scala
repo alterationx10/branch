@@ -7,9 +7,13 @@ trait ActorContext[A <: Actor: ClassTag] {
   private[actors] val identifier  =
     classTag[A].getClass.getCanonicalName
   private[actors] def create(): A = {
-    classTag[A].runtimeClass.getConstructors.head
-      .newInstance(ctorArgs*)
-      .asInstanceOf[A]
+    try {
+      classTag[A].runtimeClass.getConstructors.head
+        .newInstance(ctorArgs*)
+        .asInstanceOf[A]
+    } catch {
+      case e: Throwable => throw InstantiationException(e)
+    }
   }
 }
 

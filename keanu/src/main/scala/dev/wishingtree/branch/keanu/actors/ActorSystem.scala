@@ -21,13 +21,19 @@ trait ActorSystem {
   }
 
   LifecycleEventBus.subscribe {
-    case InterruptedTermination(refId) => startOrRestartActor(refId)
-    case OnMsgTermination(refId, e)    => startOrRestartActor(refId)
-    case PoisonPillTermination(refId) => synchronized {
-      actorRefs -= refId
-      runningActors -= refId
-    }
-    case _                             => ()
+    case InterruptedTermination(refId)    => startOrRestartActor(refId)
+    case OnMsgTermination(refId, e)       => startOrRestartActor(refId)
+    case PoisonPillTermination(refId)     =>
+      synchronized {
+        actorRefs -= refId
+        runningActors -= refId
+      }
+    case InitializationTermination(refId) =>
+      synchronized {
+        actorRefs -= refId
+        runningActors -= refId
+      }
+    case _                                => ()
   }
 
   val props: mutable.Map[String, ActorContext[?]]                    = mutable.Map.empty
@@ -50,9 +56,10 @@ trait ActorSystem {
   ): CompletableFuture[Any] = {
     CompletableFuture.supplyAsync[Any](
       () => {
-        val newActor: Actor =
-          props(refId.propId).create()
+
         try {
+          val newActor: Actor =
+            props(refId.propId).create()
           while (true) {
             mailbox.take() match {
               case PoisonPill => throw PoisonPillException
@@ -60,13 +67,17 @@ trait ActorSystem {
             }
           }
         } catch {
-          case PoisonPillException =>
+          case PoisonPillException       =>
             LifecycleEventBus.publish(
               EventMessage("", PoisonPillTermination(refId))
             )
-          case e: InterruptedException =>
+          case e: InterruptedException   =>
             Thread.currentThread().interrupt()
-          case e                       =>
+          case InstantiationException(e) =>
+            LifecycleEventBus.publish(
+              EventMessage("", InitializationTermination(refId))
+            )
+          case e                         =>
             LifecycleEventBus.publish(
               EventMessage("", OnMsgTermination(refId, e))
             )
