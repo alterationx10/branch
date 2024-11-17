@@ -23,6 +23,10 @@ trait ActorSystem {
   LifecycleEventBus.subscribe {
     case InterruptedTermination(refId) => startOrRestartActor(refId)
     case OnMsgTermination(refId, e)    => startOrRestartActor(refId)
+    case PoisonPillTermination(refId) => synchronized {
+      actorRefs -= refId
+      runningActors -= refId
+    }
     case _                             => ()
   }
 
@@ -56,15 +60,16 @@ trait ActorSystem {
             }
           }
         } catch {
-          case PoisonPillException => ()
-          case e: InterruptedException => {
+          case PoisonPillException =>
+            LifecycleEventBus.publish(
+              EventMessage("", PoisonPillTermination(refId))
+            )
+          case e: InterruptedException =>
             Thread.currentThread().interrupt()
-          }
-          case e                       => {
+          case e                       =>
             LifecycleEventBus.publish(
               EventMessage("", OnMsgTermination(refId, e))
             )
-          }
         }
       },
       executorService
@@ -97,9 +102,9 @@ trait ActorSystem {
 
   }
 
-  def tell[A <: Actor : ClassTag](name: String, msg: Any): Unit =
+  def tell[A <: Actor: ClassTag](name: String, msg: Any): Unit =
     actorForName[A](name).tell(msg)
-  
+
 }
 
 object ActorSystem {

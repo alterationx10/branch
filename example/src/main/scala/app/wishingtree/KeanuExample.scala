@@ -42,7 +42,7 @@ object KeanuExample extends Subscriber[Int] { self =>
     IntEventBus.publish(EventMessage("", 2))
     IntEventBus.publish(EventMessage("", 3))
     IntEventBus.publish(EventMessage("", 4))
-//    counterActor("boom")
+    counterActor("boom")
     IntEventBus.publish(EventMessage("", 5))
     counterActor("print")
 
