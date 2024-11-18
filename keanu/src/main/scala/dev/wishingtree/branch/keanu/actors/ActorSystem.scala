@@ -9,6 +9,9 @@ import scala.util.*
 
 trait ActorSystem {
 
+  private type Mailbox  = BlockingQueue[Any]
+  private type ActorRef = CompletableFuture[Any]
+
   val executorService: ExecutorService =
     Executors.newVirtualThreadPerTaskExecutor()
 
@@ -36,11 +39,11 @@ trait ActorSystem {
     case _                                => ()
   }
 
-  private val props: mutable.Map[String, ActorContext[?]]             =
+  private val props: mutable.Map[String, ActorContext[?]] =
     mutable.Map.empty
-  private val mailboxes: mutable.Map[ActorRefId, BlockingQueue[Any]]  =
+  private val mailboxes: mutable.Map[ActorRefId, Mailbox] =
     mutable.Map.empty
-  private val actors: mutable.Map[ActorRefId, CompletableFuture[Any]] =
+  private val actors: mutable.Map[ActorRefId, ActorRef]   =
     mutable.Map.empty
 
   def registerProp(prop: ActorContext[?]): Unit = synchronized {
@@ -49,16 +52,16 @@ trait ActorSystem {
 
   private def registerMailbox(
       refId: ActorRefId,
-      mailbox: BlockingQueue[Any]
-  ): BlockingQueue[Any] =
+      mailbox: Mailbox
+  ): Mailbox =
     synchronized {
       mailboxes.getOrElseUpdate(refId, mailbox)
     }
 
   private def submitActor(
       refId: ActorRefId,
-      mailbox: BlockingQueue[Any]
-  ): CompletableFuture[Any] = {
+      mailbox: Mailbox
+  ): ActorRef = {
     CompletableFuture.supplyAsync[Any](
       () => {
 
@@ -94,7 +97,7 @@ trait ActorSystem {
 
   private def actorForName[A <: Actor: ClassTag](
       name: String
-  ): BlockingQueue[Any] =
+  ): Mailbox =
     synchronized {
       val refId   = ActorRefId[A](name)
       val mailbox = mailboxes.getOrElseUpdate(
