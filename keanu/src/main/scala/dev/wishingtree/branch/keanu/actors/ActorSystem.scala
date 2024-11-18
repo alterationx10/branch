@@ -78,17 +78,20 @@ trait ActorSystem {
           }
         } catch {
           case PoisonPillException       =>
-            LifecycleEventBus.publishNoTopic(
+            LifecycleEventBus.publish(
+              refId.toIdentifier,
               PoisonPillTermination(refId)
             )
           case e: InterruptedException   =>
             Thread.currentThread().interrupt()
           case InstantiationException(e) =>
-            LifecycleEventBus.publishNoTopic(
+            LifecycleEventBus.publish(
+              refId.toIdentifier,
               InitializationTermination(refId)
             )
           case e                         =>
-            LifecycleEventBus.publishNoTopic(
+            LifecycleEventBus.publish(
+              refId.toIdentifier,
               OnMsgTermination(refId, e)
             )
         }
