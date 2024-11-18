@@ -1,7 +1,7 @@
 package dev.wishingtree.branch.keanu.actors
 
-import dev.wishingtree.branch.keanu.eventbus.{EventBus, EventMessage}
-
+import dev.wishingtree.branch.keanu.eventbus.EventBus
+import dev.wishingtree.branch.keanu.eventbus.EventBusMessage
 import java.util.concurrent.*
 import scala.collection.mutable
 import scala.reflect.ClassTag
@@ -24,19 +24,21 @@ trait ActorSystem {
   }
 
   LifecycleEventBus.subscribe {
-    case InterruptedTermination(refId)    => startOrRestartActor(refId)
-    case OnMsgTermination(refId, e)       => startOrRestartActor(refId)
-    case PoisonPillTermination(refId)     =>
+    case EventBusMessage(_, InterruptedTermination(refId))    =>
+      startOrRestartActor(refId)
+    case EventBusMessage(_, OnMsgTermination(refId, e))       =>
+      startOrRestartActor(refId)
+    case EventBusMessage(_, PoisonPillTermination(refId))     =>
       synchronized {
         mailboxes -= refId
         actors -= refId
       }
-    case InitializationTermination(refId) =>
+    case EventBusMessage(_, InitializationTermination(refId)) =>
       synchronized {
         mailboxes -= refId
         actors -= refId
       }
-    case _                                => ()
+    case _                                                    => ()
   }
 
   private val props: mutable.Map[String, ActorContext[?]] =
@@ -76,18 +78,18 @@ trait ActorSystem {
           }
         } catch {
           case PoisonPillException       =>
-            LifecycleEventBus.publish(
-              EventMessage("", PoisonPillTermination(refId))
+            LifecycleEventBus.publishNoTopic(
+              PoisonPillTermination(refId)
             )
           case e: InterruptedException   =>
             Thread.currentThread().interrupt()
           case InstantiationException(e) =>
-            LifecycleEventBus.publish(
-              EventMessage("", InitializationTermination(refId))
+            LifecycleEventBus.publishNoTopic(
+              InitializationTermination(refId)
             )
           case e                         =>
-            LifecycleEventBus.publish(
-              EventMessage("", OnMsgTermination(refId, e))
+            LifecycleEventBus.publishNoTopic(
+              OnMsgTermination(refId, e)
             )
         }
       },
