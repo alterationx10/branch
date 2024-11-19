@@ -1,32 +1,31 @@
 package dev.wishingtree.branch.keanu.actors
 
-import dev.wishingtree.branch.keanu.eventbus.EventBus
-import dev.wishingtree.branch.keanu.eventbus.EventBusMessage
+import dev.wishingtree.branch.keanu
 
 import java.util.concurrent.*
+import scala.collection.*
 import scala.reflect.ClassTag
 import scala.util.*
-import scala.collection.*
 
 trait ActorSystem {
 
   private type Mailbox  = BlockingQueue[Any]
-  private type ActorRef = CompletableFuture[Any]
+  private type ActorRef = CompletableFuture[LifecycleEvent]
 
   private val props: concurrent.Map[String, ActorContext[?]] =
     concurrent.TrieMap.empty
-  private val mailboxes: mutable.Map[ActorRefId, Mailbox]    =
+  private val mailboxes: concurrent.Map[ActorRefId, Mailbox] =
     concurrent.TrieMap.empty
-  private val actors: mutable.Map[ActorRefId, ActorRef]      =
+  private val actors: concurrent.Map[ActorRefId, ActorRef]   =
     concurrent.TrieMap.empty
 
   val executorService: ExecutorService =
     Executors.newVirtualThreadPerTaskExecutor()
 
-  private def startOrRestartActor(refId: ActorRefId): Unit = {
-    val currentRef = mailboxes(refId)
-    actors.get(refId).foreach(_.cancel(true))
-    actors += (refId -> submitActor(refId, currentRef))
+  private def restartActor(refId: ActorRefId): Unit = {
+    val mail = getOrCreateMailbox(refId)
+    actors -= refId
+    actors += (refId -> submitActor(refId, mail))
   }
 
   private def unregisterActor(refId: ActorRefId) = {
@@ -34,65 +33,51 @@ trait ActorSystem {
     actors -= refId
   }
 
-  private object LifecycleEventBus extends EventBus[LifecycleEvent]
-
-  LifecycleEventBus.subscribe {
-    case EventBusMessage(_, InterruptedTermination(refId))    =>
-      unregisterActor(refId)
-    case EventBusMessage(_, OnMsgTermination(refId, e))       =>
-      startOrRestartActor(refId)
-    case EventBusMessage(_, PoisonPillTermination(refId))     =>
-      unregisterActor(refId)
-    case EventBusMessage(_, InitializationTermination(refId)) =>
-      unregisterActor(refId)
-    case EventBusMessage(id, _)                               =>
-      unregisterActor(ActorRefId.fromIdentifier(id))
-  }
-
   def registerProp(prop: ActorContext[?]): Unit =
     props += (prop.identifier -> prop)
 
-  private def registerMailbox(
-      refId: ActorRefId,
-      mailbox: Mailbox
+  private def getOrCreateMailbox(
+      refId: ActorRefId
   ): Mailbox =
-    mailboxes.getOrElseUpdate(refId, mailbox)
+    mailboxes.getOrElseUpdate(refId, new LinkedBlockingQueue[Any]())
 
   private def submitActor(
       refId: ActorRefId,
       mailbox: Mailbox
   ): ActorRef = {
-    CompletableFuture.supplyAsync[Any](
+    CompletableFuture.supplyAsync[LifecycleEvent](
       () => {
 
-        try {
-          val newActor: Actor =
-            props(refId.propId).create()
-          while (true) {
-            mailbox.take() match {
-              case PoisonPill => throw PoisonPillException
-              case msg: Any   => newActor.onMsg(msg)
+        val terminationResult: LifecycleEvent = {
+          try {
+            val newActor: Actor =
+              props(refId.propId).create()
+            while (true) {
+              mailbox.take() match {
+                case PoisonPill => throw PoisonPillException
+                case msg: Any   => newActor.onMsg(msg)
+              }
             }
+            UnexpectedTermination
+          } catch {
+            case PoisonPillException       =>
+              unregisterActor(refId)
+              PoisonPillTermination
+            case e: InterruptedException   =>
+              unregisterActor(refId)
+              InterruptedTermination
+            case InstantiationException(e) =>
+              unregisterActor(refId)
+              InitializationTermination
+            case e: CancellationException  =>
+              unregisterActor(refId)
+              CancellationTermination
+            case e                         =>
+              restartActor(refId)
+              OnMsgTermination(e)
           }
-        } catch {
-          case PoisonPillException       =>
-            LifecycleEventBus.publish(
-              refId.toIdentifier,
-              PoisonPillTermination(refId)
-            )
-          case e: InterruptedException   =>
-            Thread.currentThread().interrupt()
-          case InstantiationException(e) =>
-            LifecycleEventBus.publish(
-              refId.toIdentifier,
-              InitializationTermination(refId)
-            )
-          case e                         =>
-            LifecycleEventBus.publish(
-              refId.toIdentifier,
-              OnMsgTermination(refId, e)
-            )
         }
+        terminationResult
       },
       executorService
     )
@@ -118,22 +103,26 @@ trait ActorSystem {
     mailbox
   }
 
-
-  private def cleanUp: Int = {
-    val nAffected = mailboxes.size + actors.size
+  private def cleanUp: Boolean = {
+    // PoisonPill should cause the actor to clean itself up
     mailboxes.values.foreach { mailbox =>
       mailbox.put(PoisonPill)
     }
-    actors.values.foreach { a =>
-      Try(a.get(1, TimeUnit.SECONDS))
-    }
-    nAffected
+    actors.map((id, a) => {
+      Try(a.join()) // Wait for known actors to terminate
+    })
+    // Presumably, getting the values means they have unregistered themselves,
+    // and any more actors were created afterward, and need to be cleaned up
+    actors.nonEmpty
   }
 
   def shutdownAwait: Unit = {
-    while (cleanUp > 0){
-      println(s"Attempting cleanup...")
+    var n = 0
+    while (cleanUp) {
+      n += 1
     }
+    if n == 1 then println(s"One and done!")
+    else println(s"Bad code ran $n times and you should feel bad :sad:")
   }
 
   def tell[A <: Actor: ClassTag](name: String, msg: Any): Unit = {
