@@ -12,10 +12,15 @@ trait ActorSystem {
   private type Mailbox  = BlockingQueue[Any]
   private type ActorRef = CompletableFuture[Any]
 
+  private val props: mutable.Map[String, ActorContext[?]] =
+    mutable.Map.empty
+  private val mailboxes: mutable.Map[ActorRefId, Mailbox] =
+    mutable.Map.empty
+  private val actors: mutable.Map[ActorRefId, ActorRef]   =
+    mutable.Map.empty
+
   val executorService: ExecutorService =
     Executors.newVirtualThreadPerTaskExecutor()
-
-  private object LifecycleEventBus extends EventBus[LifecycleEvent]
 
   private def startOrRestartActor(refId: ActorRefId): Unit = {
     val currentRef = mailboxes(refId)
@@ -23,30 +28,25 @@ trait ActorSystem {
     actors += (refId -> submitActor(refId, currentRef))
   }
 
+  private def unregisterActor(refId: ActorRefId) = synchronized {
+    mailboxes -= refId
+    actors -= refId
+  }
+
+  private object LifecycleEventBus extends EventBus[LifecycleEvent]
+
   LifecycleEventBus.subscribe {
     case EventBusMessage(_, InterruptedTermination(refId))    =>
-      startOrRestartActor(refId)
+      unregisterActor(refId)
     case EventBusMessage(_, OnMsgTermination(refId, e))       =>
       startOrRestartActor(refId)
     case EventBusMessage(_, PoisonPillTermination(refId))     =>
-      synchronized {
-        mailboxes -= refId
-        actors -= refId
-      }
+      unregisterActor(refId)
     case EventBusMessage(_, InitializationTermination(refId)) =>
-      synchronized {
-        mailboxes -= refId
-        actors -= refId
-      }
-    case _                                                    => ()
+      unregisterActor(refId)
+    case EventBusMessage(id, _)                               =>
+      unregisterActor(ActorRefId.fromIdentifier(id))
   }
-
-  private val props: mutable.Map[String, ActorContext[?]] =
-    mutable.Map.empty
-  private val mailboxes: mutable.Map[ActorRefId, Mailbox] =
-    mutable.Map.empty
-  private val actors: mutable.Map[ActorRefId, ActorRef]   =
-    mutable.Map.empty
 
   def registerProp(prop: ActorContext[?]): Unit = synchronized {
     props += (prop.identifier -> prop)
