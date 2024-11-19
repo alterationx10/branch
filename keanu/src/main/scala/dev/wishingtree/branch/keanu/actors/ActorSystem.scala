@@ -23,12 +23,12 @@ trait ActorSystem {
     Executors.newVirtualThreadPerTaskExecutor()
 
   private def restartActor(refId: ActorRefId): Unit = {
-    val mail = getOrCreateMailbox(refId)
+    val mailbox = getOrCreateMailbox(refId)
     actors -= refId
-    actors += (refId -> submitActor(refId, mail))
+    actors += (refId -> submitActor(refId, mailbox))
   }
 
-  private def unregisterActor(refId: ActorRefId) = {
+  private def unregisterMailboxAndActor(refId: ActorRefId) = {
     mailboxes -= refId
     actors -= refId
   }
@@ -61,16 +61,16 @@ trait ActorSystem {
             UnexpectedTermination
           } catch {
             case PoisonPillException       =>
-              unregisterActor(refId)
+              unregisterMailboxAndActor(refId)
               PoisonPillTermination
             case e: InterruptedException   =>
-              unregisterActor(refId)
+              unregisterMailboxAndActor(refId)
               InterruptedTermination
             case InstantiationException(e) =>
-              unregisterActor(refId)
+              unregisterMailboxAndActor(refId)
               InitializationTermination
             case e: CancellationException  =>
-              unregisterActor(refId)
+              unregisterMailboxAndActor(refId)
               CancellationTermination
             case e                         =>
               restartActor(refId)
@@ -89,13 +89,7 @@ trait ActorSystem {
     val refId =
       ActorRefId[A](name)
 
-    val mailbox = mailboxes.get(refId) match {
-      case Some(mb) => mb
-      case None     =>
-        val mb = new LinkedBlockingQueue[Any]()
-        mailboxes.addOne(refId -> mb)
-        mb
-    }
+    val mailbox = getOrCreateMailbox(refId)
 
     if !actors.contains(refId) then
       actors.addOne(refId -> submitActor(refId, mailbox))
