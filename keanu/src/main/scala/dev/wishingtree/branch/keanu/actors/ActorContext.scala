@@ -5,7 +5,7 @@ import scala.reflect.{ClassTag, classTag}
 trait ActorContext[A <: Actor: ClassTag] {
   private[actors] val ctorArgs: Seq[Any]
   private[actors] val identifier  =
-    classTag[A].runtimeClass.getCanonicalName
+    classTag[A].runtimeClass.getName
   private[actors] def create(): A = {
     try {
       classTag[A].runtimeClass.getConstructors.head

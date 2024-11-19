@@ -3,21 +3,21 @@ package dev.wishingtree.branch.keanu.actors
 import dev.wishingtree.branch.keanu.eventbus.EventBus
 import dev.wishingtree.branch.keanu.eventbus.EventBusMessage
 import java.util.concurrent.*
-import scala.collection.mutable
 import scala.reflect.ClassTag
 import scala.util.*
+import scala.collection.*
 
 trait ActorSystem {
 
   private type Mailbox  = BlockingQueue[Any]
   private type ActorRef = CompletableFuture[Any]
 
-  private val props: mutable.Map[String, ActorContext[?]] =
-    mutable.Map.empty
-  private val mailboxes: mutable.Map[ActorRefId, Mailbox] =
-    mutable.Map.empty
-  private val actors: mutable.Map[ActorRefId, ActorRef]   =
-    mutable.Map.empty
+  private val props: concurrent.Map[String, ActorContext[?]] =
+    concurrent.TrieMap.empty
+  private val mailboxes: mutable.Map[ActorRefId, Mailbox]    =
+    concurrent.TrieMap.empty
+  private val actors: mutable.Map[ActorRefId, ActorRef]      =
+    concurrent.TrieMap.empty
 
   val executorService: ExecutorService =
     Executors.newVirtualThreadPerTaskExecutor()
@@ -28,7 +28,7 @@ trait ActorSystem {
     actors += (refId -> submitActor(refId, currentRef))
   }
 
-  private def unregisterActor(refId: ActorRefId) = synchronized {
+  private def unregisterActor(refId: ActorRefId) = {
     mailboxes -= refId
     actors -= refId
   }
@@ -48,17 +48,14 @@ trait ActorSystem {
       unregisterActor(ActorRefId.fromIdentifier(id))
   }
 
-  def registerProp(prop: ActorContext[?]): Unit = synchronized {
+  def registerProp(prop: ActorContext[?]): Unit =
     props += (prop.identifier -> prop)
-  }
 
   private def registerMailbox(
       refId: ActorRefId,
       mailbox: Mailbox
   ): Mailbox =
-    synchronized {
-      mailboxes.getOrElseUpdate(refId, mailbox)
-    }
+    mailboxes.getOrElseUpdate(refId, mailbox)
 
   private def submitActor(
       refId: ActorRefId,
@@ -102,21 +99,24 @@ trait ActorSystem {
 
   private def actorForName[A <: Actor: ClassTag](
       name: String
-  ): Mailbox =
-    synchronized {
-      val refId   = ActorRefId[A](name)
-      val mailbox = mailboxes.getOrElseUpdate(
+  ): Mailbox = {
+    val refId =
+      ActorRefId[A](name)
+
+    val mailbox =
+      mailboxes.getOrElseUpdate(
         refId,
         new LinkedBlockingQueue[Any]()
       )
-      actors.getOrElseUpdate(
-        refId,
-        submitActor(refId, mailbox)
-      )
-      mailbox
-    }
 
-  def shutdownAwait: Unit = synchronized {
+    actors.getOrElseUpdate(
+      refId,
+      submitActor(refId, mailbox)
+    )
+    mailbox
+  }
+
+  def shutdownAwait: Unit = {
     println(s"Finalizing ${mailboxes.size} actors")
     mailboxes.values.foreach { mailbox =>
       mailbox.put(PoisonPill)
@@ -125,11 +125,11 @@ trait ActorSystem {
     actors.values.foreach { a =>
       Try(a.get())
     }
-
   }
 
-  def tell[A <: Actor: ClassTag](name: String, msg: Any): Unit =
+  def tell[A <: Actor: ClassTag](name: String, msg: Any): Unit = {
     actorForName[A](name).put(msg)
+  }
 
 }
 
