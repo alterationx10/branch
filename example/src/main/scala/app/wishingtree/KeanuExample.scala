@@ -14,8 +14,8 @@ object KeanuExample { self =>
   def main(args: Array[String]): Unit = {
 
     case class EchoActor() extends Actor {
-      override def onMsg: PartialFunction[Any, Any] = {
-        case any => println(s"$any")
+      override def onMsg: PartialFunction[Any, Any] = { case any =>
+        println(s"Echo: $any")
       }
     }
 
@@ -42,13 +42,12 @@ object KeanuExample { self =>
 
     val counterActor = as.tell[SampleActor]("counter", _)
 
-    IntEventBus.subscribe((msg) => counterActor(msg.payload))
-    IntEventBus.publish(EventBusMessage("", 1))
-    IntEventBus.publish(EventBusMessage("", 2))
-    IntEventBus.publish(EventBusMessage("", 3))
-    IntEventBus.publish(EventBusMessage("", 4))
+    counterActor(1)
+    counterActor(2)
+    counterActor(3)
+    counterActor(4)
     counterActor("boom")
-    IntEventBus.publish(EventBusMessage("", 5))
+    counterActor(5)
     counterActor("print")
 
     as.shutdownAwait

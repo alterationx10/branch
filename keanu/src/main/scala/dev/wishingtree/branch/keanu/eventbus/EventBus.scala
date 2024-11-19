@@ -4,7 +4,6 @@ import java.util
 import java.util.UUID
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
-import scala.util.Try
 
 trait EventBus[T] {
 
@@ -19,7 +18,7 @@ trait EventBus[T] {
 
   def publish(msg: EventBusMessage[T]): Unit = synchronized {
     subscribers.foreach { sub =>
-      if sub.filter(msg) then Try(sub.subscriber.onMsg(msg))
+      if sub.filter(msg) then sub.subscriber.mailbox.put(msg)
     }
   }
 

@@ -2,6 +2,7 @@ package dev.wishingtree.branch.keanu.actors
 
 import dev.wishingtree.branch.keanu.eventbus.EventBus
 import dev.wishingtree.branch.keanu.eventbus.EventBusMessage
+
 import java.util.concurrent.*
 import scala.reflect.ClassTag
 import scala.util.*
@@ -103,27 +104,35 @@ trait ActorSystem {
     val refId =
       ActorRefId[A](name)
 
-    val mailbox =
-      mailboxes.getOrElseUpdate(
-        refId,
-        new LinkedBlockingQueue[Any]()
-      )
+    val mailbox = mailboxes.get(refId) match {
+      case Some(mb) => mb
+      case None     =>
+        val mb = new LinkedBlockingQueue[Any]()
+        mailboxes.addOne(refId -> mb)
+        mb
+    }
 
-    actors.getOrElseUpdate(
-      refId,
-      submitActor(refId, mailbox)
-    )
+    if !actors.contains(refId) then
+      actors.addOne(refId -> submitActor(refId, mailbox))
+
     mailbox
   }
 
-  def shutdownAwait: Unit = {
-    println(s"Finalizing ${mailboxes.size} actors")
+
+  private def cleanUp: Int = {
+    val nAffected = mailboxes.size + actors.size
     mailboxes.values.foreach { mailbox =>
       mailbox.put(PoisonPill)
     }
-    println(s"Shutting down ${actors.size} actors")
     actors.values.foreach { a =>
-      Try(a.get())
+      Try(a.get(1, TimeUnit.SECONDS))
+    }
+    nAffected
+  }
+
+  def shutdownAwait: Unit = {
+    while (cleanUp > 0){
+      println(s"Attempting cleanup...")
     }
   }
 
