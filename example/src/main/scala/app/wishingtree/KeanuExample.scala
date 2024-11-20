@@ -1,25 +1,56 @@
 package app.wishingtree
 
-import dev.wishingtree.branch.keanu.eventbus.{EventBus, EventMessage, Subscriber}
+import dev.wishingtree.branch.keanu.actors.{Actor, ActorContext, ActorSystem}
+import dev.wishingtree.branch.keanu.eventbus.{
+  EventBus,
+  EventBusMessage,
+  Subscriber
+}
 
 object IntEventBus extends EventBus[Int]
 
-object KeanuExample extends Subscriber[Int] { self =>
+object KeanuExample { self =>
 
-  override def onMessage(msg: Int): Unit =
-    println(s"Got Int = $msg")
-  
   def main(args: Array[String]): Unit = {
 
-    IntEventBus.subscribe(self, _.payload > 5)
-    IntEventBus.subscribe(self, _.payload % 2 == 0)
-    
-    IntEventBus.subscribe((msg: Int) => println(s"Got message $msg"))
+    case class EchoActor() extends Actor {
+      override def onMsg: PartialFunction[Any, Any] = { case any =>
+        println(s"Echo: $any")
+      }
+    }
 
-    IntEventBus.publish(EventMessage[Int]("tinyInts", 4))
-    IntEventBus.publish(EventMessage[Int]("tinyInts", 6))
-    IntEventBus.publish(EventMessage[Int]("tinyInts", 10))
-    IntEventBus.publish(EventMessage[Int]("tinyInts", 9))
+    case class SampleActor(actorSystem: ActorSystem) extends Actor {
+      println("starting actor")
+      var counter = 0
+
+      override def onMsg: PartialFunction[Any, Any] = {
+        case n: Int  =>
+          counter += n
+          actorSystem.tell[EchoActor]("echo", s"Counter is now $counter")
+        case "boom"  => 1 / 0
+        case "count" =>
+          counter
+        case "print" => println(s"Counter is $counter")
+        case _       => println("Unhandled")
+      }
+    }
+
+    val as      = ActorSystem()
+    val saProps = ActorContext.props[SampleActor](as)
+    as.registerProp(saProps)
+    as.registerProp(ActorContext.props[EchoActor]())
+
+    val counterActor = as.tell[SampleActor]("counter", _)
+
+    counterActor(1)
+    counterActor(2)
+    counterActor(3)
+    counterActor(4)
+    counterActor("boom")
+    counterActor(5)
+    counterActor("print")
+
+    as.shutdownAwait
 
   }
 

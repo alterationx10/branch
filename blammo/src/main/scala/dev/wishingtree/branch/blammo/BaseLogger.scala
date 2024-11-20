@@ -17,7 +17,7 @@ transparent trait BaseLogger { self =>
     }
 
   val logger: Logger = {
-    val _logger  = Logger.getLogger(self.getClass.getCanonicalName)
+    val _logger  = Logger.getLogger(self.getClass.getName)
     _logger.setLevel(logLevel)
     _logger.setUseParentHandlers(false)
     _logger.getHandlers.foreach(_logger.removeHandler)
