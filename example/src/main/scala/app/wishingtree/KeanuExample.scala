@@ -35,7 +35,7 @@ object KeanuExample { self =>
       }
     }
 
-    val as      = new ActorSystem {}
+    val as      = ActorSystem()
     val saProps = ActorContext.props[SampleActor](as)
     as.registerProp(saProps)
     as.registerProp(ActorContext.props[EchoActor]())
