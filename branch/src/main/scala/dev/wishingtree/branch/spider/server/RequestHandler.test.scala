@@ -1,12 +1,9 @@
-package dev.wishingtree.branch.spider
+package dev.wishingtree.branch.spider.server
+
+import dev.wishingtree.branch.spider.HttpVerb
 import dev.wishingtree.branch.spider.server.OpaqueSegments.*
-import dev.wishingtree.branch.spider.server.{
-  ContextHandler,
-  Request,
-  RequestHandler,
-  Response
-}
 import dev.wishingtree.branch.spider.server.RequestHandler.given
+import dev.wishingtree.branch.spider.server.{ContextHandler, Request, RequestHandler, Response}
 
 import java.net.URI
 import java.net.http.HttpClient.Version

@@ -1,5 +1,4 @@
-package dev.wishingtree.branch.lzy
-
+import dev.wishingtree.branch.lzy.{Lazy, LazyRuntime}
 import munit.FunSuite
 
 class LazySpec extends FunSuite {

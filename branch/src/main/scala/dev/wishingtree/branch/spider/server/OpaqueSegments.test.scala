@@ -1,9 +1,9 @@
-package dev.wishingtree.branch.spider
+package dev.wishingtree.branch.spider.server
 
 import dev.wishingtree.branch.spider.server.OpaqueSegments.*
 import munit.FunSuite
 
-class PathsSpec extends FunSuite {
+class OpaqueSegmentsSpec extends FunSuite {
 
   test("appendStr") {
     assertEquals(

@@ -1,7 +1,9 @@
-package dev.wishingtree.branch.spider
+//> using target.scope test
+package dev.wishingtree.branch.spider.server
 
 import com.sun.net.httpserver.HttpServer
 import dev.wishingtree.branch.lzy.LazyRuntime
+import dev.wishingtree.branch.spider.HttpVerb
 import dev.wishingtree.branch.spider.server.OpaqueSegments.*
 import dev.wishingtree.branch.spider.server.{ContextHandler, RequestHandler}
 import munit.FunSuite

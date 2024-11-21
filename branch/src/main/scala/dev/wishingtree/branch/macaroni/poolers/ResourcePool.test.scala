@@ -1,14 +1,14 @@
-package dev.wishingtree.branch.piggy
+package dev.wishingtree.branch.macaroni.poolers
 
+import dev.wishingtree.branch.piggy.Sql.*
+import dev.wishingtree.branch.piggy.{Sql, SqlRuntime}
 import munit.FunSuite
-import Sql.*
-import dev.wishingtree.branch.macaroni.poolers.ResourcePool
 
 import java.sql.{Connection, DriverManager}
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 
-class ConnectionPoolSpec extends FunSuite {
+class ResourcePoolSpec extends FunSuite {
 
   case class H2Pool() extends ResourcePool[Connection] {
 
