@@ -34,78 +34,22 @@ lazy val root =
     .settings(
       name := "branch"
     )
-    .aggregate(macaroni, lzy, spider, piggy, friday, veil)
+    .aggregate(branch)
 
-lazy val macaroni =
+lazy val branch =
   project
-    .in(file("macaroni"))
+    .in(file("branch"))
     .settings(
-      name := "macaroni"
-    )
-
-lazy val lzy =
-  project
-    .in(file("lzy"))
-    .settings(
-      name := "lzy"
-    )
-
-lazy val spider =
-  project
-    .in(file("spider"))
-    .settings(
-      name := "spider"
-    )
-    .dependsOn(macaroni, lzy)
-
-lazy val piggy =
-  project
-    .in(file("piggy"))
-    .settings(
-      name := "piggy",
+      name := "branch",
       libraryDependencies ++= Seq(
         "com.h2database" % "h2" % "2.3.232" % Test
       )
     )
-    .dependsOn(macaroni, lzy)
-
-lazy val friday =
-  project
-    .in(file("friday"))
-    .settings(
-      name := "friday"
-    )
-    .dependsOn(macaroni, lzy)
-
-lazy val veil =
-  project
-    .in(file("veil"))
-    .settings(
-      name := "veil"
-    )
-    .dependsOn(macaroni, lzy, friday)
-
-lazy val blammo = {
-  project
-    .in(file("blammo"))
-    .settings(
-      name := "blammo"
-    )
-    .dependsOn(macaroni, lzy, friday, veil)
-}
-
-lazy val keanu =
-  project
-    .in(file("keanu"))
-    .settings(
-      name := "keanu"
-    )
-    .dependsOn(macaroni, lzy, blammo)
 
 lazy val example =
   project
     .in(file("example"))
-    .dependsOn(macaroni, lzy, spider, piggy, friday, veil, blammo, keanu)
+    .dependsOn(branch)
     .settings(
       name := "example",
       libraryDependencies ++= Seq( // Examples and tests are allowed to have dependencies :-)
@@ -113,6 +57,5 @@ lazy val example =
       ),
       fork := true
     )
-
 addCommandAlias("fmtCheck", ";scalafmtCheckAll;scalafmtSbtCheck")
 addCommandAlias("fmt", ";scalafmtAll;scalafmtSbt")
