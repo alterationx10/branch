@@ -54,4 +54,9 @@ class LazySpec extends FunSuite {
     } yield assertEquals(l, "abc")
   }
 
+  test("Lazy.forEach") {
+    for {
+      l <- Lazy.forEach(1 to 10000)(_ => Lazy.fn(1))
+    } yield assertEquals(l.sum, 10000)
+  }
 }
