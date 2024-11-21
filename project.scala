@@ -12,5 +12,6 @@
 
 //> using test.dep org.scalameta::munit:1.0.2
 //> using test.dep com.h2database:h2:2.3.232
+//> using test.resourceDir ./test_resources
 
 //> using publish.version 0.0.1-SNAPSHOT
