@@ -11,7 +11,8 @@ trait Subscriber[T] {
     .ofVirtual()
     .start(() => {
       while (true) {
-        Try(onMsg(mailbox.take()))
+        val msg = mailbox.take()
+        Try(onMsg(msg))
       }
     })
 
