@@ -1,5 +1,3 @@
-package app.wishingtree
-
 import dev.wishingtree.branch.friday.{Json, JsonCodec, JsonDecoder}
 
 import scala.language.postfixOps

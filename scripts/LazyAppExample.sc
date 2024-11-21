@@ -1,5 +1,3 @@
-package app.wishingtree
-
 import dev.wishingtree.branch.lzy.{Lazy, LazyApp}
 
 object LazyAppExample extends LazyApp {

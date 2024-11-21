@@ -1,5 +1,3 @@
-package app.wishingtree
-
 import dev.wishingtree.branch.friday.JsonDecoder
 import dev.wishingtree.branch.veil.{Config, Veil}
 

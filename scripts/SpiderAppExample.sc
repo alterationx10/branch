@@ -1,5 +1,3 @@
-package app.wishingtree
-
 import com.sun.net.httpserver.Filter
 import dev.wishingtree.branch.friday.JsonEncoder
 import dev.wishingtree.branch.friday.http.JsonBodyHandler

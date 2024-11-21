@@ -1,5 +1,3 @@
-package app.wishingtree
-
 import dev.wishingtree.branch.lzy.{Lazy, LazyApp, LazyRuntime}
 
 import scala.concurrent.duration.Duration

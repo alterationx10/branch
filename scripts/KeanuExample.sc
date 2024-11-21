@@ -1,5 +1,3 @@
-package app.wishingtree
-
 import dev.wishingtree.branch.keanu.actors.{Actor, ActorContext, ActorSystem}
 import dev.wishingtree.branch.keanu.eventbus.{
   EventBus,
