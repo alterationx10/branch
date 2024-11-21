@@ -50,7 +50,6 @@ object PiggyExample {
     val ins = (p: Person) =>
       ps"INSERT INTO person (name, age) values (${p.name}, ${p.age})"
 
-    
     val find: PsArg[Tuple1[String]] = a =>
       ps"SELECT id, name, age from person where name like $a"
 
@@ -60,10 +59,12 @@ object PiggyExample {
       _             <- Sql.statement(ddl)
       _             <- Sql.statement("truncate table person")
       nIns          <- Sql.prepareUpdate(ins, tenPeople*)
-      fetchedPeople <- Sql.prepareQuery[Tuple1[String], (Int, String, Int)](
-                         find,
-                         Tuple1("Mark%")
-                       ).map(_.map(Person.apply))
+      fetchedPeople <- Sql
+                         .prepareQuery[Tuple1[String], (Int, String, Int)](
+                           find,
+                           Tuple1("Mark%")
+                         )
+                         .map(_.map(Person.apply))
     } yield (nIns, fetchedPeople)
 
     lazyPiggy.execute match {

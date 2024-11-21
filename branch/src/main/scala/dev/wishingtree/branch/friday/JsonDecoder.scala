@@ -83,4 +83,7 @@ object JsonDecoder {
           }
     }
   }
+
+  inline def decode[T](json: Json)(using decoder: JsonDecoder[T]): Try[T] =
+    decoder.decode(json)
 }

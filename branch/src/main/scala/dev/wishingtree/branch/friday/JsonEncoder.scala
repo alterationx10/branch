@@ -81,4 +81,7 @@ object JsonEncoder {
         error("Auto derivation of Sum types is not currently supported")
     }
   }
+
+  inline def encode[T](t: T)(using encoder: JsonEncoder[T]): Json =
+    encoder.encode(t)
 }
