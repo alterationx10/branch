@@ -19,7 +19,7 @@ class ConfigSpec extends FunSuite {
     for {
       config <-
         summon[Config[AppConfig]]
-          .fromFile(Path.of("", "app-config.json").toAbsolutePath.toString)
+          .fromFile(Path.of("","test_resources", "app-config.json").toAbsolutePath.toString)
     } yield assertEquals(config, AppConfig("localhost", 9000))
   }
 
