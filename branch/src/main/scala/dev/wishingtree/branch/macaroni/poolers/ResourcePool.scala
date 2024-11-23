@@ -55,11 +55,14 @@ trait ResourcePool[R] {
   private def fillPool(): Unit = {
     gate.acquire(poolSize)
     synchronized {
-      while (pool.size < poolSize) {
-        pool.enqueue(acquire)
+      try {
+        while (pool.size < poolSize) {
+          pool.enqueue(acquire)
+        }
+      } finally {
+        gate.release(poolSize)
       }
     }
-    gate.release(poolSize)
   }
 
   Runtime.getRuntime.addShutdownHook {

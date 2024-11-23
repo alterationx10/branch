@@ -11,6 +11,16 @@ import javax.sql.DataSource
 // Need to investigate the cause of the hang.
 class PiggyPostgresqlSpec extends munit.FunSuite {
 
+  // docker run --rm  -p 5432:5432 -e POSTGRES_HOST_AUTH_METHOD=trust postgres
+  val pg = {
+    val ds = new PGSimpleDataSource()
+    ds.setURL("jdbc:postgresql://localhost:5432/postgres")
+    ds.setUser("postgres")
+    ds
+  }
+
+  given PgConnectionPool(pg)
+
   override def munitValueTransforms = super.munitValueTransforms ++ List(
     new ValueTransform(
       "Sql",
@@ -48,14 +58,6 @@ class PiggyPostgresqlSpec extends munit.FunSuite {
       resource.isValid(5)
   }
 
-  // docker run --rm  -p 5432:5432 -e POSTGRES_HOST_AUTH_METHOD=trust postgres
-  val pg = {
-    val ds = new PGSimpleDataSource()
-    ds.setURL("jdbc:postgresql://localhost:5432/postgres")
-    ds.setUser("postgres")
-    ds
-  }
-
   case class Person(id: Int, name: String, age: Int)
 
   val ins = (p: Person) =>
@@ -65,8 +67,6 @@ class PiggyPostgresqlSpec extends munit.FunSuite {
     ps"SELECT id, name, age from person where name like $a"
 
   val tenPeople = (1 to 10).map(i => Person(0, s"Mark-$i", i))
-
-  given PgConnectionPool(pg)
 
   test("PiggyPostgresql") {
     for {
@@ -83,6 +83,7 @@ class PiggyPostgresqlSpec extends munit.FunSuite {
       assertEquals(nIns, 10)
       assertEquals(fetchedPeople.distinct.size, 10)
     }
+//    sql.execute(using pool)
   }
 
 }
