@@ -33,14 +33,13 @@ salac-cli publish local branch
 ```
 
 I'm trying something new out, and keeping the tests alongside the source code (`.test.scala` files).
+Some reusable testing components are in the `teskit` package, which are scoped to `test`.
+
 You can run the tests with:
 
 ```bash
 scala-cli test branch
 ```
 
-Some tests require dependencies to be running, so you may need to, for example, run the following:
-
-```bash
-docker run --rm  -p 5432:5432 -e POSTGRES_HOST_AUTH_METHOD=trust postgres
-```
+Some tests use `testcontainers` to run tests, so you will need Docker running to be able to run those tests
+successfully.

@@ -25,6 +25,10 @@ sealed trait Sql[+A] {
 
 object Sql {
 
+  extension [T](t: T) {
+    def tuple1: Tuple1[T] = Tuple1(t)
+  }
+
   type PsArg[X] = X => PsArgHolder
 
   extension (sc: StringContext) {
