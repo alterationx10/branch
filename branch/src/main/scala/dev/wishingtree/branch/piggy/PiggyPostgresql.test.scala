@@ -1,5 +1,3 @@
-//> using target.scope test
-//> using test.dep org.postgresql:postgresql:42.7.4
 package dev.wishingtree.branch.piggy
 
 import dev.wishingtree.branch.macaroni.poolers.ResourcePool
@@ -9,6 +7,8 @@ import org.postgresql.ds.PGSimpleDataSource
 import java.sql.Connection
 import javax.sql.DataSource
 
+// This test hangs if the connection pool fails to start up!
+// Need to investigate the cause of the hang.
 class PiggyPostgresqlSpec extends munit.FunSuite {
 
   override def munitValueTransforms = super.munitValueTransforms ++ List(
