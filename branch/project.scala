@@ -1,8 +1,7 @@
 //> using scala "3.5.2"
+//> using jvm 23
 
 //> using  options -no-indent -rewrite -source:3.4-migration
-
-//> using exclude "examples/*" "scripts/*"
 
 //> using publish.name branch
 //> using publish.organization dev.wishingtree
