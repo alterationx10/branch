@@ -58,7 +58,7 @@ object ContextHandler {
       override val authenticator: Option[Authenticator] =
         a.authenticator.orElse(b.authenticator)
       override val contextRouter
-          : PartialFunction[(HttpVerb, Segments), RequestHandler[_, _]] =
+          : PartialFunction[(HttpVerb, Segments), RequestHandler[?, ?]] =
         a.contextRouter orElse b.contextRouter
     }
   }

@@ -28,10 +28,11 @@ trait EventBus[T] {
   def publishNoTopic(payload: T): Unit =
     publish("", payload)
 
-  def subscribe(subscriber: Subscriber[T]): UUID =
+  def subscribe(subscriber: Subscriber[T]): UUID = {
     val sub = Subscription(UUID.randomUUID(), subscriber, _ => true)
     subscribers += sub.id -> sub
     sub.id
+  }
 
   def subscribe(
       subscriber: Subscriber[T],

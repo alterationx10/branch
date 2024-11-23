@@ -1,5 +1,7 @@
 //> using scala "3.5.2"
 
+//> using  options -no-indent -rewrite -source:3.4-migration
+
 //> using publish.name branch
 //> using publish.organization dev.wishingtree
 //> using publish.url https://github.com/wishingtreedev/branch

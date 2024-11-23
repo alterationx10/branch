@@ -1,9 +1,5 @@
 import dev.wishingtree.branch.keanu.actors.{Actor, ActorContext, ActorSystem}
-import dev.wishingtree.branch.keanu.eventbus.{
-  EventBus,
-  EventBusMessage,
-  Subscriber
-}
+import dev.wishingtree.branch.keanu.eventbus.{EventBus, EventBusMessage, Subscriber}
 
 object IntEventBus extends EventBus[Int]
 
