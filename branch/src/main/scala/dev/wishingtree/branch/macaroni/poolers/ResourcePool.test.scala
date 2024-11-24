@@ -31,7 +31,9 @@ class ResourcePoolSpec extends FunSuite {
     given pool: ResourcePool[Connection] = H2Pool()
 
     val asyncSum = (1 to 100).map { _ =>
-      Sql.statement(s"SELECT 1", rs => { rs.next(); rs.getInt(1) }).executeAsync
+      Sql
+        .statement(s"SELECT 1", rs => { rs.next(); rs.getInt(1) })
+        .executePoolAsync
     }
 
     val sum = Await
@@ -48,7 +50,7 @@ class ResourcePoolSpec extends FunSuite {
     given pool: ResourcePool[Connection] = H2Pool()
 
     val tple =
-      Sql.statement(s"SELECT 1, 'two'", _.tupled[(Int, String)]).execute
+      Sql.statement(s"SELECT 1, 'two'", _.tupled[(Int, String)]).executePool
 
     assertEquals(tple.get, (1, "two"))
   }
@@ -73,7 +75,7 @@ class ResourcePoolSpec extends FunSuite {
                            _.tupledList[(Int, String, Int)]
                          )
       } yield fetchedPeople
-    }.execute.get
+    }.executePool.get
 
     assert(readBack.size == 10)
     assert(readBack.forall(_._2.startsWith("Mark")))

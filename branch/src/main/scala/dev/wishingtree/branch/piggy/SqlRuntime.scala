@@ -9,11 +9,16 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.*
 
 trait SqlRuntime {
-  def execute[A, B <: ResourcePool[Connection]](sql: Sql[A])(using
+
+  def execute[A](sql: Sql[A])(using connection: Connection): Try[A]
+
+  def executePool[A, B <: ResourcePool[Connection]](sql: Sql[A])(using
       pool: B
   ): Try[A]
 
-  def executeAsync[A, B <: ResourcePool[Connection]](sql: Sql[A])(using
+  def executeAsync[A](sql: Sql[A])(using connection: Connection): Future[A]
+
+  def executePoolAsync[A, B <: ResourcePool[Connection]](sql: Sql[A])(using
       pool: B
   ): Future[A]
 }
@@ -26,31 +31,41 @@ object SqlRuntime extends SqlRuntime {
   val executionContext: ExecutionContext =
     LazyRuntime.executionContext
 
-  override def execute[A, B <: ResourcePool[Connection]](sql: Sql[A])(using
+  override def execute[A](sql: Sql[A])(using
+      connection: Connection
+  ): Try[A] =
+    Try {
+      try {
+        connection.setAutoCommit(false)
+        val result = eval(sql)(using connection).get()
+        connection.commit()
+        result
+      } catch {
+        case e: Throwable =>
+          connection.rollback()
+          throw e
+      } finally {
+        connection.setAutoCommit(true)
+      }
+
+    }.flatten
+
+  override def executePool[A, B <: ResourcePool[Connection]](sql: Sql[A])(using
       pool: B
-  ): Try[A] = {
+  ): Try[A] =
     Try {
       pool.use { conn =>
-        try {
-          conn.setAutoCommit(false)
-          val result = eval(sql)(using conn).get()
-          conn.commit()
-          result
-        } catch {
-          case e: Throwable => {
-            conn.rollback()
-            throw e
-          }
-        } finally {
-          conn.setAutoCommit(true)
-        }
+        execute(sql)(using conn)
       }
-    }
-  }.flatten
+    }.flatten
 
-  override def executeAsync[A, B <: ResourcePool[Connection]](sql: Sql[A])(using
-      pool: B
+  override def executeAsync[A](sql: Sql[A])(using
+      connection: Connection
   ): Future[A] = Future.fromTry(execute(sql))
+
+  override def executePoolAsync[A, B <: ResourcePool[Connection]](sql: Sql[A])(
+      using pool: B
+  ): Future[A] = Future.fromTry(executePool(sql))
 
   private def eval[A](sql: Sql[A])(using
       connection: Connection

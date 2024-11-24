@@ -53,7 +53,7 @@ class PiggyPostgresqlSpec extends PGContainerSuite {
                          )
                          .map(_.map(Person.apply))
     } yield (nIns, fetchedPeople)
-    val result = sql.execute(using PgConnectionPool(ds))
+    val result = sql.executePool(using PgConnectionPool(ds))
     assert(result.isSuccess)
     assertEquals(result.get._1, 10)
     assertEquals(result.get._2.distinct.size, 10)
@@ -61,13 +61,13 @@ class PiggyPostgresqlSpec extends PGContainerSuite {
 
   test("PiggyPostgresql Rollback") {
     given PgConnectionPool = PgConnectionPool(ds)
-    assert(Sql.statement(ddl).execute.isSuccess)
+    assert(Sql.statement(ddl).executePool.isSuccess)
 
     val blowup = for {
       nIns <- Sql.prepareUpdate(ins, tenPeople*)
       _    <- Sql.statement("this is not valid sql")
     } yield nIns
-    assert(blowup.execute.isFailure)
+    assert(blowup.executePool.isFailure)
 
     val sql    = for {
       fetchedPeople <- Sql
@@ -79,7 +79,7 @@ class PiggyPostgresqlSpec extends PGContainerSuite {
     } yield {
       fetchedPeople
     }
-    val result = sql.execute
+    val result = sql.executePool
     assert(result.isSuccess)
     assertEquals(result.get.size, 0)
 

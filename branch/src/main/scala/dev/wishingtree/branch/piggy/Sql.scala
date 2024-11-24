@@ -39,10 +39,14 @@ object Sql {
   }
 
   extension [A](a: Sql[A]) {
-    def execute(using pool: ResourcePool[Connection]): Try[A]         =
+    def execute(using connection: Connection): Try[A]                     =
       SqlRuntime.execute(a)
-    def executeAsync(using pool: ResourcePool[Connection]): Future[A] =
+    def executeAsync(using connection: Connection): Future[A]             =
       SqlRuntime.executeAsync(a)
+    def executePool(using pool: ResourcePool[Connection]): Try[A]         =
+      SqlRuntime.executePool(a)
+    def executePoolAsync(using pool: ResourcePool[Connection]): Future[A] =
+      SqlRuntime.executePoolAsync(a)
   }
 
   private inline def parseRs[T <: Tuple](rs: ResultSet)(index: Int): Tuple =
