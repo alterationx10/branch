@@ -43,7 +43,7 @@ class PiggyPostgresqlSpec extends PGContainerSuite {
   val tenPeople = (1 to 10).map(i => Person(0, s"Mark-$i", i))
 
   test("PiggyPostgresql") {
-    val sql = for {
+    val sql    = for {
       _             <- Sql.statement(ddl)
       nIns          <- Sql.prepareUpdate(ins, tenPeople*)
       fetchedPeople <- Sql
@@ -52,11 +52,37 @@ class PiggyPostgresqlSpec extends PGContainerSuite {
                            Tuple1("Mark-%")
                          )
                          .map(_.map(Person.apply))
+    } yield (nIns, fetchedPeople)
+    val result = sql.execute(using PgConnectionPool(ds))
+    assert(result.isSuccess)
+    assertEquals(result.get._1, 10)
+    assertEquals(result.get._2.distinct.size, 10)
+  }
+
+  test("PiggyPostgresql Rollback") {
+    given PgConnectionPool = PgConnectionPool(ds)
+    assert(Sql.statement(ddl).execute.isSuccess)
+
+    val blowup = for {
+      nIns <- Sql.prepareUpdate(ins, tenPeople*)
+      _    <- Sql.statement("this is not valid sql")
+    } yield nIns
+    assert(blowup.execute.isFailure)
+
+    val sql    = for {
+      fetchedPeople <- Sql
+                         .prepareQuery[Tuple1[String], (Int, String, Int)](
+                           find,
+                           Tuple1("Mark-%")
+                         )
+                         .map(_.map(Person.apply))
     } yield {
-      assertEquals(nIns, 10)
-      assertEquals(fetchedPeople.distinct.size, 10)
+      fetchedPeople
     }
-    sql.execute(using PgConnectionPool(ds))
+    val result = sql.execute
+    assert(result.isSuccess)
+    assertEquals(result.get.size, 0)
+
   }
 
 }
