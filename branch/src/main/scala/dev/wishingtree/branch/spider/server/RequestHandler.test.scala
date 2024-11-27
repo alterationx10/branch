@@ -3,18 +3,13 @@ package dev.wishingtree.branch.spider.server
 import dev.wishingtree.branch.spider.HttpVerb
 import dev.wishingtree.branch.spider.server.OpaqueSegments.*
 import dev.wishingtree.branch.spider.server.RequestHandler.given
-import dev.wishingtree.branch.spider.server.{
-  ContextHandler,
-  Request,
-  RequestHandler,
-  Response
-}
+import dev.wishingtree.branch.testkit.spider.server.HttpFixtureSuite
 
 import java.net.URI
 import java.net.http.HttpClient.Version
 import java.net.http.{HttpClient, HttpRequest, HttpResponse}
 
-class RequestHandlerSpec extends HttpFunSuite {
+class RequestHandlerSpec extends HttpFixtureSuite {
 
   case class AlohaGreeter() extends RequestHandler[Unit, String] {
     override def handle(request: Request[Unit]): Response[String] = {
@@ -22,13 +17,11 @@ class RequestHandlerSpec extends HttpFunSuite {
     }
   }
 
-  contextFixture.test("RequestHandler") { (server, fn) =>
-
-    val testHandler = fn { case HttpVerb.GET -> >> / "aloha" =>
-      AlohaGreeter()
-    }
-
-    ContextHandler.registerHandler(testHandler)(using server)
+  val alohaHandler
+      : PartialFunction[(HttpVerb, Segments), RequestHandler[Unit, String]] = {
+    case HttpVerb.GET -> >> / "aloha" => AlohaGreeter()
+  }
+  httpFixture(alohaHandler).test("RequestHandler") { server =>
 
     val client = HttpClient.newBuilder
       .version(Version.HTTP_1_1)
