@@ -20,7 +20,7 @@ trait ActorSystem {
 
   /** A collection of props which now how to create actors
     */
-  private val props: concurrent.Map[String, ActorContext[?]] =
+  private val props: concurrent.Map[String, ActorProps[?]] =
     concurrent.TrieMap.empty
 
   /** A collection of mailboxes used to deliver messages to actors
@@ -59,7 +59,7 @@ trait ActorSystem {
   /** Register a prop with the system, so it can be used to create actors
     * @param prop
     */
-  def registerProp(prop: ActorContext[?]): Unit =
+  def registerProp(prop: ActorProps[?]): Unit =
     props += (prop.identifier -> prop)
 
   /** Get or create a mailbox for the given refId

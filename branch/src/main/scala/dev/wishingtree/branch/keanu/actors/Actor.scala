@@ -1,5 +1,5 @@
 package dev.wishingtree.branch.keanu.actors
 
-trait Actor {
+trait Actor extends Product with Serializable {
   def onMsg: PartialFunction[Any, Any]
 }
