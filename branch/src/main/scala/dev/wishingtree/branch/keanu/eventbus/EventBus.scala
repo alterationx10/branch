@@ -52,11 +52,4 @@ trait EventBus[T] {
   def unsubscribe(ids: UUID*): Unit =
     ids.foreach(subscribers -= _)
 
-  def drainAwait: Unit =
-    subscribers.foreach { (id, sub) =>
-      while (sub.subscriber.mailbox.size() > 0) {
-        // wait for all messages to be processed
-      }
-    }
-
 }

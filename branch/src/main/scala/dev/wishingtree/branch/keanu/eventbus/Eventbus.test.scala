@@ -1,23 +1,26 @@
 package dev.wishingtree.branch.keanu.eventbus
 
+import java.util.concurrent.{CountDownLatch, TimeUnit}
+
 class EventBusTest extends munit.FunSuite {
 
   test("EventBus") {
     @volatile
     var counter = 0
+    val latch   = new CountDownLatch(5)
 
     object TestEventBus extends EventBus[Int]
 
     TestEventBus.subscribe((msg: EventBusMessage[Int]) => {
       counter += msg.payload
+      latch.countDown()
     })
 
     for (i <- 1 to 5) {
       TestEventBus.publishNoTopic(i)
     }
 
-    TestEventBus.drainAwait
-
+    latch.await()
     assertEquals(counter, 15)
 
   }
@@ -26,11 +29,14 @@ class EventBusTest extends munit.FunSuite {
     @volatile
     var counter = 0
 
+    val latch = new CountDownLatch(2)
+
     object TestEventBus extends EventBus[Int]
 
     TestEventBus.subscribe(
       (msg: EventBusMessage[Int]) => {
         counter += msg.payload
+        latch.countDown()
       },
       _.topic == "a"
     )
@@ -40,11 +46,7 @@ class EventBusTest extends munit.FunSuite {
       TestEventBus.publish(topic, i)
     }
 
-    // Race condition - this runs before 4 is added
-    // need to investigate, but running twice holds for now
-    TestEventBus.drainAwait
-    TestEventBus.drainAwait
-
+    latch.await()
     assertEquals(counter, 6)
   }
 }
