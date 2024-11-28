@@ -11,11 +11,11 @@ class VeilSpec extends FunSuite {
 
     for {
       t2 <- Veil.get("THING_2")
-    } yield assertEquals(t2, "\"123\"") // TODO escape quotes
+    } yield assertEquals(t2, "123")
 
     for {
       t3 <- Veil.get("THING_3")
-    } yield assertEquals(t3, "\"1+1=2\"")
+    } yield assertEquals(t3, "1+1=2")
 
     assert(Veil.get("USER").nonEmpty)
   }

@@ -44,7 +44,10 @@ object Veil {
       .getOrElse(Map.empty[String, String])
   }
 
+  private def stripQuotes(str: String): String =
+    str.stripPrefix("\"").stripSuffix("\"")
+
   final def get(key: String): Option[String] =
-    dotEnv.get(key).orElse(System.getenv().asScala.get(key))
+    dotEnv.get(key).orElse(System.getenv().asScala.get(key)).map(stripQuotes)
 
 }
