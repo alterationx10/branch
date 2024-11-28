@@ -1,13 +1,13 @@
 package dev.wishingtree.branch.veil
 
-import munit.FunSuite
+import dev.wishingtree.branch.testkit.fixtures.FileFixtureSuite
 
 import java.nio.file.Path
 
 case class AppConfig(host: String, port: Int) derives Config
 case class AppConfig2(host: String, port: Int)
 
-class ConfigSpec extends FunSuite {
+class ConfigSpec extends FileFixtureSuite {
 
   test("Config.fromResource") {
     for {
@@ -15,16 +15,12 @@ class ConfigSpec extends FunSuite {
     } yield assertEquals(config, AppConfig("localhost", 9000))
   }
 
-  test("Config.fromFile") {
+  val json = """{"host":"localhost","port":9000}"""
+  filesWithContent(json).test("Config.fromFile") { file =>
     for {
       config <-
         summon[Config[AppConfig]]
-          .fromFile(
-            Path
-              .of("", "test_resources", "app-config.json")
-              .toAbsolutePath
-              .toString
-          )
+          .fromFile(file)
     } yield assertEquals(config, AppConfig("localhost", 9000))
   }
 

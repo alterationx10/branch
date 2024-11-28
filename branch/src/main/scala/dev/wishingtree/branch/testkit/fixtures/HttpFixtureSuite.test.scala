@@ -1,5 +1,5 @@
 //> using target.scope test
-package dev.wishingtree.branch.testkit.spider.server
+package dev.wishingtree.branch.testkit.fixtures
 
 import com.sun.net.httpserver.HttpServer
 import dev.wishingtree.branch.lzy.LazyRuntime

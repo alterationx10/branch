@@ -3,7 +3,7 @@ package dev.wishingtree.branch.spider.server
 import dev.wishingtree.branch.spider.HttpVerb
 import dev.wishingtree.branch.spider.server.OpaqueSegments.*
 import dev.wishingtree.branch.spider.server.RequestHandler.given
-import dev.wishingtree.branch.testkit.spider.server.HttpFixtureSuite
+import dev.wishingtree.branch.testkit.fixtures.HttpFixtureSuite
 
 import java.net.URI
 import java.net.http.HttpClient.Version

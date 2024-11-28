@@ -5,9 +5,9 @@ import dev.wishingtree.branch.friday.http.JsonBodyHandler
 import dev.wishingtree.branch.spider.HttpVerb
 import dev.wishingtree.branch.spider.client.ClientRequest.uri
 import dev.wishingtree.branch.spider.server.{Request, RequestHandler, Response}
-import dev.wishingtree.branch.testkit.spider.server.HttpFixtureSuite
 import dev.wishingtree.branch.spider.server.OpaqueSegments.*
 import dev.wishingtree.branch.spider.server.RequestHandler.given
+import dev.wishingtree.branch.testkit.fixtures.HttpFixtureSuite
 import munit.FunSuite
 
 class ClientSpec extends HttpFixtureSuite {
