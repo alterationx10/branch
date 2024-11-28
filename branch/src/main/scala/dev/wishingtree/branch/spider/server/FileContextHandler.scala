@@ -1,11 +1,11 @@
 package dev.wishingtree.branch.spider.server
 
-import OpaqueSegments.*
 import dev.wishingtree.branch.spider.*
+import dev.wishingtree.branch.spider.server.OpaqueSegments.Segments
 
 import java.io.File
 
-object FileContext {
+object FileContextHandler {
 
   private[spider] val defaultFiles: List[String] = List(
     "index.html",
@@ -13,8 +13,8 @@ object FileContext {
   )
 }
 
-case class FileContext(rootFilePath: Segments, rootPath: String = "/")
-    extends ContextHandler(rootPath) {
+case class FileContextHandler(rootFilePath: Segments, contextPath: String = "/")
+    extends ContextHandler(contextPath) {
 
   private def fileExists(path: Segments): Boolean = {
     val filePath = (rootFilePath / path).toPathString
@@ -24,14 +24,14 @@ case class FileContext(rootFilePath: Segments, rootPath: String = "/")
 
   private def defaultExists(path: Segments): Boolean = {
     !path.toSeq.lastOption.exists(_.contains("\\.")) &&
-    FileContext.defaultFiles.foldLeft(false) { (b, d) =>
+    FileContextHandler.defaultFiles.foldLeft(false) { (b, d) =>
       val file = new File((rootFilePath / path / d).toPathString)
       b || (file.exists() && file.isFile)
     }
   }
 
   private def defaultFile(path: Segments): File =
-    FileContext.defaultFiles.iterator
+    FileContextHandler.defaultFiles.iterator
       .map(fn => new File((rootFilePath / path / fn).toPathString))
       .find(_.exists())
       .getOrElse(throw new Exception("Not found"))

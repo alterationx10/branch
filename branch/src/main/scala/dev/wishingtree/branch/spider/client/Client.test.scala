@@ -34,9 +34,9 @@ class ClientSpec extends HttpFixtureSuite {
     val request = ClientRequest
       .build(uri"http://localhost:${server.getAddress.getPort}/PerSoN/Mark")
 
-    val response = client.sendAsync(request, JsonBodyHandler.of[Person])
+    val response = client.send(request, JsonBodyHandler.of[Person])
 
-    assertEquals(response.get().body().get.name, "Mark")
+    assertEquals(response.body().get.name, "Mark")
   }
 
 }

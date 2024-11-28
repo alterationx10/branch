@@ -39,4 +39,14 @@ class OpaqueSegmentsSpec extends FunSuite {
 
   }
 
+  test("case insensitive matching") {
+
+    val pf: PartialFunction[Segments, String] = {
+      case >> / ci"this" / ci"that" / s"$arg" => arg
+    }
+
+    assert(pf(p"ThIs/tHaT/123") == "123")
+
+  }
+
 }
