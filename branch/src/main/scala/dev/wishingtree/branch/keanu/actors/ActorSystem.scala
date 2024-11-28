@@ -1,6 +1,7 @@
 package dev.wishingtree.branch.keanu.actors
 
 import dev.wishingtree.branch.keanu
+import dev.wishingtree.branch.macaroni.runtimes.BranchExecutors
 
 import java.util.concurrent.*
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
@@ -34,7 +35,7 @@ trait ActorSystem {
   /** The executor service used to run actors
     */
   val executorService: ExecutorService =
-    Executors.newVirtualThreadPerTaskExecutor()
+    BranchExecutors.executorService
 
   /** Ensure there is a mailbox and running actor for the given refId
     * @param refId
@@ -151,7 +152,8 @@ trait ActorSystem {
     actors.nonEmpty
   }
 
-  /** Shutdown the actor system and wait for all actors to terminate
+  /** Shutdown the actor system and wait for all actors to terminate. All calls
+    * to tell will throw an exception after this is called.
     */
   def shutdownAwait(): Unit = {
     isShuttingDown.set(true)

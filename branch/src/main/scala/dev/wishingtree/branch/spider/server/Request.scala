@@ -1,7 +1,5 @@
 package dev.wishingtree.branch.spider.server
 
-import dev.wishingtree.branch.spider.server.Request
-
 import java.net.URI
 
 case class Request[A](uri: URI, headers: Map[String, List[String]], body: A)

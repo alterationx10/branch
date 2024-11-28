@@ -1,6 +1,8 @@
 package dev.wishingtree.branch.lzy
 
-import java.util.concurrent.{CompletableFuture, ExecutorService, Executors}
+import dev.wishingtree.branch.macaroni.runtimes.BranchExecutors
+
+import java.util.concurrent.{CompletableFuture, ExecutorService}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.FutureConverters.*
 import scala.util.{Failure, Success, Try}
@@ -13,10 +15,10 @@ trait LazyRuntime {
 object LazyRuntime extends LazyRuntime {
 
   val executorService: ExecutorService =
-    Executors.newVirtualThreadPerTaskExecutor()
+    BranchExecutors.executorService
 
   val executionContext: ExecutionContext =
-    ExecutionContext.fromExecutorService(executorService)
+    BranchExecutors.executionContext
 
   override def runSync[A](lzy: Lazy[A]): Try[A] =
     eval(lzy).get()

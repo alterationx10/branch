@@ -2,6 +2,7 @@ package dev.wishingtree.branch.piggy
 
 import dev.wishingtree.branch.lzy.LazyRuntime
 import dev.wishingtree.branch.macaroni.poolers.ResourcePool
+import dev.wishingtree.branch.macaroni.runtimes.BranchExecutors
 
 import java.sql.{Connection, PreparedStatement}
 import java.util.concurrent.{CompletableFuture, ExecutorService}
@@ -26,10 +27,10 @@ trait SqlRuntime {
 object SqlRuntime extends SqlRuntime {
 
   val executorService: ExecutorService =
-    LazyRuntime.executorService
+    BranchExecutors.executorService
 
   val executionContext: ExecutionContext =
-    LazyRuntime.executionContext
+    BranchExecutors.executionContext
 
   override def execute[A](sql: Sql[A])(using
       connection: Connection
