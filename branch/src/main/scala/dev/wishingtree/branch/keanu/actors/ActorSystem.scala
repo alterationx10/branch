@@ -3,17 +3,15 @@ package dev.wishingtree.branch.keanu.actors
 import dev.wishingtree.branch.keanu
 
 import java.util.concurrent.*
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
 import scala.collection.*
 import scala.reflect.ClassTag
 import scala.util.*
 
 trait ActorSystem {
 
-  /** An atomic counter to keep track of the number of running actors
-    */
-  private val nActiveActors: AtomicInteger =
-    new AtomicInteger(0)
+  private val isShuttingDown: AtomicBoolean =
+    new AtomicBoolean(false)
 
   private type Mailbox  = BlockingQueue[Any]
   private type ActorRef = CompletableFuture[LifecycleEvent]
@@ -80,7 +78,6 @@ trait ActorSystem {
       refId: ActorRefId,
       mailbox: Mailbox
   ): ActorRef = {
-    nActiveActors.getAndIncrement()
     CompletableFuture.supplyAsync[LifecycleEvent](
       () => {
         val terminationResult: LifecycleEvent = {
@@ -112,7 +109,6 @@ trait ActorSystem {
               OnMsgTermination(e)
           }
         }
-        nActiveActors.getAndDecrement()
         terminationResult
       },
       executorService
@@ -157,10 +153,9 @@ trait ActorSystem {
 
   /** Shutdown the actor system and wait for all actors to terminate
     */
-  def shutdownAwait: Unit = {
-    while (nActiveActors.get() > 0) {
-      cleanUp
-    }
+  def shutdownAwait(): Unit = {
+    isShuttingDown.set(true)
+    cleanUp
   }
 
   /** Tell an actor to process a message. If the actor does not exist, it will
@@ -170,7 +165,8 @@ trait ActorSystem {
     * @tparam A
     */
   def tell[A <: Actor: ClassTag](name: String, msg: Any): Unit = {
-    actorForName[A](name).put(msg)
+    if !isShuttingDown.get() then actorForName[A](name).put(msg)
+    else throw ShutdownException
   }
 
 }

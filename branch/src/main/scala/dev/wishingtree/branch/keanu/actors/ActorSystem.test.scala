@@ -29,7 +29,8 @@ class ActorSystemSpec extends FunSuite {
     as.tell[BoomActor]("boom", "countDown")
     as.tell[BoomActor]("boom", 42)
     as.tell[BoomActor]("boom", "countDown")
-    latch.await()
+//    latch.await()
+    as.shutdownAwait()
     assertEquals(counter, 4)
 
   }
