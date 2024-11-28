@@ -25,20 +25,18 @@ class ClientSpec extends HttpFixtureSuite {
 
   val personHandler
       : PartialFunction[(HttpVerb, Segments), RequestHandler[Unit, Person]] = {
-    case HttpVerb.GET -> >> / "person" / s"$name" => PersonHandler(name)
+    case HttpVerb.GET -> >> / ci"person" / s"$name" => PersonHandler(name)
   }
 
   httpFixture(personHandler).test("Client") { server =>
     val client = Client.build()
 
     val request = ClientRequest
-      .build(uri"http://localhost:${server.getAddress.getPort}/person/Mark")
+      .build(uri"http://localhost:${server.getAddress.getPort}/PerSoN/Mark")
 
     val response = client.sendAsync(request, JsonBodyHandler.of[Person])
 
-    // Because the path is lowercases for the match, that means binding to
-    // a variable is lowercase as well :(
-    assertEquals(response.get().body().get.name, "mark")
+    assertEquals(response.get().body().get.name, "Mark")
   }
 
 }

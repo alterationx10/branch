@@ -26,9 +26,7 @@ trait ContextHandler(val path: String) {
           .fn {
             HttpVerb
               .fromString(exchange.getRequestMethod.toUpperCase)
-              .map(v =>
-                v -> Segments(exchange.getRequestURI.getPath.toLowerCase)
-              )
+              .map(v => v -> Segments(exchange.getRequestURI.getPath))
               .filter(contextRouter.isDefinedAt)
               .map(contextRouter)
               .getOrElse(RequestHandler.unimplementedHandler)

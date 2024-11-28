@@ -45,6 +45,7 @@ object OpaqueSegments {
 
   extension (sc: StringContext) {
     def p(args: Any*): Segments = Segments(sc.s(args*))
+    def ci                      = ("(?i)" + sc.parts.mkString).r
   }
 
   @targetName("root")
