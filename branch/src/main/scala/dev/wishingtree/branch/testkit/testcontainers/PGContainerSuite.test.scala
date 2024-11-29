@@ -1,9 +1,13 @@
 //> using target.scope test
 package dev.wishingtree.branch.testkit.testcontainers
 
+import dev.wishingtree.branch.macaroni.poolers.ResourcePool
 import munit.*
 import org.postgresql.ds.PGSimpleDataSource
 import org.testcontainers.containers.GenericContainer
+
+import java.sql.Connection
+import javax.sql.DataSource
 
 class PGContainerSuite extends munit.FunSuite {
 
@@ -11,6 +15,20 @@ class PGContainerSuite extends munit.FunSuite {
     * single container will be created for all tests.
     */
   val containerPerTest = true
+
+  case class PgConnectionPool(ds: DataSource) extends ResourcePool[Connection] {
+
+    override def acquire: Connection = {
+      ds.getConnection()
+    }
+
+    override def release(resource: Connection): Unit = {
+      resource.close()
+    }
+
+    override def test(resource: Connection): Boolean =
+      resource.isValid(5)
+  }
 
   case class PGTestContainer() extends GenericContainer("postgres:latest") {
     withEnv("POSTGRES_HOST_AUTH_METHOD", "trust")
@@ -56,4 +74,7 @@ class PGContainerSuite extends munit.FunSuite {
     _ds.setUser("postgres")
     _ds
   }
+
+  def pgPool: PgConnectionPool =
+    PgConnectionPool(ds)
 }

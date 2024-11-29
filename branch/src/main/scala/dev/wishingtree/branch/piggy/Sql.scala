@@ -66,15 +66,14 @@ object Sql {
 
   extension (rs: ResultSet) {
 
-    inline def tupled[A <: Tuple]: A = {
-      rs.next() // dangerous, should be handled
-      parseRs[A](rs)(1).asInstanceOf[A]
-    }
-
     inline def tupledList[A <: Tuple]: List[A] = {
       val b = List.newBuilder[A]
       while rs.next() do b += parseRs[A](rs)(1).asInstanceOf[A]
       b.result()
+    }
+
+    inline def tupled[A <: Tuple]: Option[A] = {
+      tupledList[A].headOption
     }
 
   }

@@ -1,11 +1,7 @@
 package dev.wishingtree.branch.piggy
 
-import dev.wishingtree.branch.macaroni.poolers.ResourcePool
 import dev.wishingtree.branch.piggy.Sql.*
 import dev.wishingtree.branch.testkit.testcontainers.PGContainerSuite
-
-import java.sql.Connection
-import javax.sql.DataSource
 
 class PiggyPostgresqlSpec extends PGContainerSuite {
 
@@ -17,20 +13,6 @@ class PiggyPostgresqlSpec extends PGContainerSuite {
         age INT NOT NULL
       )
     """
-
-  case class PgConnectionPool(ds: DataSource) extends ResourcePool[Connection] {
-
-    override def acquire: Connection = {
-      ds.getConnection()
-    }
-
-    override def release(resource: Connection): Unit = {
-      resource.close()
-    }
-
-    override def test(resource: Connection): Boolean =
-      resource.isValid(5)
-  }
 
   case class Person(id: Int, name: String, age: Int)
 
@@ -53,14 +35,14 @@ class PiggyPostgresqlSpec extends PGContainerSuite {
                          )
                          .map(_.map(Person.apply))
     } yield (nIns, fetchedPeople)
-    val result = sql.executePool(using PgConnectionPool(ds))
+    val result = sql.executePool(using pgPool)
     assert(result.isSuccess)
     assertEquals(result.get._1, 10)
     assertEquals(result.get._2.distinct.size, 10)
   }
 
   test("PiggyPostgresql Rollback") {
-    given PgConnectionPool = PgConnectionPool(ds)
+    given PgConnectionPool = pgPool
     assert(Sql.statement(ddl).executePool.isSuccess)
 
     val blowup = for {
@@ -83,6 +65,34 @@ class PiggyPostgresqlSpec extends PGContainerSuite {
     assert(result.isSuccess)
     assertEquals(result.get.size, 0)
 
+  }
+
+  test("ResultSet Tupled") {
+    given pool: PgConnectionPool = pgPool
+
+    val tple =
+      Sql.statement(s"SELECT 1, 'two'", _.tupled[(Int, String)]).executePool
+
+    assertEquals(tple.get.get, (1, "two"))
+  }
+
+  test("ResultSet TupledList") {
+    given pool: PgConnectionPool = pgPool
+
+    val readBack = {
+      for {
+        _             <- Sql.statement(ddl)
+        _             <- Sql.statement("truncate table person")
+        _             <- Sql.prepareUpdate(ins, tenPeople*)
+        fetchedPeople <- Sql.statement(
+                           "select * from person where name like 'Mark%'",
+                           _.tupledList[(Int, String, Int)]
+                         )
+      } yield fetchedPeople
+    }.executePool.get
+
+    assert(readBack.size == 10)
+    assert(readBack.forall(_._2.startsWith("Mark")))
   }
 
 }
