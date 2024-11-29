@@ -30,13 +30,6 @@ sealed trait Lazy[+A] {
     loop
   }
 
-  final def debug(prefix: String = "") =
-    this.map { a =>
-      if prefix.isEmpty then println(s"$a")
-      else println(s"$prefix: $a")
-      a
-    }
-
   final def unit: Lazy[Unit] =
     this.map(_ => ())
 
@@ -49,6 +42,17 @@ sealed trait Lazy[+A] {
 
   def ignore: Lazy[Unit] =
     this.unit.recover(_ => Lazy.unit)
+
+  def tap(f: A => Unit): Lazy[A] = {
+    this.flatMap(a => Lazy.fn(a).ignore.as(a))
+  }
+
+  final def debug(prefix: String = "") =
+    this.tap { a =>
+      if prefix.isEmpty then println(s"$a")
+      else println(s"$prefix: $a")
+    }
+    
 }
 
 object Lazy {
