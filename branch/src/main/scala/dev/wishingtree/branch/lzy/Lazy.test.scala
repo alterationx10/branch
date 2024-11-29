@@ -1,6 +1,8 @@
 import dev.wishingtree.branch.lzy.{Lazy, LazyRuntime}
 import munit.FunSuite
 
+import java.time.*
+
 class LazySpec extends FunSuite {
 
   override def munitValueTransforms = super.munitValueTransforms ++ List(
@@ -59,4 +61,21 @@ class LazySpec extends FunSuite {
       l <- Lazy.forEach(1 to 10000)(_ => Lazy.fn(1))
     } yield assertEquals(l.sum, 10000)
   }
+
+  test("Lazy.now") {
+    for {
+      l <- Lazy.now()
+    } yield assert(l.isBefore(Instant.now()))
+  }
+
+  test("Lazy.now - adjusted clock") {
+    def clockAt(instant: Instant) = Clock.fixed(instant, ZoneId.of("UTC"))
+    for {
+      now <- Lazy.now()
+      a   <- Lazy.now(clockAt(now.plusSeconds(3600)))
+    } yield {
+      assert(Duration.between(now, a).toHours == 1)
+    }
+  }
+
 }

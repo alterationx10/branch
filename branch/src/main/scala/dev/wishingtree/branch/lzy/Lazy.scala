@@ -1,6 +1,6 @@
 package dev.wishingtree.branch.lzy
 
-import java.time.Instant
+import java.time.{Clock, Instant}
 import scala.annotation.targetName
 import scala.concurrent.Future
 import scala.util.Try
@@ -82,8 +82,8 @@ object Lazy {
   def println(str: String): Lazy[Unit] =
     fn(scala.Predef.println(str))
 
-  def now: Lazy[Instant] =
-    fn(Instant.now())
+  def now(clock: Clock = Clock.systemUTC()): Lazy[Instant] =
+    fn(clock.instant())
 
   def unit: Lazy[Unit] =
     Lazy.fn(())
