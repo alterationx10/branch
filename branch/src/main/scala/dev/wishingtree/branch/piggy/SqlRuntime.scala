@@ -1,6 +1,5 @@
 package dev.wishingtree.branch.piggy
 
-import dev.wishingtree.branch.lzy.LazyRuntime
 import dev.wishingtree.branch.macaroni.poolers.ResourcePool
 import dev.wishingtree.branch.macaroni.runtimes.BranchExecutors
 
@@ -62,11 +61,12 @@ object SqlRuntime extends SqlRuntime {
 
   override def executeAsync[A](sql: Sql[A])(using
       connection: Connection
-  ): Future[A] = Future.fromTry(execute(sql))
+  ): Future[A] = Future(Future.fromTry(execute(sql)))(executionContext).flatten
 
   override def executePoolAsync[A, B <: ResourcePool[Connection]](sql: Sql[A])(
       using pool: B
-  ): Future[A] = Future.fromTry(executePool(sql))
+  ): Future[A] =
+    Future(Future.fromTry(executePool(sql)))(executionContext).flatten
 
   private def eval[A](sql: Sql[A])(using
       connection: Connection

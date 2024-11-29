@@ -1,13 +1,16 @@
 package dev.wishingtree.branch.macaroni.poolers
 
-import java.util.concurrent.Semaphore
+import java.util.concurrent.{ConcurrentLinkedQueue, Semaphore}
 import java.util.concurrent.atomic.AtomicBoolean
-import scala.collection.mutable
+import scala.util.{Success, Try}
 
 trait ResourcePool[R] {
 
-  val isShuttingDown: AtomicBoolean =
+  private val isShuttingDown: AtomicBoolean =
     new AtomicBoolean(false)
+
+  def isShutdown: Boolean =
+    isShuttingDown.get()
 
   val poolSize: Int =
     5
@@ -15,8 +18,8 @@ trait ResourcePool[R] {
   private val gate: Semaphore =
     new Semaphore(poolSize, true)
 
-  private val pool: mutable.Queue[R] =
-    mutable.Queue.empty[R]
+  private val pool: ConcurrentLinkedQueue[R] =
+    new ConcurrentLinkedQueue[R]()
 
   def acquire: R
   def release(resource: R): Unit
@@ -35,54 +38,56 @@ trait ResourcePool[R] {
 
   private def borrowResource: R = {
     if isShuttingDown.get() then
-      throw new IllegalStateException("Pool is shutting down")
+      throw new IllegalStateException("ResourcePool is shutting down")
     gate.acquire()
-    synchronized(pool.dequeue())
+    // Lazily fill the pool
+    Option(pool.poll()).getOrElse(acquire)
   }
 
   private def returnResource(resource: R): Unit = {
-    synchronized {
-      if (test(resource)) {
-        pool.enqueue(resource)
-      } else {
-        release(resource)
-        pool.enqueue(acquire)
-      }
+    Try(test(resource)) match {
+      case Success(true) =>
+        pool.add(resource)
+      case _             =>
+        Try(release(resource))
     }
     gate.release()
   }
 
-  private def fillPool(): Unit = {
+  def fillPool(): Unit = {
     gate.acquire(poolSize)
-    synchronized {
-      try {
-        while (pool.size < poolSize) {
-          pool.enqueue(acquire)
-        }
-      } finally {
-        gate.release(poolSize)
+    try {
+      while (pool.size < poolSize) {
+        pool.add(acquire)
       }
+    } finally {
+      gate.release(poolSize)
     }
+
+  }
+
+  def drainPool(): Unit = {
+    // Wait until all resources are returned
+    gate.acquire(poolSize)
+    // Release all resources
+    pool.iterator().forEachRemaining { r =>
+      release(r)
+      pool.remove(r)
+    }
+    // Release the gate
+    gate.release(poolSize)
+  }
+
+  def shutdown(): Unit = {
+    // Prevent new resources from being acquired
+    isShuttingDown.set(true)
+    drainPool()
   }
 
   Runtime.getRuntime.addShutdownHook {
     new Thread(() => {
-      // Prevent new resources from being acquired
-      isShuttingDown.set(true)
-      // Wait until all resources are returned
-      gate.acquire(poolSize)
-      // Release all resources
-      synchronized {
-        pool.dequeueAll { r =>
-          release(r)
-          true
-        }
-      }
-      // Release the gate
-      gate.release(poolSize)
+      if !isShuttingDown.get() then shutdown()
     })
   }
 
-  // Fill the pool on startup
-  fillPool()
 }
