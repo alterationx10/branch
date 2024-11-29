@@ -22,7 +22,7 @@ sealed trait Lazy[+A] {
   final def orElse[B >: A](default: => Lazy[B]): Lazy[B] =
     this.recover(_ => default)
 
-  final def orElseValue[B >: A](default: B): Lazy[B] =
+  final def orElseDefault[B >: A](default: B): Lazy[B] =
     this.orElse(Lazy.fn(default))
 
   final def forever[A] = {

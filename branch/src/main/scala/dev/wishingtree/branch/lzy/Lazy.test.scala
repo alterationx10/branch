@@ -52,7 +52,7 @@ class LazySpec extends FunSuite {
 
   test("Lazy.orElseValue") {
     for {
-      l <- Lazy.fail(new Exception("error")).orElseValue("abc")
+      l <- Lazy.fail(new Exception("error")).orElseDefault("abc")
     } yield assertEquals(l, "abc")
   }
 
