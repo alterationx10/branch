@@ -9,11 +9,17 @@ import scala.collection.*
 import scala.reflect.ClassTag
 import scala.util.*
 
+/** The default ActorSystem implementation. For singleton usage, have an object
+  * extend this trait. For an instance usage, the default apply method can be
+  * used.
+  */
 trait ActorSystem {
 
+  /** A flag for internally controlling if the ActorSystem is shutting down */
   private final val isShuttingDown: AtomicBoolean =
     new AtomicBoolean(false)
 
+  /** Returns true if the ActorSystem is shutting down */
   final def isShutdown: Boolean =
     isShuttingDown.get()
 
@@ -165,9 +171,6 @@ trait ActorSystem {
 
   /** Tell an actor to process a message. If the actor does not exist, it will
     * be created.
-    * @param name
-    * @param msg
-    * @tparam A
     */
   final def tell[A <: Actor: ClassTag](name: String, msg: Any): Unit = {
     if !isShuttingDown.get() then actorForName[A](name).put(msg)
