@@ -7,12 +7,18 @@ import java.io.File
 
 object FileContextHandler {
 
+  /**
+   * A list of default files to look for when a directory is requested.
+   * E.g. /some/path -> /some/path/index.html
+   */
   private[spider] val defaultFiles: List[String] = List(
     "index.html",
     "index.htm"
   )
 }
 
+/** A built-in context handler for serving files from the file system.
+  */
 case class FileContextHandler(rootFilePath: Segments, contextPath: String = "/")
     extends ContextHandler(contextPath) {
 
@@ -43,6 +49,6 @@ case class FileContextHandler(rootFilePath: Segments, contextPath: String = "/")
       : PartialFunction[(HttpMethod, Segments), RequestHandler[?, ?]] = {
     case HttpMethod.GET -> anyPath if fileExists(anyPath)    => fileHandler
     case HttpMethod.GET -> anyPath if defaultExists(anyPath) =>
-      DefaultFilerHandler(defaultFile(anyPath))
+      DefaultFileHandler(defaultFile(anyPath))
   }
 }
