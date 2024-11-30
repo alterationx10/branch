@@ -2,18 +2,31 @@ package dev.wishingtree.branch.spider.server
 
 import com.sun.net.httpserver.HttpExchange
 import dev.wishingtree.branch.lzy.Lazy
-import dev.wishingtree.branch.spider.server.{RequestHandler, Response}
 
 import scala.jdk.CollectionConverters.*
 
+/** A base trait to extend for handling a Request and returning a Response.
+  * @tparam I
+  *   The type of the request body (must have a `Conversion[Array[Byte], I]` in
+  *   scope)
+  * @tparam O
+  *   The type of the response body (must have a `Conversion[O, Array[Byte]]` in
+  *   scope)
+  */
 trait RequestHandler[I, O](using
     requestDecoder: Conversion[Array[Byte], I],
     responseEncoder: Conversion[O, Array[Byte]]
 ) {
 
+  /** Handle a request and return a response.
+    * @param request
+    * @return
+    */
   def handle(request: Request[I]): Response[O]
 
-  private def decodeRequest(
+  /** Decode the Request from the HttpExchange.
+    */
+  private final def decodeRequest(
       exchange: HttpExchange
   ): Lazy[Request[I]] =
     for {
@@ -27,7 +40,9 @@ trait RequestHandler[I, O](using
       body    <- Lazy.fn(requestDecoder(rawBody))
     } yield Request(exchange.getRequestURI, headers, body)
 
-  private def sendResponse(response: Response[O])(
+  /** Send the Response to the HttpExchange.
+    */
+  private final def sendResponse(response: Response[O])(
       exchange: HttpExchange
   ): Lazy[Unit] = {
     for {
@@ -42,7 +57,7 @@ trait RequestHandler[I, O](using
     } yield ()
   }
 
-  private[spider] inline def lzyRun(
+  private[spider] inline final def lzyRun(
       exchange: HttpExchange
   ): Lazy[Unit] = {
     for {
@@ -66,7 +81,6 @@ object RequestHandler {
 
   private[spider] val unimplementedHandler: RequestHandler[Unit, Unit] =
     new RequestHandler[Unit, Unit] {
-
       override def handle(request: Request[Unit]): Response[Unit] =
         throw new Exception("Not implemented")
     }

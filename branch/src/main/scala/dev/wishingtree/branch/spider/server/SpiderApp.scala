@@ -7,13 +7,19 @@ import java.net.InetSocketAddress
 
 trait SpiderApp {
 
+  /** The port on which the server will listen. Defaults to 9000.
+    */
   val port: Int =
     9000
 
+  /** The maximum number of pending connections the server will queue.
+    */
   val backlog: Int =
     0
 
-  given server: HttpServer =
+  /** The given server instance.
+    */
+  final given server: HttpServer =
     HttpServer.create(new InetSocketAddress(port), backlog)
 
   server.setExecutor(LazyRuntime.executorService)
@@ -22,6 +28,8 @@ trait SpiderApp {
     new Thread(() => server.stop(5))
   }
 
+  /** The application's main entry point, which starts the HTTP server.
+    */
   final def main(args: Array[String]): Unit =
     server.start()
 
