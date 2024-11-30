@@ -3,7 +3,7 @@ package dev.wishingtree.branch.spider.server
 import com.sun.net.httpserver.*
 import dev.wishingtree.branch.lzy.Lazy
 import dev.wishingtree.branch.lzy.abstractions.Semigroup
-import dev.wishingtree.branch.spider.HttpVerb
+import dev.wishingtree.branch.spider.HttpMethod
 import dev.wishingtree.branch.spider.server.OpaqueSegments.*
 
 import java.time.{Duration, Instant}
@@ -17,14 +17,17 @@ trait ContextHandler(val path: String) {
   val authenticator: Option[Authenticator] =
     Option.empty
 
-  val contextRouter: PartialFunction[(HttpVerb, Segments), RequestHandler[?, ?]]
+  val contextRouter: PartialFunction[
+    (HttpMethod, Segments),
+    RequestHandler[?, ?]
+  ]
 
   private[spider] inline def httpHandler: HttpHandler = {
     (exchange: HttpExchange) =>
       {
         Lazy
           .fn {
-            HttpVerb
+            HttpMethod
               .fromString(exchange.getRequestMethod.toUpperCase)
               .map(v => v -> Segments(exchange.getRequestURI.getPath))
               .filter(contextRouter.isDefinedAt)
@@ -56,7 +59,7 @@ object ContextHandler {
       override val authenticator: Option[Authenticator] =
         a.authenticator.orElse(b.authenticator)
       override val contextRouter
-          : PartialFunction[(HttpVerb, Segments), RequestHandler[?, ?]] =
+          : PartialFunction[(HttpMethod, Segments), RequestHandler[?, ?]] =
         a.contextRouter orElse b.contextRouter
     }
   }

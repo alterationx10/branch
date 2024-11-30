@@ -40,9 +40,9 @@ case class FileContextHandler(rootFilePath: Segments, contextPath: String = "/")
     FileHandler(rootFilePath)
 
   override val contextRouter
-      : PartialFunction[(HttpVerb, Segments), RequestHandler[?, ?]] = {
-    case HttpVerb.GET -> anyPath if fileExists(anyPath)    => fileHandler
-    case HttpVerb.GET -> anyPath if defaultExists(anyPath) =>
+      : PartialFunction[(HttpMethod, Segments), RequestHandler[?, ?]] = {
+    case HttpMethod.GET -> anyPath if fileExists(anyPath)    => fileHandler
+    case HttpMethod.GET -> anyPath if defaultExists(anyPath) =>
       DefaultFilerHandler(defaultFile(anyPath))
   }
 }

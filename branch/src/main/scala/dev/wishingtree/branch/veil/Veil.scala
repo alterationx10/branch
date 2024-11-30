@@ -5,17 +5,13 @@ import java.nio.file.{Files, Path}
 import scala.jdk.CollectionConverters.*
 import scala.util.Try
 
-trait Veil {
-  val runtimeEnv: RuntimeEnv
-  val dotEnv: Map[String, String]
-
-  final def get(key: String): Option[String] =
-    dotEnv.get(key).orElse(System.getenv().asScala.get(key))
-
-}
-
+/** An object for reading environment variables from a .env file.
+  */
 object Veil {
 
+  /** The runtime environment, as based of the environment variable SCALA_ENV.
+    * If missing, or configured incorrectly, defaults to DEV.
+    */
   val runtimeEnv: RuntimeEnv =
     System
       .getenv()
@@ -24,6 +20,13 @@ object Veil {
       .flatMap(str => Try(RuntimeEnv.valueOf(str)).toOption)
       .getOrElse(RuntimeEnv.DEV)
 
+  /** Loads the env file into a Map, based on [[runtimeEnv]].
+    * {{{
+    * case DEV  => ".env"
+    * case TEST => ".env.test"
+    * case PROD => ".env.prod"
+    * }}}
+    */
   private val dotEnv: Map[String, String] = {
     val envFile = this.runtimeEnv match {
       case DEV  => ".env"
@@ -44,10 +47,20 @@ object Veil {
       .getOrElse(Map.empty[String, String])
   }
 
+  /** Utility method to strip prefixed quotes from a string, as might be common
+    * in env files.
+    * @param str
+    * @return
+    */
   private def stripQuotes(str: String): String =
     str.stripPrefix("\"").stripSuffix("\"")
 
+  /** Get an environment variable by key. It first searches through variables
+    * loaded from an env file, then through system variables.
+    * @param key
+    * @return
+    */
   final def get(key: String): Option[String] =
-    dotEnv.get(key).orElse(System.getenv().asScala.get(key)).map(stripQuotes)
+    dotEnv.get(key).map(stripQuotes).orElse(System.getenv().asScala.get(key))
 
 }

@@ -1,100 +1,341 @@
 package dev.wishingtree.branch.spider
 
+/** A helper class for Content-Type headers
+  * @param content
+  */
 case class ContentType(content: String)
 
 object ContentType {
 
   extension (ct: ContentType) {
+
+    /** Convert a ContentType to a header
+      * @return
+      */
     def toHeader: (String, List[String]) = "Content-Type" -> List(ct.content)
   }
 
-  // https://developer.mozilla.org/en-US/docs/Web/HTTP/MIME_types/Common_types
+  /** "audio/aac"
+    */
+  val aac = ContentType("audio/aac")
 
-  val aac        = ContentType("audio/aac")
-  val abw        = ContentType("application/x-abiword")
-  val apng       = ContentType("image/apng")
-  val arc        = ContentType("application/x-freearc")
-  val avif       = ContentType("image/avif")
-  val avi        = ContentType("video/x-msvideo")
-  val azw        = ContentType("application/vnd.amazon.ebook")
-  val bin        = ContentType("application/octet-stream")
-  val bmp        = ContentType("image/bmp")
-  val bz         = ContentType("application/x-bzip")
-  val bz2        = ContentType("application/x-bzip2")
-  val cda        = ContentType("application/x-cdf")
-  val csh        = ContentType("application/x-csh")
-  val css        = ContentType("text/css")
-  val csv        = ContentType("text/csv")
-  val doc        = ContentType("application/msword")
-  val docx       = ContentType(
+  /** "application/x-abiword"
+    */
+  val abw = ContentType("application/x-abiword")
+
+  /** "image/apng"
+    */
+  val apng = ContentType("image/apng")
+
+  /** "application/x-freearc"
+    */
+  val arc = ContentType("application/x-freearc")
+
+  /** "image/avif"
+    */
+  val avif = ContentType("image/avif")
+
+  /** "video/x-msvideo"
+    */
+  val avi = ContentType("video/x-msvideo")
+
+  /** "application/vnd.amazon.ebook"
+    */
+  val azw = ContentType("application/vnd.amazon.ebook")
+
+  /** "application/octet-stream"
+    */
+  val bin = ContentType("application/octet-stream")
+
+  /** "image/bmp"
+    */
+  val bmp = ContentType("image/bmp")
+
+  /** "application/x-bzip"
+    */
+  val bz = ContentType("application/x-bzip")
+
+  /** "application/x-bzip2"
+    */
+  val bz2 = ContentType("application/x-bzip2")
+
+  /** "application/x-cdf"
+    */
+  val cda = ContentType("application/x-cdf")
+
+  /** "application/x-csh"
+    */
+  val csh = ContentType("application/x-csh")
+
+  /** "text/css"
+    */
+  val css = ContentType("text/css")
+
+  /** "text/csv"
+    */
+  val csv = ContentType("text/csv")
+
+  /** "application/msword"
+    */
+  val doc = ContentType("application/msword")
+
+  /** "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    */
+  val docx = ContentType(
     " application/vnd.openxmlformats-officedocument.wordprocessingml.document "
   )
-  val eot        = ContentType("application/vnd.ms-fontobject")
-  val epub       = ContentType("application/epub+zip")
-  val gz         = ContentType("application/gzip")
-  val xgz        = ContentType("application/x-gzip")
-  val gif        = ContentType("image/gif")
-  val html       = ContentType("text/html")    // .html /html
-  val ico        = ContentType("image/vnd.microsoft.icon")
-  val ics        = ContentType("text/calendar")
-  val jar        = ContentType("application/java-archive")
-  val jpeg       = ContentType("image/jpeg")   // .jpg .jpeg
-  val js         = ContentType("test/javascript")
-  val json       = ContentType("application/json")
-  val jsonld     = ContentType("application/ld+json")
-  val midi       = ContentType("audio/midi")   // .mid .midi
-  val xmidi      = ContentType("audio/x-midi") // .mid .midi
-  val mjs        = ContentType("text/javascript")
-  val mp3        = ContentType("audio/mpeg")
-  val mp4        = ContentType("video/mp4")
-  val mpeg       = ContentType("video/mpeg")
-  val mpkg       = ContentType("application/vnd.apple.installer+xml")
-  val odp        = ContentType("application/vnd.oasis.opendocument.presentation")
-  val ods        = ContentType("application/vnd.oasis.opendocument.spreadsheet")
-  val odt        = ContentType("application/vnd.oasis.opendocument.text")
-  val oga        = ContentType("audio/ogg")
-  val ogv        = ContentType("video/ogg")
-  val ogx        = ContentType("application/ogg")
-  val opus       = ContentType("audio/ogg")
-  val otf        = ContentType("font/otf")
-  val png        = ContentType("image/png")
-  val pdf        = ContentType("application/pdf")
-  val php        = ContentType("application/x-httpd-php")
-  val ppt        = ContentType("application/vnd.ms-powerpoint")
-  val pptx       = ContentType(
-    " application/vnd.openxmlformats-officedocument.presentationml.presentation "
+
+  /** "application/vnd.ms-fontobject"
+    */
+  val eot = ContentType("application/vnd.ms-fontobject")
+
+  /** "application/epub+zip"
+    */
+  val epub = ContentType("application/epub+zip")
+
+  /** "application/gzip"
+    */
+  val gz = ContentType("application/gzip")
+
+  /** "image/x-gzip"
+    */
+  val xgz = ContentType("application/x-gzip")
+
+  /** "image/gif"
+    */
+  val gif = ContentType("image/gif")
+
+  /** "text/html"
+    */
+  val html = ContentType("text/html") // .html /html
+
+  /** "image/vnd.microsoft.icon"
+    */
+  val ico = ContentType("image/vnd.microsoft.icon")
+
+  /** "text/calendar"
+    */
+  val ics = ContentType("text/calendar")
+
+  /** "application/java-archive"
+    */
+  val jar = ContentType("application/java-archive")
+
+  /** "image/jpeg" .jpg, .jpeg
+    */
+  val jpeg = ContentType("image/jpeg")
+
+  /** "text/javascript"
+    */
+  val js = ContentType("text/javascript")
+
+  /** "application/json"
+    */
+  val json = ContentType("application/json")
+
+  /** "application/ld+json"
+    */
+  val jsonld = ContentType("application/ld+json")
+
+  /** "audio/midi" .mid, .midi
+    */
+  val midi = ContentType("audio/midi")
+
+  /** "audio/x-midi" .mid, .midi
+    */
+  val xmidi = ContentType("audio/x-midi")
+
+  /** "text/javascript"
+    */
+  val mjs = ContentType("text/javascript")
+
+  /** "audio/mpeg"
+    */
+  val mp3 = ContentType("audio/mpeg")
+
+  /** "video/mp4"
+    */
+  val mp4 = ContentType("video/mp4")
+
+  /** "video/mpeg"
+    */
+  val mpeg = ContentType("video/mpeg")
+
+  /** "application/vnd.apple.installer+xml"
+    */
+  val mpkg = ContentType("application/vnd.apple.installer+xml")
+
+  /** "application/vnd.oasis.opendocument.presentation"
+    */
+  val odp = ContentType("application/vnd.oasis.opendocument.presentation")
+
+  /** "application/vnd.oasis.opendocument.spreadsheet"
+    */
+  val ods = ContentType("application/vnd.oasis.opendocument.spreadsheet")
+
+  /** "application/vnd.oasis.opendocument.text"
+    */
+  val odt = ContentType("application/vnd.oasis.opendocument.text")
+
+  /** "audio/ogg"
+    */
+  val oga = ContentType("audio/ogg")
+
+  /** "video/ogg"
+    */
+  val ogv = ContentType("video/ogg")
+
+  /** "application/ogg"
+    */
+  val ogx = ContentType("application/ogg")
+
+  /** "audio/ogg"
+    */
+  val opus = ContentType("audio/ogg")
+
+  /** "font/otf"
+    */
+  val otf = ContentType("font/otf")
+
+  /** "image/png"
+    */
+  val png = ContentType("image/png")
+
+  /** "application/pdf"
+    */
+  val pdf = ContentType("application/pdf")
+
+  /** "application/x-httpd-php"
+    */
+  val php = ContentType("application/x-httpd-php")
+
+  /** "application/vnd.ms-powerpoint"
+    */
+  val ppt = ContentType("application/vnd.ms-powerpoint")
+
+  /** "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+    */
+  val pptx = ContentType(
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation"
   )
-  val rar        = ContentType("application/vnd.rar")
-  val rtf        = ContentType("application/rtf")
-  val sh         = ContentType("application/x-sh")
-  val svg        = ContentType("image/svg+xml")
-  val tar        = ContentType("application/x-tar")
-  val tiff       = ContentType("image/tiff")   // .tif
-  val ts         = ContentType("video/mp2t")
-  val ttf        = ContentType("font/ttf")
-  val txt        = ContentType("text/plain")
-  val vsd        = ContentType("application/vnd.visio")
-  val wav        = ContentType("audio/wav")
-  val weba       = ContentType("audio/webm")
-  val webm       = ContentType("video/webm")
-  val webp       = ContentType("image/webp")
-  val woff       = ContentType("font/woff")
-  val woff2      = ContentType("font/woff2")
-  val xhtml      = ContentType("application/xhtml+xml")
-  val xls        = ContentType("application/vnd.ms-excel")
-  val xlsx       = ContentType(
+
+  /** "application/vnd.rar"
+    */
+  val rar = ContentType("application/vnd.rar")
+
+  /** "application/rtf"
+    */
+  val rtf = ContentType("application/rtf")
+
+  /** "application/x-sh"
+    */
+  val sh = ContentType("application/x-sh")
+
+  /** "image/svg+xml"
+    */
+  val svg = ContentType("image/svg+xml")
+
+  /** "application/x-tar"
+    */
+  val tar = ContentType("application/x-tar")
+
+  /** "image/tiff" .tif
+    */
+  val tiff = ContentType("image/tiff")
+
+  /** "video/mp2t"
+    */
+  val ts = ContentType("video/mp2t")
+
+  /** "font/ttf"
+    */
+  val ttf = ContentType("font/ttf")
+
+  /** "text/plain"
+    */
+  val txt = ContentType("text/plain")
+
+  /** "application/vnd.visio"
+    */
+  val vsd = ContentType("application/vnd.visio")
+
+  /** "audio/wav"
+    */
+  val wav = ContentType("audio/wav")
+
+  /** "audio/webm"
+    */
+  val weba = ContentType("audio/webm")
+
+  /** "video/webm"
+    */
+  val webm = ContentType("video/webm")
+
+  /** "image/webp"
+    */
+  val webp = ContentType("image/webp")
+
+  /** "font/woff"
+    */
+  val woff = ContentType("font/woff")
+
+  /** "font/woff2"
+    */
+  val woff2 = ContentType("font/woff2")
+
+  /** "application/xhtml+xml"
+    */
+  val xhtml = ContentType("application/xhtml+xml")
+
+  /** "application/vnd.ms-excel"
+    */
+  val xls = ContentType("application/vnd.ms-excel")
+
+  /** "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    */
+  val xlsx = ContentType(
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
   )
-  val xml        = ContentType("application/xml")
-  val xul        = ContentType("application/vnd.mozilla.xul+xml")
-  val zip        = ContentType("application/zip")
-  val xzip       = ContentType("application/x-zip-compressed")
-  val `3gp`      = ContentType("video/3gpp")
-  val `3gpAudio` = ContentType("audio/3gpp")
-  val `3g2`      = ContentType("video/3gpp2")
-  val `3g2Audio` = ContentType("audio/3gpp2")
-  val `7z`       = ContentType("application/x-7z-compressed")
 
+  /** "application/xml"
+    */
+  val xml = ContentType("application/xml")
+
+  /** "application/vnd.mozilla.xul+xml"
+    */
+  val xul = ContentType("application/vnd.mozilla.xul+xml")
+
+  /** "application/zip"
+    */
+  val zip = ContentType("application/zip")
+
+  /** "application/x-zip-compressed"
+    */
+  val xzip = ContentType("application/x-zip-compressed")
+
+  /** "video/3gpp"
+    */
+  val `3gp` = ContentType("video/3gpp")
+
+  /** "audio/3gpp"
+    */
+  val `3gpAudio` = ContentType("audio/3gpp")
+
+  /** "video/3gpp2"
+    */
+  val `3g2` = ContentType("video/3gpp2")
+
+  /** "audio/3gpp2"
+    */
+  val `3g2Audio` = ContentType("audio/3gpp2")
+
+  /** "application/x-7z-compressed"
+    */
+  val `7z` = ContentType("application/x-7z-compressed")
+
+  /** A partial function to convert file extensions to content types. Defaults
+    * to [[bin]], so will always return a [[ContentType]].
+    */
   val contentPF: PartialFunction[String, ContentType] = {
     case "aac"          => aac
     case "abw"          => abw

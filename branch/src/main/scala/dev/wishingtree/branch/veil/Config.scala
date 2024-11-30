@@ -6,9 +6,27 @@ import scala.util.*
 import java.nio.file.{Files, Path}
 import scala.io.Source
 
+/** A type-class for reading configuration from a file or resource.
+  * @tparam T
+  */
 trait Config[T] {
+
+  /** Read configuration from a file.
+    * @param path
+    * @return
+    */
   def fromFile(path: Path): Try[T]
+
+  /** Read configuration from a file.
+    * @param path
+    * @return
+    */
   def fromFile(file: String): Try[T] = fromFile(Path.of(file))
+
+  /** Read configuration from a resource.
+    * @param path
+    * @return
+    */
   def fromResource(path: String): Try[T]
 }
 

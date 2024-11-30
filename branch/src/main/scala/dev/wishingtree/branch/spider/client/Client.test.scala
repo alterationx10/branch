@@ -2,7 +2,7 @@ package dev.wishingtree.branch.spider.client
 
 import dev.wishingtree.branch.friday.JsonEncoder
 import dev.wishingtree.branch.friday.http.JsonBodyHandler
-import dev.wishingtree.branch.spider.HttpVerb
+import dev.wishingtree.branch.spider.HttpMethod
 import dev.wishingtree.branch.spider.client.ClientRequest.uri
 import dev.wishingtree.branch.spider.server.{Request, RequestHandler, Response}
 import dev.wishingtree.branch.spider.server.OpaqueSegments.*
@@ -23,9 +23,11 @@ class ClientSpec extends HttpFixtureSuite {
       Response(Person(name))
   }
 
-  val personHandler
-      : PartialFunction[(HttpVerb, Segments), RequestHandler[Unit, Person]] = {
-    case HttpVerb.GET -> >> / ci"person" / s"$name" => PersonHandler(name)
+  val personHandler: PartialFunction[(HttpMethod, Segments), RequestHandler[
+    Unit,
+    Person
+  ]] = { case HttpMethod.GET -> >> / ci"person" / s"$name" =>
+    PersonHandler(name)
   }
 
   httpFixture(personHandler).test("Client") { server =>

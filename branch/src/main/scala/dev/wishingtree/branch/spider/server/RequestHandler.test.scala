@@ -1,6 +1,6 @@
 package dev.wishingtree.branch.spider.server
 
-import dev.wishingtree.branch.spider.HttpVerb
+import dev.wishingtree.branch.spider.HttpMethod
 import dev.wishingtree.branch.spider.server.OpaqueSegments.*
 import dev.wishingtree.branch.spider.server.RequestHandler.given
 import dev.wishingtree.branch.testkit.fixtures.HttpFixtureSuite
@@ -17,9 +17,11 @@ class RequestHandlerSpec extends HttpFixtureSuite {
     }
   }
 
-  val alohaHandler
-      : PartialFunction[(HttpVerb, Segments), RequestHandler[Unit, String]] = {
-    case HttpVerb.GET -> >> / "aloha" => AlohaGreeter()
+  val alohaHandler: PartialFunction[(HttpMethod, Segments), RequestHandler[
+    Unit,
+    String
+  ]] = { case HttpMethod.GET -> >> / "aloha" =>
+    AlohaGreeter()
   }
   httpFixture(alohaHandler).test("RequestHandler") { server =>
 
