@@ -13,6 +13,13 @@ class ResourcePoolSpec extends FunSuite {
     override def release(resource: Int): Unit = ()
   }
 
+  test("ResourcePool - fill") {
+    val pool = OnePool()
+    pool.fillPool()
+
+    assertEquals(pool.poolSize, pool.pool.size)
+  }
+
   test("ResourcePool - async use") {
     val pool = OnePool()
 
