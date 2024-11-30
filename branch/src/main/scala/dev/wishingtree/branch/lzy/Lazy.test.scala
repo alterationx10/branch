@@ -1,11 +1,13 @@
 import dev.wishingtree.branch.lzy.{Lazy, LazyRuntime}
+import dev.wishingtree.branch.testkit.fixtures.LoggerFixtureSuite
 import munit.FunSuite
 
 import java.time.*
+import java.util.logging.Logger
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
 
-class LazySpec extends FunSuite {
+class LazySpec extends LoggerFixtureSuite {
 
   override def munitValueTransforms = super.munitValueTransforms ++ List(
     new ValueTransform(
@@ -136,4 +138,54 @@ class LazySpec extends FunSuite {
       assert(java.time.Duration.between(b, c).getSeconds >= 1)
     }
   }
+
+  loggerFixture.test("Lazy.log") { (logger, handler) =>
+    given Logger = logger
+
+    for {
+      _ <- Lazy.logSevere("severe", new Exception("severe"))
+      _ <- Lazy.logWarning("warning")
+      _ <- Lazy.logInfo("info")
+      _ <- Lazy.logConfig("config")
+      _ <- Lazy.logFine("fine")
+    } yield {
+      assertEquals(
+        handler.records.map(_.getMessage).toList,
+        List("severe", "warning", "info", "config", "fine")
+      )
+      assert(handler.records.flatMap(r => Option(r.getThrown)).size == 1)
+    }
+  }
+
+  loggerFixture.test("Lazy.logError") { (logger, handler) =>
+    given Logger = logger
+    for {
+      _ <- Lazy.fail(new Exception("error")).logError.ignore
+    } yield {
+      assertEquals(handler.records.head.getMessage, "error")
+    }
+  }
+
+  loggerFixture.test("Lazy.tapError") { (logger, handler) =>
+    given Logger = logger
+    var counter  = 0
+    for {
+      _ <- Lazy.fn(42).tapError(e => counter += 1).ignore
+      _ <- Lazy.fail(new Exception("error")).tapError(e => counter += 1).ignore
+    } yield {
+      assertEquals(counter, 1)
+    }
+  }
+
+  test("Lazy.mapError") {
+    val result = Lazy
+      .fail(new Exception("error"))
+      .mapError(e => new Exception("mapped error"))
+      .runSync()
+
+    assert(result.isFailure)
+    assertEquals(result.failed.get.getMessage, "mapped error")
+
+  }
+
 }

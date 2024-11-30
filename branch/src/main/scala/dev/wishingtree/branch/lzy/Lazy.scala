@@ -1,6 +1,7 @@
 package dev.wishingtree.branch.lzy
 
 import java.time.{Clock, Instant}
+import java.util.logging.{Level, Logger}
 import scala.annotation.targetName
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
@@ -64,6 +65,15 @@ sealed trait Lazy[+A] {
 
   final def pause(duration: Duration): Lazy[A] =
     this.flatMap(a => Lazy.sleep(duration).as(a))
+
+  final def mapError(f: Throwable => Throwable): Lazy[A] =
+    this.recover(e => Lazy.fail(f(e)))
+
+  final def tapError(f: Throwable => Unit): Lazy[A] =
+    this.recover(e => Lazy.fn(f(e)).flatMap(_ => Lazy.fail(e)))
+
+  final def logError(using logger: Logger): Lazy[A] =
+    this.tapError(e => logger.log(Level.SEVERE, e.getMessage, e))
 }
 
 object Lazy {
@@ -105,4 +115,70 @@ object Lazy {
 
   def unit: Lazy[Unit] =
     Lazy.fn(())
+
+  def log(msg: String, level: Level)(using logger: Logger): Lazy[Unit] =
+    Lazy.fn(logger.log(level, msg))
+
+  def log[A](a: A, level: Level)(using
+      logger: Logger,
+      conversion: Conversion[A, String]
+  ): Lazy[Unit] =
+    Lazy.fn(logger.log(level, conversion(a)))
+
+  def log(msg: String, level: Level, e: Throwable)(using
+      logger: Logger
+  ): Lazy[Unit] =
+    Lazy.fn(logger.log(level, msg, e))
+
+  def log[A](a: A, level: Level, e: Throwable)(using
+      logger: Logger,
+      conversion: Conversion[A, String]
+  ): Lazy[Unit] =
+    Lazy.fn(logger.log(level, conversion(a), e))
+
+  def logSevere(msg: String, e: Throwable)(using logger: Logger): Lazy[Unit] =
+    log(msg, Level.SEVERE, e)
+
+  def logSevere[A](a: A, e: Throwable)(using
+      logger: Logger,
+      conversion: Conversion[A, String]
+  ): Lazy[Unit] =
+    log(a, Level.SEVERE, e)
+
+  def logWarning(msg: String)(using logger: Logger): Lazy[Unit] =
+    log(msg, Level.WARNING)
+
+  def logWarning[A](a: A)(using
+      logger: Logger,
+      conversion: Conversion[A, String]
+  ): Lazy[Unit] =
+    log(a, Level.WARNING)
+
+  def logInfo(msg: String)(using logger: Logger): Lazy[Unit] =
+    log(msg, Level.INFO)
+
+  def logInfo[A](a: A)(using
+      logger: Logger,
+      conversion: Conversion[A, String]
+  ): Lazy[Unit] =
+    log(a, Level.INFO)
+
+  def logConfig(msg: String)(using logger: Logger): Lazy[Unit] =
+    log(msg, Level.CONFIG)
+
+  def logConfig[A](a: A)(using
+      logger: Logger,
+      conversion: Conversion[A, String]
+  ): Lazy[Unit] =
+    log(a, Level.CONFIG)
+
+  def logFine(msg: String)(using logger: Logger): Lazy[Unit] =
+    log(msg, Level.FINE)
+
+  def logFine[A](a: A)(using
+      logger: Logger,
+      conversion: Conversion[A, String]
+  ): Lazy[Unit] =
+    log(a, Level.FINE)
+
 }
