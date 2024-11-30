@@ -37,13 +37,13 @@ sealed trait Lazy[+A] {
   final def *>[B](that: => Lazy[B]): Lazy[B] =
     this.flatMap(_ => that)
 
-  def as[B](b: => B): Lazy[B] =
+  final def as[B](b: => B): Lazy[B] =
     this.map(_ => b)
 
-  def ignore: Lazy[Unit] =
+  final def ignore: Lazy[Unit] =
     this.unit.recover(_ => Lazy.unit)
 
-  def tap(f: A => Unit): Lazy[A] = {
+  final def tap(f: A => Unit): Lazy[A] = {
     this.flatMap(a => Lazy.fn(a).ignore.as(a))
   }
 
@@ -52,7 +52,11 @@ sealed trait Lazy[+A] {
       if prefix.isEmpty then println(s"$a")
       else println(s"$prefix: $a")
     }
-    
+
+  final def retryN(n: Int): Lazy[A] = {
+    if n > 0 then this.recover(_ => this.retryN(n - 1))
+    else this
+  }
 }
 
 object Lazy {

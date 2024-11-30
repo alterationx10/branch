@@ -78,4 +78,28 @@ class LazySpec extends FunSuite {
     }
   }
 
+  test("Lazy.retryN") {
+    var i = 0
+    for {
+      l <- Lazy
+             .fn {
+               i += 1
+               if i <= 2 then throw new Exception("error")
+               else i
+             }
+             .retryN(5)
+             .recover(_ => Lazy.fn(100))
+      f <- Lazy
+             .fn {
+               i += 1
+               if i <= 10 then throw new Exception("error")
+               else i
+             }
+             .retryN(5)
+             .recover(_ => Lazy.fn(100))
+    } yield {
+      assertEquals(l, 3)
+      assertEquals(f, 100)
+    }
+  }
 }
