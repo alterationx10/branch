@@ -8,7 +8,7 @@ import java.util.concurrent.{CompletableFuture, ExecutorService}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.*
 
-trait SqlRuntime {
+private[piggy] trait SqlRuntime {
 
   def execute[A](sql: Sql[A])(using connection: Connection): Try[A]
 
@@ -25,12 +25,22 @@ trait SqlRuntime {
 
 object SqlRuntime extends SqlRuntime {
 
+  /** The ExecutorService to use for running Sqls. Uses
+    * [[BranchExecutors.executorService]]
+    */
   val executorService: ExecutorService =
     BranchExecutors.executorService
 
+  /** The ExecutionContext to use for running Sqls as Futures. uses
+    * [[BranchExecutors.executionContext]]
+    */
   val executionContext: ExecutionContext =
     BranchExecutors.executionContext
 
+  /** Execute a Sql[A] using a Connection, returning the result as a Try. The
+    * entire chain of Sql operations is done over the given Connection, and the
+    * transaction is rolled back on failure.
+    */
   override def execute[A](sql: Sql[A])(using
       connection: Connection
   ): Try[A] =
@@ -50,6 +60,10 @@ object SqlRuntime extends SqlRuntime {
 
     }.flatten
 
+  /** Execute a Sql[A] using a ResourcePool[Connection], returning the result as
+    * a Try. The entire chain of Sql operations is done over a single Connection
+    * from the pool, and the transaction is rolled back on failure.
+    */
   override def executePool[A, B <: ResourcePool[Connection]](sql: Sql[A])(using
       pool: B
   ): Try[A] =
@@ -59,10 +73,18 @@ object SqlRuntime extends SqlRuntime {
       }
     }.flatten
 
+  /** Execute a Sql[A] using a Connection, returning the result as a Future. The
+    * entire chain of Sql operations is done over the given Connection, and the
+    * transaction is rolled back on failure.
+    */
   override def executeAsync[A](sql: Sql[A])(using
       connection: Connection
   ): Future[A] = Future(Future.fromTry(execute(sql)))(executionContext).flatten
 
+  /** Execute a Sql[A] using a ResourcePool[Connection], returning the result as
+    * a Future. The entire chain of Sql operations is done over a single
+    * Connection from the pool, and the transaction is rolled back on failure.
+    */
   override def executePoolAsync[A, B <: ResourcePool[Connection]](sql: Sql[A])(
       using pool: B
   ): Future[A] =

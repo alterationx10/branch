@@ -7,10 +7,9 @@ import java.io.File
 
 object FileContextHandler {
 
-  /**
-   * A list of default files to look for when a directory is requested.
-   * E.g. /some/path -> /some/path/index.html
-   */
+  /** A list of default files to look for when a directory is requested. E.g.
+    * /some/path -> /some/path/index.html
+    */
   private[spider] val defaultFiles: List[String] = List(
     "index.html",
     "index.htm"

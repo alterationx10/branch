@@ -92,12 +92,11 @@ object ContextHandler {
     override def description(): String = "Print timing for handling requests."
   }
 
-  /**
-   * Register a handler with the HttpServer
-   * @param handler
-   * @param httpServer
-   * @tparam H
-   */
+  /** Register a handler with the HttpServer
+    * @param handler
+    * @param httpServer
+    * @tparam H
+    */
   inline def registerHandler[H <: ContextHandler](
       handler: H
   )(using httpServer: HttpServer): Unit = {
