@@ -44,6 +44,9 @@ object LazyRuntime extends LazyRuntime {
               case Failure(e) => eval(f(e)).get
               case success    => success
             }
+          case Lazy.Sleep(duration)                     =>
+            Thread.sleep(duration.toMillis)
+            Success(())
         }
       },
       executorService

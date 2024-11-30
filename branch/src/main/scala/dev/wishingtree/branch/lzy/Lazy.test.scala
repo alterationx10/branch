@@ -2,6 +2,8 @@ import dev.wishingtree.branch.lzy.{Lazy, LazyRuntime}
 import munit.FunSuite
 
 import java.time.*
+import scala.concurrent.duration.DurationInt
+import scala.language.postfixOps
 
 class LazySpec extends FunSuite {
 
@@ -100,6 +102,38 @@ class LazySpec extends FunSuite {
     } yield {
       assertEquals(l, 3)
       assertEquals(f, 100)
+    }
+  }
+
+  test("Lazy.sleep") {
+    for {
+      start <- Lazy.now()
+      _     <- Lazy.sleep(1.second)
+      end   <- Lazy.now()
+    } yield {
+      assert(java.time.Duration.between(start, end).getSeconds >= 1)
+    }
+  }
+
+  test("Lazy.delay") {
+    for {
+      a <- Lazy.now()
+      b <- Lazy.now().delay(1.second)
+      c <- Lazy.now()
+    } yield {
+      assert(java.time.Duration.between(a, b).getSeconds >= 1)
+      assert(java.time.Duration.between(b, c).getSeconds < 1)
+    }
+  }
+
+  test("Lazy.pause") {
+    for {
+      a <- Lazy.now()
+      b <- Lazy.now().pause(1.second)
+      c <- Lazy.now()
+    } yield {
+      assert(java.time.Duration.between(a, b).getSeconds < 1)
+      assert(java.time.Duration.between(b, c).getSeconds >= 1)
     }
   }
 }

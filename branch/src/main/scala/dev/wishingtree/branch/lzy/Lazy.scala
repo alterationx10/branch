@@ -3,6 +3,7 @@ package dev.wishingtree.branch.lzy
 import java.time.{Clock, Instant}
 import scala.annotation.targetName
 import scala.concurrent.Future
+import scala.concurrent.duration.Duration
 import scala.util.Try
 
 sealed trait Lazy[+A] {
@@ -57,6 +58,12 @@ sealed trait Lazy[+A] {
     if n > 0 then this.recover(_ => this.retryN(n - 1))
     else this
   }
+
+  final def delay(duration: Duration): Lazy[A] =
+    Lazy.sleep(duration).flatMap(_ => this)
+
+  final def pause(duration: Duration): Lazy[A] =
+    this.flatMap(a => Lazy.sleep(duration).as(a))
 }
 
 object Lazy {
@@ -76,8 +83,11 @@ object Lazy {
       f: Throwable => Lazy[A]
   ) extends Lazy[A]
 
+  private[lzy] final case class Sleep(duration: Duration) extends Lazy[Unit]
+
   def fn[A](a: => A): Lazy[A]                = Fn(() => a)
   def fail[A](throwable: Throwable): Lazy[A] = Fail(throwable)
+  def sleep(duration: Duration): Lazy[Unit]  = Sleep(duration)
 
   def forEach[A, B](xs: Iterable[A])(f: A => Lazy[B]): Lazy[Iterable[B]] =
     xs.foldLeft(Lazy.fn(Vector.empty[B]))((acc, curr) => {
