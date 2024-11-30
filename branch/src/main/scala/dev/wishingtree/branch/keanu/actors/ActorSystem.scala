@@ -4,32 +4,35 @@ import dev.wishingtree.branch.keanu
 import dev.wishingtree.branch.macaroni.runtimes.BranchExecutors
 
 import java.util.concurrent.*
-import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
+import java.util.concurrent.atomic.AtomicBoolean
 import scala.collection.*
 import scala.reflect.ClassTag
 import scala.util.*
 
 trait ActorSystem {
 
-  private val isShuttingDown: AtomicBoolean =
+  private final val isShuttingDown: AtomicBoolean =
     new AtomicBoolean(false)
 
-  private type Mailbox  = BlockingQueue[Any]
-  private type ActorRef = CompletableFuture[LifecycleEvent]
+  final def isShutdown: Boolean =
+    isShuttingDown.get()
+
+  private final type Mailbox  = BlockingQueue[Any]
+  private final type ActorRef = CompletableFuture[LifecycleEvent]
 
   /** A collection of props which now how to create actors
     */
-  private val props: concurrent.Map[String, ActorProps[?]] =
+  private final val props: concurrent.Map[String, ActorProps[?]] =
     concurrent.TrieMap.empty
 
   /** A collection of mailboxes used to deliver messages to actors
     */
-  private val mailboxes: concurrent.Map[ActorRefId, Mailbox] =
+  private final val mailboxes: concurrent.Map[ActorRefId, Mailbox] =
     concurrent.TrieMap.empty
 
   /** A collection of currently running actors
     */
-  private val actors: concurrent.Map[ActorRefId, ActorRef] =
+  private final val actors: concurrent.Map[ActorRefId, ActorRef] =
     concurrent.TrieMap.empty
 
   /** The executor service used to run actors
@@ -40,7 +43,7 @@ trait ActorSystem {
   /** Ensure there is a mailbox and running actor for the given refId
     * @param refId
     */
-  private def restartActor(refId: ActorRefId): Unit = {
+  private final def restartActor(refId: ActorRefId): Unit = {
     val mailbox = getOrCreateMailbox(refId)
     actors -= refId
     actors += (refId -> submitActor(refId, mailbox))
@@ -50,7 +53,7 @@ trait ActorSystem {
     * @param refId
     * @return
     */
-  private def unregisterMailboxAndActor(refId: ActorRefId) = {
+  private final def unregisterMailboxAndActor(refId: ActorRefId) = {
     mailboxes -= refId
     actors -= refId
   }
@@ -58,14 +61,14 @@ trait ActorSystem {
   /** Register a prop with the system, so it can be used to create actors
     * @param prop
     */
-  def registerProp(prop: ActorProps[?]): Unit =
+  final def registerProp(prop: ActorProps[?]): Unit =
     props += (prop.identifier -> prop)
 
   /** Get or create a mailbox for the given refId
     * @param refId
     * @return
     */
-  private def getOrCreateMailbox(
+  private final def getOrCreateMailbox(
       refId: ActorRefId
   ): Mailbox =
     mailboxes.getOrElseUpdate(refId, new LinkedBlockingQueue[Any]())
@@ -75,7 +78,7 @@ trait ActorSystem {
     * @param mailbox
     * @return
     */
-  private def submitActor(
+  private final def submitActor(
       refId: ActorRefId,
       mailbox: Mailbox
   ): ActorRef = {
@@ -121,7 +124,7 @@ trait ActorSystem {
     * @tparam A
     * @return
     */
-  private def actorForName[A <: Actor: ClassTag](
+  private final def actorForName[A <: Actor: ClassTag](
       name: String
   ): Mailbox = {
     val refId =
@@ -139,7 +142,7 @@ trait ActorSystem {
     * for them to terminate.
     * @return
     */
-  private def cleanUp: Boolean = {
+  private final def cleanUp: Boolean = {
     // PoisonPill should cause the actor to clean itself up
     mailboxes.values.foreach { mailbox =>
       mailbox.put(PoisonPill)
@@ -155,7 +158,7 @@ trait ActorSystem {
   /** Shutdown the actor system and wait for all actors to terminate. All calls
     * to tell will throw an exception after this is called.
     */
-  def shutdownAwait(): Unit = {
+  final def shutdownAwait(): Unit = {
     isShuttingDown.set(true)
     cleanUp
   }
@@ -166,9 +169,9 @@ trait ActorSystem {
     * @param msg
     * @tparam A
     */
-  def tell[A <: Actor: ClassTag](name: String, msg: Any): Unit = {
+  final def tell[A <: Actor: ClassTag](name: String, msg: Any): Unit = {
     if !isShuttingDown.get() then actorForName[A](name).put(msg)
-    else throw ShutdownException
+    else throw new IllegalStateException("ActorSystem is shutting down")
   }
 
 }
