@@ -2,6 +2,8 @@ package dev.wishingtree.branch.lzy.abstractions
 
 import scala.annotation.targetName
 
+/** A type-class for combining two values of the same type.
+  */
 trait Semigroup[T] {
 
   def combine(a: T, b: T): T
