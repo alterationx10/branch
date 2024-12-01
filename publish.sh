@@ -39,6 +39,7 @@ cd $WORKDIR/bundle/dev/wishingtree/branch_3/${BRANCH_VERSION}
 rename "s/branch_3/branch_3-${BRANCH_VERSION}/" *
 
 cd $WORKDIR/bundle
+rm -rf .ivy2
 zip -r branch-${BRANCH_VERSION}.zip .
 
 # Publish the bundle
