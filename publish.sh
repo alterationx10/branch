@@ -31,4 +31,4 @@ curl \
   --request POST \
   --header "Authorization: Bearer ${CENTRAL_TOKEN}" \
   --form bundle=@branch-${BRANCH_VERSION}.zip \
-  https://central.sonatype.com/api/v1/publisher/upload?publishingType=USER_MANAGED
+  "https://central.sonatype.com/api/v1/publisher/upload?publishingType=USER_MANAGED"
