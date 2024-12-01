@@ -1,5 +1,5 @@
 //> using scala "3.5.2"
-//> using jvm 23
+//> using jvm 21
 
 //> using  options -no-indent -rewrite -source:3.4-migration
 
@@ -15,8 +15,7 @@
 
 //> using test.dep org.scalameta::munit:1.0.2
 //> using test.dep org.testcontainers:testcontainers:1.20.4
-//> using test.dep com.h2database:h2:2.3.232
 //> using test.dep org.postgresql:postgresql:42.7.4
 //> using test.resourceDir ../test_resources
 
-//> using publish.version 0.0.1-SNAPSHOT
+//> using publish.computeVersion git:tag

@@ -6,3 +6,5 @@ site/book
 .scala-build
 
 .DS_Store
+bundle
+.central
