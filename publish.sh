@@ -12,7 +12,7 @@ scalc-cli clean branch
 mkdir ./bundle
 
 # Publish the project locally
-scala-cli publish local branch --gpg-key ${PGP_KEY_ID} --secret-key ${PGP_SECRET} --signer bc
+scala-cli publish local branch --project-version ${BRANCH_VERSION} --gpg-key ${PGP_KEY_ID} --secret-key ${PGP_SECRET} --signer bc
 
 # Create the bundle
 for DIR in srcs docs poms jars; do

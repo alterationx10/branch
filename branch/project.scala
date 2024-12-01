@@ -18,4 +18,4 @@
 //> using test.dep org.postgresql:postgresql:42.7.4
 //> using test.resourceDir ../test_resources
 
-//> using publish.computeVersion git:tag
+//> using publish.version 0.0.1-SNAPSHOT
