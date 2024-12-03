@@ -6,6 +6,7 @@ import java.time.*
 import java.util.logging.Logger
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
+import scala.util.Try
 
 class LazySpec extends LoggerFixtureSuite {
 
@@ -60,10 +61,48 @@ class LazySpec extends LoggerFixtureSuite {
     } yield assertEquals(l, "abc")
   }
 
-  test("Lazy.forEach") {
+  test("Lazy.iterate") {
     for {
-      l <- Lazy.forEach(1 to 10000)(_ => Lazy.fn(1))
-    } yield assertEquals(l.sum, 10000)
+      l     <- Lazy.iterate((1 to 10000).iterator)(List.newBuilder[Int])(_ =>
+                 Lazy.fn(1)
+               )
+      empty <-
+        Lazy.iterate(Iterator.empty)(List.newBuilder[Int])(_ => Lazy.fn(1))
+    } yield {
+      assertEquals(l.size, 10000)
+      assertEquals(l.sum, 10000)
+      assertEquals(empty.size, 0)
+    }
+  }
+
+  test("Lazy.forEach - Set") {
+    for {
+      l <- Lazy.forEach(Set(1, 2, 3, 4, 5, 5, 4, 3, 2, 1))(Lazy.fn)
+    } yield assertEquals(l.sum, 15)
+  }
+
+  test("Lazy.forEach - List") {
+    for {
+      l <- Lazy.forEach(List(1, 2, 3, 4, 5))(Lazy.fn)
+    } yield assertEquals(l.sum, 15)
+  }
+
+  test("Lazy.forEach - Seq") {
+    for {
+      l <- Lazy.forEach(Seq(1, 2, 3, 4, 5))(Lazy.fn)
+    } yield assertEquals(l.sum, 15)
+  }
+
+  test("Lazy.forEach - IndexedSeq") {
+    for {
+      l <- Lazy.forEach(IndexedSeq(1, 2, 3, 4, 5))(Lazy.fn)
+    } yield assertEquals(l.sum, 15)
+  }
+
+  test("Lazy.forEach - Vector") {
+    for {
+      l <- Lazy.forEach(Vector(1, 2, 3, 4, 5))(Lazy.fn)
+    } yield assertEquals(l.sum, 15)
   }
 
   test("Lazy.now") {
@@ -186,6 +225,38 @@ class LazySpec extends LoggerFixtureSuite {
     assert(result.isFailure)
     assertEquals(result.failed.get.getMessage, "mapped error")
 
+  }
+
+  test("Lazy.fromTry - captured") {
+    // If the Try is not previously evaluated, it will be evaluated on each run
+    @volatile
+    var counter = 0
+    val lzyTry  = Lazy.fromTry(Try(counter += 1))
+    assert(counter == 0)
+    lzyTry.runSync()
+    assert(counter == 1)
+    lzyTry.runSync()
+    assert(counter == 2)
+  }
+
+  test("Lazy.fromTry - by value") {
+    // If the Try is already evaluated, it won't be re-evaluated
+    @volatile
+    var counter    = 0
+    val alreadyTry = Try(counter += 1)
+    assert(counter == 1)
+    val lzyTry     = Lazy.fromTry(alreadyTry)
+    assert(counter == 1)
+    lzyTry.runSync()
+    assert(counter == 1)
+  }
+
+  test("Lazy.using") {
+    Lazy
+      .using(scala.io.Source.fromResource("app-config.json")) { r =>
+        r.getLines().mkString
+      }
+      .map(str => assert(str.nonEmpty))
   }
 
 }

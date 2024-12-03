@@ -1,11 +1,15 @@
 package dev.wishingtree.branch.lzy
 
 import java.time.{Clock, Instant}
+import java.util
 import java.util.logging.{Level, Logger}
 import scala.annotation.targetName
+import scala.collection.mutable
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
+import scala.reflect.ClassTag
 import scala.util.Try
+import scala.util.Using.Releasable
 
 sealed trait Lazy[+A] {
 
@@ -148,14 +152,55 @@ object Lazy {
     */
   def sleep(duration: Duration): Lazy[Unit] = Sleep(duration)
 
-  /** FoldLeft over the provided iterable, collecting the Lazy results */
-  def forEach[A, B](xs: Iterable[A])(f: A => Lazy[B]): Lazy[Iterable[B]] =
-    xs.foldLeft(Lazy.fn(Vector.empty[B]))((acc, curr) => {
-      for {
-        soFar <- acc
-        x     <- f(curr)
-      } yield soFar :+ x
-    })
+  /** FoldLeft over the provided iterator, adding the Lazy fn result to the
+    * provided builder, and returning the builder result.
+    *
+    * This is a "lower level" method used for concrete implementations of
+    * forEach, but could be useful in other contexts.
+    */
+  def iterate[A, B, F[_]](
+      xs: Iterator[A]
+  )(xb: mutable.Builder[B, F[B]])(fn: A => Lazy[B]): Lazy[F[B]] = {
+    xs.foldLeft(Lazy.fn(xb))((acc, curr) => {
+      acc.flatMap(b => fn(curr).map(b.addOne))
+    }).as(xb.result())
+  }
+
+  /** Iterate through the given Set, collecting the results of the Lazy f into a
+    * new Set
+    */
+  def forEach[A, B](set: Set[A])(f: A => Lazy[B]): Lazy[Set[B]] =
+    iterate(set.iterator)(Set.newBuilder[B])(f)
+
+  /** Iterate through the given List, collecting the results of the Lazy f into
+    * a new List
+    */
+  def forEach[A, B](list: List[A])(f: A => Lazy[B]): Lazy[List[B]] =
+    iterate(list.iterator)(List.newBuilder[B])(f)
+
+  /** Iterate through the given Seq, collecting the results of the Lazy f into a
+    * new Seq
+    */
+  def forEach[A, B](seq: Seq[A])(f: A => Lazy[B]): Lazy[Seq[B]] =
+    iterate(seq.iterator)(Seq.newBuilder[B])(f)
+
+  /** Iterate through the given IndexedSeq, collecting the results of the Lazy f
+    * into a new IndexedSeq
+    */
+  def forEach[A, B](seq: IndexedSeq[A])(f: A => Lazy[B]): Lazy[IndexedSeq[B]] =
+    iterate(seq.iterator)(IndexedSeq.newBuilder[B])(f)
+
+  /** Iterate through the given Vector, collecting the results of the Lazy f
+    * into a new Vector
+    */
+  def forEach[A, B](vec: Vector[A])(f: A => Lazy[B]): Lazy[Vector[B]] =
+    iterate(vec.iterator)(Vector.newBuilder[B])(f)
+
+  /** Iterate through the given Array, collecting the results of the Lazy f into
+    * a new Array
+    */
+  def forEach[A, B: ClassTag](arr: Array[A])(f: A => Lazy[B]): Lazy[Array[B]] =
+    iterate(arr.iterator)(Array.newBuilder[B])(f).map(_.toArray)
 
   /** A Lazy value that prints the provided string.
     */
@@ -267,4 +312,13 @@ object Lazy {
   ): Lazy[Unit] =
     log(a, Level.FINE)
 
+  def fromTry[A](t: => Try[A]): Lazy[A] =
+    Lazy.fn(t.fold(Lazy.fail, Lazy.fn)).flatten
+
+  def using[R: Releasable, A](resource: => R)(f: R => A): Lazy[A] =
+    Lazy.fromTry {
+      scala.util.Using(resource) { r =>
+        f(r)
+      }
+    }
 }
