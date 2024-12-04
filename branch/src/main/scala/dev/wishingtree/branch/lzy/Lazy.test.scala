@@ -259,4 +259,87 @@ class LazySpec extends LoggerFixtureSuite {
       .map(str => assert(str.nonEmpty))
   }
 
+  test("Lazy.when") {
+    for {
+      a <- Lazy.when(true)(Lazy.fn(42))
+      b <- Lazy.when(false)(Lazy.fn(42))
+      c <- Lazy.fn(42).when(true)
+      d <- Lazy.fn(42).when(false)
+    } yield {
+      assert(a.contains(42))
+      assert(b.isEmpty)
+      assert(c.contains(42))
+      assert(d.isEmpty)
+    }
+  }
+
+  test("Lazy.whenCase") {
+    for {
+      a <- Lazy.whenCase("yes") {
+             case "no"  => Lazy.fn(21)
+             case "yes" => Lazy.fn(42)
+           }
+      b <- Lazy.whenCase("no") { case "yes" =>
+             Lazy.fn(42)
+           }
+
+    } yield {
+      assert(a.contains(42))
+      assert(b.isEmpty)
+    }
+  }
+
+  test("Lazy.fromOption") {
+    for {
+      a <- Lazy.fromOption(Some(42))
+      b <- Lazy.fromOption(Option.empty[Int]).orElseDefault(21)
+    } yield {
+      assertEquals(a, 42)
+      assertEquals(b, 21)
+    }
+  }
+
+  test("Lazy.optional") {
+    for {
+      a <- Lazy.fn(42).optional
+      b <- Lazy.fail[Int](new Exception("error")).optional
+    } yield {
+      assert(a.contains(42))
+      assert(b.isEmpty)
+    }
+  }
+
+  test("Lazy.someOrElse") {
+    for {
+      a <- Lazy
+             .fn(Some(42))
+             .someOrElse(21)
+      b <- Lazy
+             .fn(Option.empty[Int])
+             .someOrElse(21)
+    } yield {
+      assertEquals(a, 42)
+      assertEquals(b, 21)
+    }
+  }
+
+  test("Lazy.someOrFail") {
+    assert(
+      Lazy
+        .fn(Some(42))
+        .someOrFail(new Exception("error"))
+        .runSync()
+        .isSuccess
+    )
+
+    assert(
+      Lazy
+        .fn(Option.empty[Int])
+        .someOrFail(new Exception("error"))
+        .runSync()
+        .isFailure
+    )
+
+  }
+
 }

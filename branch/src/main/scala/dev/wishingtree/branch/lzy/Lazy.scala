@@ -24,7 +24,7 @@ sealed trait Lazy[+A] {
     flatMap(a => Lazy.fn(f(a)))
 
   /** Flatten a nested Lazy */
-  final def flatten[B](using ev: A <:< Lazy[B]) =
+  final def flatten[B](using ev: A <:< Lazy[B]): Lazy[B] =
     this.flatMap(a => ev(a))
 
   /** If the Lazy fails, attempt to recover with the provided function.
@@ -115,6 +115,30 @@ sealed trait Lazy[+A] {
     */
   final def logError(using logger: Logger): Lazy[A] =
     this.tapError(e => logger.log(Level.SEVERE, e.getMessage, e))
+
+  /** Wraps this Lazy in [[Lazy.when]]
+    */
+  final def when(cond: => Boolean): Lazy[Option[A]] =
+    Lazy.when(cond)(this)
+
+  /** Wraps the success of this Lazy into a Some, or None on failure.
+    */
+  final def optional: Lazy[Option[A]] =
+    this.map(Some(_)).orElseDefault(None)
+
+  /** Converts a Lazy[Option[A]] into a Lazy[A], using the default value if the
+    * Option is empty
+    */
+  final def someOrElse[B](default: B)(using ev: A <:< Option[B]): Lazy[B] =
+    this.map(o => ev(o).getOrElse(default))
+
+  /** Converts a Lazy[Option[A]] into a Lazy[A], failing with the provided
+    * throwable if the Option is empty
+    */
+  final def someOrFail[B](throwable: => Throwable)(using
+      ev: A <:< Option[B]
+  ): Lazy[B] =
+    this.flatMap(o => Lazy.fromOption(ev(o)).mapError(_ => throwable))
 }
 
 object Lazy {
@@ -321,4 +345,36 @@ object Lazy {
         f(r)
       }
     }
+
+  /** Evaluates the lzy function when the condition is true, mapping the result
+    * to Some, or None if the condition is false
+    */
+  def when[A](cond: => Boolean)(lzy: => Lazy[A]): Lazy[Option[A]] = {
+    Lazy.fn {
+      if cond then lzy.map(Some(_))
+      else Lazy.unit.as(None)
+    }
+  }.flatten
+
+  /** Evaluates the partial function using [[when]] if defined at the provided
+    * value a.
+    */
+  def whenCase[A, B](
+      a: A
+  )(pf: PartialFunction[A, Lazy[B]]): Lazy[Option[B]] = {
+    when(pf.isDefinedAt(a))(pf(a))
+  }
+
+  /** Lift an Option into a Lazy, failing with NoSuchElementException if the
+    * Option is empty.
+    */
+  def fromOption[A](opt: => Option[A]): Lazy[A] =
+    Lazy.fn {
+      opt match {
+        case Some(a) => Lazy.fn(a)
+        case None    =>
+          Lazy.fail(new NoSuchElementException("None.get in Lazy.fromOption"))
+      }
+    }.flatten
+
 }
