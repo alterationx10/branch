@@ -11,7 +11,7 @@ class ConfigSpec extends FileFixtureSuite {
 
   test("Config.fromResource") {
     for {
-      config <- summon[Config[AppConfig]].fromResource("app-config.json")
+      config <- Config.of[AppConfig].fromResource("app-config.json")
     } yield assertEquals(config, AppConfig("localhost", 9000))
   }
 
@@ -19,14 +19,15 @@ class ConfigSpec extends FileFixtureSuite {
   filesWithContent(json).test("Config.fromFile") { file =>
     for {
       config <-
-        summon[Config[AppConfig]]
+        Config
+          .of[AppConfig]
           .fromFile(file)
     } yield assertEquals(config, AppConfig("localhost", 9000))
   }
 
   test("Config.fromResource with AppConfig2 auto-derive") {
     for {
-      config <- summon[Config[AppConfig2]].fromResource("app-config.json")
+      config <- Config.of[AppConfig2].fromResource("app-config.json")
     } yield assertEquals(config, AppConfig2("localhost", 9000))
   }
 

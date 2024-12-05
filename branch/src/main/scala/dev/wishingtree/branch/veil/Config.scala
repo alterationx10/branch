@@ -4,6 +4,7 @@ import dev.wishingtree.branch.friday.JsonDecoder
 
 import scala.util.*
 import java.nio.file.{Files, Path}
+import scala.compiletime.summonInline
 import scala.io.Source
 
 /** A type-class for reading configuration from a file or resource.
@@ -31,6 +32,9 @@ trait Config[T] {
 }
 
 object Config {
+
+  inline def of[A]: Config[A] =
+    summonInline[Config[A]]
 
   inline given derived[T](using JsonDecoder[T]): Config[T] =
     new Config[T] {
