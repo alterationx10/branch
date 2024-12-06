@@ -13,6 +13,34 @@ case class Response[A](
 
 object Response {
 
+  extension (sc: StringContext) {
+
+    /** A string interpolator for creating a text/html response.
+      *
+      * {{{
+      *   html"""
+      *   <h1>Hello, $name!</h1>
+      *   """
+      * }}}
+      */
+    def html(args: Any*): Response[String] = {
+      Response(sc.s(args*).trim, Map(ContentType.html.toHeader))
+    }
+
+    /** A string interpolator for creating an application/json response.
+      *
+      * {{{
+      *   json"""
+      *   {
+      *    "message": "Hello, $name!"
+      *   }
+      *   """
+      * }}}
+      */
+    def json(args: Any*): Response[String] =
+      Response(sc.s(args*).strip(), Map(ContentType.json.toHeader))
+  }
+
   extension [A](r: Response[A]) {
 
     /** Adds a header to the response.
