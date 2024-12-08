@@ -1,7 +1,7 @@
 package dev.wishingtree.branch.keanu.actors
 
 import scala.deriving.Mirror
-import scala.reflect.{ClassTag, classTag}
+import scala.reflect.{classTag, ClassTag}
 
 /** A type-class for creating actors.
   */

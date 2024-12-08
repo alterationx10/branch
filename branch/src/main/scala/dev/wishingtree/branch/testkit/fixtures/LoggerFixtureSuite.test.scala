@@ -1,7 +1,7 @@
 //> using target.scope test
 package dev.wishingtree.branch.testkit.fixtures
 
-import java.util.logging.{Handler, LogRecord, Logger}
+import java.util.logging.{Handler, Logger, LogRecord}
 
 trait LoggerFixtureSuite extends munit.FunSuite {
 

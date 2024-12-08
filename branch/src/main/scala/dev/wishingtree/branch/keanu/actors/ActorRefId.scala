@@ -1,6 +1,6 @@
 package dev.wishingtree.branch.keanu.actors
 
-import scala.reflect.{ClassTag, classTag}
+import scala.reflect.{classTag, ClassTag}
 
 /** An internal identifier for an actor reference.
   */
