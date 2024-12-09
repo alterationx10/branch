@@ -49,6 +49,30 @@ class LazySpec extends LoggerFixtureSuite {
     } yield assertEquals(l, "abc")
   }
 
+  test("Lazy.recoverSome") {
+    val a = for {
+      l <- Lazy.fail(new ArithmeticException("error")).recoverSome {
+             case _: IllegalArgumentException =>
+               Lazy.fn("abc")
+           }
+    } yield ()
+
+    val aResult = a.runSync()
+    assert(aResult.isFailure)
+    assert(aResult.failed.get.isInstanceOf[ArithmeticException])
+
+    val b = for {
+      l <- Lazy.fail(new ArithmeticException("error")).recoverSome {
+             case _: ArithmeticException =>
+               Lazy.fn("abc")
+           }
+    } yield l
+
+    val bResult = b.runSync()
+    assert(bResult.isSuccess)
+    assertEquals(bResult.get, "abc")
+  }
+
   test("Lazy.orElse") {
     for {
       l <- Lazy.fail(new Exception("error")).orElse(Lazy.fn("abc"))

@@ -1,5 +1,6 @@
 package dev.wishingtree.branch.ursula.command
 
+import dev.wishingtree.branch.lzy.Lazy
 import dev.wishingtree.branch.ursula.args.builtin.HelpFlag
 import dev.wishingtree.branch.ursula.args.{Argument, Flag}
 import dev.wishingtree.branch.ursula.doc.{CommandDoc, Documentation}
@@ -119,13 +120,6 @@ trait Command {
     flags.filterNot(presentFlags.toSet).exists(_.required)
   }
 
-  private final def failWhen[E <: Throwable](
-      predicate: => Boolean,
-      error: E
-  ): Unit = {
-    if strict && predicate then throw error
-  }
-
   private final def printArgs(args: Seq[String]): Unit =
     println(s"> ${args.mkString(" ")}")
 
@@ -136,25 +130,32 @@ trait Command {
       printHelp
   }
 
-  final def processedAction(
+  private[ursula] final def lazyAction(
       args: Seq[String]
-  ): Unit = ???
-//    for {
-//      _            <- failWhen(HelpFlag.isPresent(args), HelpFlagException)
-//      _            <- failWhen(unrecognizedFlags(args), UnrecognizedFlagException)
-//        .tapError { printHelpfulError(args) }
-//      presentFlags <- ZIO.filter(flags)(_.isPresentZIO(args))
-//      _            <- failWhen(conflictingFlags(presentFlags), ConflictingFlagsException)
-//        .tapError { printHelpfulError(args) }
-//      _            <- failWhen(missingRequiredFlags(presentFlags), MissingFlagsException)
-//        .tapError { printHelpfulError(args) }
-//
-//      _ <- action(args).unit
-//    } yield ()
-//  }.catchSome {
-//    //
-//    case HelpFlagException =>
-//      printHelp
-//  }
+  ): Lazy[Unit] =
+    for {
+      lzy          <- Lazy
+                        .when(HelpFlag.isPresent(args)) {
+                          Lazy.fn(printHelp)
+                        }
+      _            <- Lazy.when(strict && unrecognizedFlags(args)) {
+                        Lazy
+                          .fail(new IllegalArgumentException("Unrecognized flags"))
+                          .tapError { printHelpfulError(args) }
+                      }
+      presentFlags <- Lazy.fn(flags.filter(_.isPresent(args)))
+      _            <- Lazy
+                        .when(strict && conflictingFlags(presentFlags)) {
+                          Lazy
+                            .fail(new IllegalArgumentException("Conflicting flags"))
+                            .tapError { printHelpfulError(args) }
+                        }
+      _            <- Lazy.when(strict && missingRequiredFlags(presentFlags)) {
+                        Lazy
+                          .fail(new IllegalArgumentException("Missing required flags"))
+                          .tapError { printHelpfulError(args) }
+                      }
+      _            <- Lazy.fn(action(args))
+    } yield ()
 
 }
