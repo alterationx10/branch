@@ -34,6 +34,18 @@ trait JsonEncoder[-A] {
   */
 object JsonEncoder {
 
+  /** A JsonEncoder for Json
+    */
+  given JsonEncoder[Json] with {
+    def encode(a: Json): Json = a
+  }
+
+  /** A JsonEncoder for JsonObject
+    */
+  given JsonEncoder[JsonObject] with {
+    def encode(a: JsonObject): Json = a
+  }
+
   /** A JsonEncoder for Strings
     */
   given JsonEncoder[String] with {

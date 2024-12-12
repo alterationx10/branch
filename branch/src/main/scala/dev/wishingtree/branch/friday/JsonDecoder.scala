@@ -34,6 +34,20 @@ trait JsonDecoder[+A] {
   */
 object JsonDecoder {
 
+  /** A JsonDecoder for Json
+    */
+  given JsonDecoder[Json] with {
+    def decode(json: Json): Try[Json] =
+      Try(json)
+  }
+  
+  /** A JsonDecoder for JsonObject
+    */
+  given JsonDecoder[JsonObject] with {
+    def decode(json: Json): Try[JsonObject] =
+      Try(json.asInstanceOf[JsonObject])
+  }
+
   /** A JsonDecoder for Strings
     */
   given JsonDecoder[String] with {

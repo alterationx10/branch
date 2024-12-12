@@ -122,7 +122,7 @@ trait Flag[R] {
     * Most useful when this Flag is expected once (i.e. [[multiple]] == false)
     * @param args
     *   The arguments passed to the command
-    * @throws InvalidOptionFlagException
+    * @throws IllegalArgumentException
     *   if the flag is present but the value is not in the options (if options
     *   is defined and non-empty)
     * @return
