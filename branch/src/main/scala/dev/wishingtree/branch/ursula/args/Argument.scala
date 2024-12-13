@@ -43,12 +43,33 @@ trait Argument[R] {
     * example, if you wanted to restrict to only "dev", or "test", supply them
     * here.
     */
-  val options: Option[Set[Argument[?]]] = Option.empty
+  val options: Option[Set[R]] = Option.empty
 
   /** An optional default value to apply
     */
   val default: Option[R] = Option.empty
 
   lazy val documentation: Documentation = ArgumentDoc(this)
+
+  /** Parse the value or arg if it is defined, otherwise attempt accessing a
+    * default value.
+    */
+  final def valueOrDefault(arg: Option[String]): R = {
+    arg.map(parse).orElse(default) match {
+      case Some(value) =>
+        if (options.isEmpty || options.exists(_.contains(value))) {
+          value
+        } else {
+          throw new IllegalArgumentException(
+            s"Argument $name is expected to be one of ${options.mkString(", ")}, but was $value"
+          )
+        }
+      case None        =>
+        throw new IllegalArgumentException(
+          s"Argument $name is expected, but was not provided"
+        )
+
+    }
+  }
 
 }
