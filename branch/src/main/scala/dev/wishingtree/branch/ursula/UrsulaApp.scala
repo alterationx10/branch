@@ -18,12 +18,16 @@ trait UrsulaApp {
     */
   val commands: Seq[Command]
 
+  /** A collection of built-in Commands that are always available to the CLI.
+    */
   private lazy val builtInCommands: Seq[Command] = Seq(
     HelpCommand(commands = commands, isDefault = defaultHelp)
   )
 
+  /** Provided and built-in commands combined */
   private lazy val _allCommands = commands ++ builtInCommands
 
+  /** A map of trigger -> Command for quick lookup */
   private lazy val commandMap: Map[String, Command] =
     _allCommands.groupBy(_.trigger).map { case (k, v) =>
       if v.size > 1 then {
@@ -35,9 +39,11 @@ trait UrsulaApp {
       k -> v.head
     }
 
+  /** A list of all triggers for all commands */
   private lazy val triggerList: Seq[String] =
     _allCommands.map(_.trigger)
 
+  /** The default command to run if no trigger is found */
   private lazy val findDefaultCommand: Option[Command] = {
     val default = _allCommands.filter(_.isDefaultCommand)
     if default.size > 1 then {
@@ -67,7 +73,7 @@ trait UrsulaApp {
                  )
                )
 
-      result <- cmd.lazyAction(if dropOne then args.tail else args)
+      result <- cmd.lazyAction(if dropOne then args.drop(1) else args)
     } yield result
 
     lzyApp.runSync() match {

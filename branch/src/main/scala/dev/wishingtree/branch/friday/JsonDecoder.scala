@@ -40,7 +40,7 @@ object JsonDecoder {
     def decode(json: Json): Try[Json] =
       Try(json)
   }
-  
+
   /** A JsonDecoder for JsonObject
     */
   given JsonDecoder[JsonObject] with {

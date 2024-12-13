@@ -4,6 +4,7 @@ import dev.wishingtree.branch.ursula.doc.{Documentation, FlagDoc}
 
 import scala.annotation.tailrec
 import dev.wishingtree.branch.ursula.extensions.Extensions.*
+import dev.wishingtree.branch.veil.Veil
 
 /** Flags are non-positional arguments passed to the command. Flags can be
   * generally used as either an argument flag, which expects an argument parsed
@@ -36,14 +37,14 @@ trait Flag[R] {
     */
   val multiple: Boolean = false
 
-  /** An optional environment variable used to set the value of the this Flag
-    * when [[expectsArgument]] is true. The precedence is [arg] > [[env]] >
+  /** An optional environment variable used to set the value of the Flag when
+    * [[expectsArgument]] is true. The precedence is [arg] > [[env]] >
     * [[default]]
     */
   val env: Option[String] = Option.empty
 
   private final def envArg: Option[R] =
-    env.flatMap(e => sys.env.get(e)).map(parse)
+    env.flatMap(e => Veil.get(e)).map(parse)
 
   /** An optional set of possible values to restrict the argument to. For
     * example, if you wanted to restrict an --env [arg] flag to only "dev", or
@@ -131,7 +132,9 @@ trait Flag[R] {
     */
   final def parseFirstArg(args: Seq[String]): Option[R] = {
     args
-      .find(a => a == _sk || a == _lk)
+      .dropWhile(a => a != _sk && a != _lk)
+      .drop(1)
+      .headOption
       .map(parse) :~ envArg :~ default
   }.oneOfOrThrow(
     options.getOrElse(Set.empty),
@@ -147,7 +150,7 @@ trait Flag[R] {
     *   is defined and non-empty)
     */
   def parseArgs(args: Seq[String]): Seq[R] = {
-    recursiveParse(parse)(args) :~ envArg :~ default
+    recursiveParse(parse)(args) :~ envArg.toSeq :~ default.toSeq
   }.oneOfOrThrow(
     options.getOrElse(Set.empty),
     new IllegalArgumentException(s"Invalid option for flag $name")
