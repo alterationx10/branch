@@ -77,8 +77,11 @@ trait UrsulaApp {
     } yield result
 
     lzyApp.runSync() match {
-      case Success(value)     => ()
-      case Failure(exception) => println(s"${exception.getMessage}")
+      case Success(value)     =>
+        System.exit(0)
+      case Failure(exception) =>
+        println(s"${exception.getMessage}")
+        System.exit(1)
     }
   }
 
