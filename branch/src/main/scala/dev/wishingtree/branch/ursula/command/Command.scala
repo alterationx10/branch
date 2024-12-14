@@ -133,28 +133,33 @@ trait Command {
       args: Seq[String]
   ): Lazy[Unit] =
     for {
-      _            <- Lazy
-                        .when(HelpFlag.isPresent(args)) {
-                          Lazy.fn(printHelp)
-                        }
-      _            <- Lazy.when(strict && unrecognizedFlags(args)) {
-                        Lazy
-                          .fail(new IllegalArgumentException("Unrecognized flags"))
-                          .tapError { printHelpfulError(args) }
-                      }
-      presentFlags <- Lazy.fn(flags.filter(_.isPresent(args)))
-      _            <- Lazy
-                        .when(strict && conflictingFlags(presentFlags)) {
-                          Lazy
-                            .fail(new IllegalArgumentException("Conflicting flags"))
-                            .tapError { printHelpfulError(args) }
-                        }
-      _            <- Lazy.when(strict && missingRequiredFlags(presentFlags)) {
-                        Lazy
-                          .fail(new IllegalArgumentException("Missing required flags"))
-                          .tapError { printHelpfulError(args) }
-                      }
-      _            <- Lazy.fn(action(args))
+      showHelp         <- Lazy.fn(HelpFlag.isPresent(args))
+      presentFlags     <- Lazy.fn(flags.filter(_.isPresent(args)))
+      unrecognizedExit <-
+        Lazy.fn(!showHelp && strict && unrecognizedFlags(args))
+      conflictingExit  <-
+        Lazy.fn(!showHelp && strict && conflictingFlags(presentFlags))
+      missingExit      <-
+        Lazy.fn(!showHelp && strict && missingRequiredFlags(presentFlags))
+      _                <- Lazy.when(showHelp) {
+                            Lazy.fn(printHelp)
+                          }
+      _                <- Lazy.when(unrecognizedExit) {
+                            Lazy
+                              .fail(new IllegalArgumentException("Unrecognized flags"))
+                              .tapError { printHelpfulError(args) }
+                          }
+      _                <- Lazy.when(conflictingExit) {
+                            Lazy
+                              .fail(new IllegalArgumentException("Conflicting flags"))
+                              .tapError { printHelpfulError(args) }
+                          }
+      _                <- Lazy.when(missingExit) {
+                            Lazy
+                              .fail(new IllegalArgumentException("Missing required flags"))
+                              .tapError { printHelpfulError(args) }
+                          }
+      _                <- Lazy.fn(action(args)).when(!showHelp)
     } yield ()
 
 }
