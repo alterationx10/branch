@@ -25,8 +25,7 @@ trait Command {
     */
   val trigger: String
 
-  /** A collection fo [[com.alterationx10.ursula.args.Flag]] that this command
-    * supports.
+  /** A collection fo [[Flag]] that this command supports.
     */
   val flags: Seq[Flag[?]]
 
@@ -134,7 +133,7 @@ trait Command {
       args: Seq[String]
   ): Lazy[Unit] =
     for {
-      lzy          <- Lazy
+      _            <- Lazy
                         .when(HelpFlag.isPresent(args)) {
                           Lazy.fn(printHelp)
                         }

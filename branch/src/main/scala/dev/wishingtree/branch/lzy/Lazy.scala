@@ -134,7 +134,7 @@ sealed trait Lazy[+A] {
   /** Converts a Lazy[Option[A]] into a Lazy[A], using the default value if the
     * Option is empty
     */
-  final def someOrElse[B](default: B)(using ev: A <:< Option[B]): Lazy[B] =
+  final def someOrElse[B](default: => B)(using ev: A <:< Option[B]): Lazy[B] =
     this.map(o => ev(o).getOrElse(default))
 
   /** Converts a Lazy[Option[A]] into a Lazy[A], failing with the provided

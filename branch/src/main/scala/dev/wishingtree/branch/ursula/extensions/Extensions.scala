@@ -5,8 +5,9 @@ import scala.annotation.targetName
 private[ursula] object Extensions {
 
   extension (s: String) {
-    def split: Seq[String] = s.split(" ").toSeq
-    def indented: String   =
+    def splitSeq(delimiter: String = " "): Seq[String] =
+      s.split(delimiter).toSeq
+    def indented: String                               =
       s.split(System.lineSeparator())
         .map(s => "\t" + s)
         .mkString(System.lineSeparator())
