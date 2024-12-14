@@ -1,6 +1,6 @@
 package dev.wishingtree.branch.macaroni.runtimes
 
-import java.util.concurrent.{ExecutorService, Executors}
+import java.util.concurrent.{Executors, ExecutorService}
 import scala.concurrent.ExecutionContext
 
 /** BranchExecutors provides a global executor service and execution context for

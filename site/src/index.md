@@ -17,6 +17,7 @@ things done quickly! Think of it as the framework for your side-project, not you
 - **Veil** - `.env` / (Json based) Config utilities.
 - **Blammo** - It's better than bad, it's (Json) logging!
 - **Keanu** - A simple *typed* EventBus implementation, and a mediocre *untyped* ActorSystem.
+- **Ursula** - A slim CLI framework.
 
 ... and *more to come*!
 

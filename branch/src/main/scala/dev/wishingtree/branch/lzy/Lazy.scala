@@ -32,6 +32,11 @@ sealed trait Lazy[+A] {
   final def recover[B >: A](f: Throwable => Lazy[B]): Lazy[B] =
     Lazy.Recover(this, f)
 
+  final def recoverSome[B >: A](
+      f: PartialFunction[Throwable, Lazy[B]]
+  ): Lazy[B] =
+    this.recover(f.applyOrElse(_, Lazy.fail))
+
   /** If the Lazy fails, return the provided default Lazy value.
     */
   final def orElse[B >: A](default: => Lazy[B]): Lazy[B] =
@@ -129,7 +134,7 @@ sealed trait Lazy[+A] {
   /** Converts a Lazy[Option[A]] into a Lazy[A], using the default value if the
     * Option is empty
     */
-  final def someOrElse[B](default: B)(using ev: A <:< Option[B]): Lazy[B] =
+  final def someOrElse[B](default: => B)(using ev: A <:< Option[B]): Lazy[B] =
     this.map(o => ev(o).getOrElse(default))
 
   /** Converts a Lazy[Option[A]] into a Lazy[A], failing with the provided
