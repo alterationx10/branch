@@ -1,5 +1,6 @@
 package dev.wishingtree.branch.spider.server
 
+import com.sun.net.httpserver.{Authenticator, Filter}
 import dev.wishingtree.branch.spider.*
 import dev.wishingtree.branch.spider.server.OpaqueSegments.Segments
 
@@ -18,8 +19,12 @@ object FileContextHandler {
 
 /** A built-in context handler for serving files from the file system.
   */
-case class FileContextHandler(rootFilePath: Segments, contextPath: String = "/")
-    extends ContextHandler(contextPath) {
+case class FileContextHandler(
+    rootFilePath: Segments,
+    contextPath: String = "/",
+    override val filters: Seq[Filter] = Seq.empty,
+    override val authenticator: Option[Authenticator] = Option.empty
+) extends ContextHandler(contextPath) {
 
   private def fileExists(path: Segments): Boolean = {
     val filePath = (rootFilePath / path).toPathString
