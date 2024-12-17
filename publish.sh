@@ -9,7 +9,6 @@ if [ -z "$BRANCH_VERSION" ]; then
 fi
 
 PGP_KEY_ID=401126ef4e40ebab
-PGP_SECRET=`scala-cli config pgp.secret-key`
 CENTRAL_TOKEN=`cat .central`
 
 rm -rf ./build
@@ -21,9 +20,8 @@ git clone --branch v${BRANCH_VERSION} --single-branch git@github.com:wishingtree
 # Publish the project locally
 scala-cli publish local branch \
   --project-version ${BRANCH_VERSION} \
+  --signer gpg \
   --gpg-key ${PGP_KEY_ID} \
-  --secret-key ${PGP_SECRET} \
-  --signer bc \
   --ivy2-home ${WORKDIR}/.ivy2
 
 
