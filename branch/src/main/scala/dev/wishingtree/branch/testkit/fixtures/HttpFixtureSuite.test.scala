@@ -4,15 +4,15 @@ package dev.wishingtree.branch.testkit.fixtures
 import com.sun.net.httpserver.HttpServer
 import dev.wishingtree.branch.lzy.LazyRuntime
 import dev.wishingtree.branch.spider.HttpMethod
-import dev.wishingtree.branch.spider.server.OpaqueSegments.*
 import dev.wishingtree.branch.spider.server.{ContextHandler, RequestHandler}
 import munit.FunSuite
 
 import java.net.InetSocketAddress
+import java.nio.file.Path
 
 trait HttpFixtureSuite extends FunSuite {
 
-  type PF = PartialFunction[(HttpMethod, Segments), RequestHandler[?, ?]]
+  type PF = PartialFunction[(HttpMethod, Path), RequestHandler[?, ?]]
 
   def httpFixture(routes: PF): FunFixture[HttpServer] =
     FunFixture[HttpServer](

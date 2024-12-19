@@ -5,10 +5,12 @@ import dev.wishingtree.branch.friday.http.JsonBodyHandler
 import dev.wishingtree.branch.spider.HttpMethod
 import dev.wishingtree.branch.spider.client.ClientRequest.uri
 import dev.wishingtree.branch.spider.server.{Request, RequestHandler, Response}
-import dev.wishingtree.branch.spider.server.OpaqueSegments.*
 import dev.wishingtree.branch.spider.server.RequestHandler.given
+import dev.wishingtree.branch.macaroni.fs.PathOps.*
 import dev.wishingtree.branch.testkit.fixtures.HttpFixtureSuite
 import munit.FunSuite
+
+import java.nio.file.Path
 
 class ClientSpec extends HttpFixtureSuite {
 
@@ -23,7 +25,7 @@ class ClientSpec extends HttpFixtureSuite {
       Response(Person(name))
   }
 
-  val personHandler: PartialFunction[(HttpMethod, Segments), RequestHandler[
+  val personHandler: PartialFunction[(HttpMethod, Path), RequestHandler[
     Unit,
     Person
   ]] = { case HttpMethod.GET -> >> / ci"person" / s"$name" =>

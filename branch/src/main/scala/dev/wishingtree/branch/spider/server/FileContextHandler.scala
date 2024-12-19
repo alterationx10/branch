@@ -2,9 +2,9 @@ package dev.wishingtree.branch.spider.server
 
 import com.sun.net.httpserver.{Authenticator, Filter}
 import dev.wishingtree.branch.spider.*
-import dev.wishingtree.branch.spider.server.OpaqueSegments.Segments
-
+import dev.wishingtree.branch.macaroni.fs.PathOps.*
 import java.io.File
+import java.nio.file.Path
 
 object FileContextHandler {
 
@@ -20,19 +20,19 @@ object FileContextHandler {
 /** A built-in context handler for serving files from the file system.
   */
 case class FileContextHandler(
-    rootFilePath: Segments,
+    rootFilePath: Path,
     contextPath: String = "/",
     override val filters: Seq[Filter] = Seq.empty,
     override val authenticator: Option[Authenticator] = Option.empty
 ) extends ContextHandler(contextPath) {
 
-  private def fileExists(path: Segments): Boolean = {
+  private def fileExists(path: Path): Boolean = {
     val filePath = (rootFilePath / path).toPathString
     val file     = new File(filePath)
     file.exists() && file.isFile
   }
 
-  private def defaultExists(path: Segments): Boolean = {
+  private def defaultExists(path: Path): Boolean = {
     !path.toSeq.lastOption.exists(_.contains("\\.")) &&
     FileContextHandler.defaultFiles.foldLeft(false) { (b, d) =>
       val file = new File((rootFilePath / path / d).toPathString)
@@ -40,7 +40,7 @@ case class FileContextHandler(
     }
   }
 
-  private def defaultFile(path: Segments): File =
+  private def defaultFile(path: Path): File =
     FileContextHandler.defaultFiles.iterator
       .map(fn => new File((rootFilePath / path / fn).toPathString))
       .find(_.exists())
@@ -50,7 +50,7 @@ case class FileContextHandler(
     FileHandler(rootFilePath)
 
   override val contextRouter
-      : PartialFunction[(HttpMethod, Segments), RequestHandler[?, ?]] = {
+      : PartialFunction[(HttpMethod, Path), RequestHandler[?, ?]] = {
     case HttpMethod.GET -> anyPath if fileExists(anyPath)    => fileHandler
     case HttpMethod.GET -> anyPath if defaultExists(anyPath) =>
       DefaultFileHandler(defaultFile(anyPath))

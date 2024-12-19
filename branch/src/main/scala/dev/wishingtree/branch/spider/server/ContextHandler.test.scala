@@ -1,8 +1,10 @@
 package dev.wishingtree.branch.spider.server
 
+import dev.wishingtree.branch.macaroni.fs.PathOps.*
 import com.sun.net.httpserver.{Authenticator, Filter}
 import dev.wishingtree.branch.spider.HttpMethod
-import dev.wishingtree.branch.spider.server.OpaqueSegments.*
+
+import java.nio.file.Path
 
 class ContextHandlerSpec extends munit.FunSuite {
 
@@ -11,7 +13,7 @@ class ContextHandlerSpec extends munit.FunSuite {
       override val filters: Seq[Filter]                 = Seq.empty
       override val authenticator: Option[Authenticator] = Option.empty
       override val contextRouter
-          : PartialFunction[(HttpMethod, Segments), RequestHandler[?, ?]] = {
+          : PartialFunction[(HttpMethod, Path), RequestHandler[?, ?]] = {
         case HttpMethod.GET -> >> / "a" => RequestHandler.unimplementedHandler
       }
     }
@@ -20,7 +22,7 @@ class ContextHandlerSpec extends munit.FunSuite {
       override val filters: Seq[Filter]                 = Seq(ContextHandler.timingFilter)
       override val authenticator: Option[Authenticator] = Option.empty
       override val contextRouter
-          : PartialFunction[(HttpMethod, Segments), RequestHandler[?, ?]] = {
+          : PartialFunction[(HttpMethod, Path), RequestHandler[?, ?]] = {
         case HttpMethod.GET -> >> / "b" => RequestHandler.unimplementedHandler
       }
     }
