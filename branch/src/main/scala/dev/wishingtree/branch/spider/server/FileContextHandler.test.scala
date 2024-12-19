@@ -1,7 +1,7 @@
 package dev.wishingtree.branch.spider.server
 
 import dev.wishingtree.branch.spider.HttpMethod
-import dev.wishingtree.branch.spider.server.OpaqueSegments.{>>, Segments}
+import dev.wishingtree.branch.macaroni.fs.PathOps.*
 
 class FileContextHandlerSpec extends munit.FunSuite {
 
@@ -10,7 +10,7 @@ class FileContextHandlerSpec extends munit.FunSuite {
   // mdbook build
   // TODO: Set up a Fixture to stage files
   test("FileContextHandler") {
-    val staticFilesPath = Segments.wd / "site" / "book"
+    val staticFilesPath = wd / "site" / "book"
     val files           = FileContextHandler(staticFilesPath)
 
     assert(files.contextRouter.isDefinedAt((HttpMethod.GET, >> / "index.html")))

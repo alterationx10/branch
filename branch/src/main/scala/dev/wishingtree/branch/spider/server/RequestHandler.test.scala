@@ -2,14 +2,15 @@ package dev.wishingtree.branch.spider.server
 
 import dev.wishingtree.branch.friday.http.JsonBodyHandler
 import dev.wishingtree.branch.spider.HttpMethod
-import dev.wishingtree.branch.spider.server.OpaqueSegments.*
 import dev.wishingtree.branch.spider.server.RequestHandler.given
 import dev.wishingtree.branch.spider.server.Response.*
 import dev.wishingtree.branch.testkit.fixtures.HttpFixtureSuite
+import dev.wishingtree.branch.macaroni.fs.PathOps.*
 
 import java.net.URI
 import java.net.http.HttpClient.Version
 import java.net.http.{HttpClient, HttpRequest, HttpResponse}
+import java.nio.file.Path
 
 class RequestHandlerSpec extends HttpFixtureSuite {
 
@@ -37,7 +38,7 @@ class RequestHandlerSpec extends HttpFixtureSuite {
     }
   }
 
-  val alohaHandler: PartialFunction[(HttpMethod, Segments), RequestHandler[
+  val alohaHandler: PartialFunction[(HttpMethod, Path), RequestHandler[
     Unit,
     String
   ]] = {

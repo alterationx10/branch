@@ -1,11 +1,12 @@
 package dev.wishingtree.branch.spider.server
 
 import dev.wishingtree.branch.spider.server.FileHandler.given
-import dev.wishingtree.branch.spider.server.OpaqueSegments.*
 import dev.wishingtree.branch.spider.server.RequestHandler.given
 import dev.wishingtree.branch.spider.server.{Request, RequestHandler, Response}
+import dev.wishingtree.branch.macaroni.fs.PathOps.*
 
 import java.io.{File, FileInputStream, FileNotFoundException}
+import java.nio.file.Path
 
 object FileHandler {
 
@@ -27,7 +28,7 @@ object FileHandler {
 
 /** A built-in handler for serving files from the file system.
   */
-private[spider] case class FileHandler(rootFilePath: Segments)
+private[spider] case class FileHandler(rootFilePath: Path)
     extends RequestHandler[Unit, File] {
 
   override def handle(request: Request[Unit]): Response[File] = {
