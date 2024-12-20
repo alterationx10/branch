@@ -1,7 +1,6 @@
 package dev.wishingtree.branch.macaroni.fs
 
 import java.nio.file.*
-import scala.jdk.CollectionConverters.*
 
 object PathOps {
 
@@ -18,13 +17,17 @@ object PathOps {
     /** Append a Path to the path */
     def /(subPath: Path): Path = path.resolve(subPath)
 
-    /** Convert the path to a String. It will be prefixed with a slash
-      */
-    def toPathString = "/" + path.toString
-
     /** Convert the path to a Seq[String]
       */
     def toSeq: Seq[String] = path.toString.split("/").filter(_.nonEmpty).toSeq
+
+    /** Relativize the path to the given rootPath. */
+    def relativeTo(rootPath: String): Path =
+      Path.of(rootPath).relativize(path)
+
+    /** Relativize the path to the given rootPath. */
+    def relativeTo(rootPath: Path): Path =
+      rootPath.relativize(path)
   }
 
   object / {
