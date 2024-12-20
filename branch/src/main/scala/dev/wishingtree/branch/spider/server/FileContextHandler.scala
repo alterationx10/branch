@@ -27,7 +27,7 @@ case class FileContextHandler(
 ) extends ContextHandler(contextPath) {
 
   private def fileExists(path: Path): Boolean = {
-    val filePath = (rootFilePath / path).toPathString
+    val filePath = (rootFilePath / path).toString
     val file     = new File(filePath)
     file.exists() && file.isFile
   }
@@ -35,14 +35,14 @@ case class FileContextHandler(
   private def defaultExists(path: Path): Boolean = {
     !path.toSeq.lastOption.exists(_.contains("\\.")) &&
     FileContextHandler.defaultFiles.foldLeft(false) { (b, d) =>
-      val file = new File((rootFilePath / path / d).toPathString)
+      val file = new File((rootFilePath / path / d).toString)
       b || (file.exists() && file.isFile)
     }
   }
 
   private def defaultFile(path: Path): File =
     FileContextHandler.defaultFiles.iterator
-      .map(fn => new File((rootFilePath / path / fn).toPathString))
+      .map(fn => new File((rootFilePath / path / fn).toString))
       .find(_.exists())
       .getOrElse(throw new Exception("Not found"))
 

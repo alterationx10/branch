@@ -1,9 +1,8 @@
 package dev.wishingtree.branch.spider.server
 
+import dev.wishingtree.branch.macaroni.fs.PathOps.*
 import dev.wishingtree.branch.spider.server.FileHandler.given
 import dev.wishingtree.branch.spider.server.RequestHandler.given
-import dev.wishingtree.branch.spider.server.{Request, RequestHandler, Response}
-import dev.wishingtree.branch.macaroni.fs.PathOps.*
 
 import java.io.{File, FileInputStream, FileNotFoundException}
 import java.nio.file.Path
@@ -32,7 +31,7 @@ private[spider] case class FileHandler(rootFilePath: Path)
     extends RequestHandler[Unit, File] {
 
   override def handle(request: Request[Unit]): Response[File] = {
-    val filePath = (rootFilePath / request.uri.getPath.toLowerCase).toPathString
+    val filePath = (rootFilePath / request.uri.getPath.stripPrefix("/")).toString
     Response(
       body = new File(filePath)
     ).autoContent(filePath)

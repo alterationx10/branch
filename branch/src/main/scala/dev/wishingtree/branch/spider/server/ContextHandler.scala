@@ -4,7 +4,7 @@ import com.sun.net.httpserver.*
 import dev.wishingtree.branch.lzy.Lazy
 import dev.wishingtree.branch.lzy.abstractions.Semigroup
 import dev.wishingtree.branch.spider.HttpMethod
-
+import dev.wishingtree.branch.macaroni.fs.PathOps.*
 import java.time.{Duration, Instant}
 import java.nio.file.Path
 import scala.jdk.CollectionConverters.*
@@ -37,7 +37,7 @@ trait ContextHandler(val path: String) {
           .fn {
             HttpMethod
               .fromString(exchange.getRequestMethod.toUpperCase)
-              .map(v => v -> Path.of(exchange.getRequestURI.getPath))
+              .map(v => v -> Path.of(exchange.getRequestURI.getPath).relativeTo("/"))
               .filter(contextRouter.isDefinedAt)
               .map(contextRouter)
               .getOrElse(RequestHandler.unimplementedHandler)
