@@ -82,6 +82,12 @@ object JsonEncoder {
     def encode(a: Int): Json = Json.JsonNumber(a.toDouble)
   }
 
+  /** A JsonEncoder for Longs
+    */
+  given JsonEncoder[Long] with {
+    def encode(a: Long): Json = Json.JsonNumber(a.toDouble)
+  }
+
   /** A JsonEncoder for Instants
     */
   given JsonEncoder[Instant] with {

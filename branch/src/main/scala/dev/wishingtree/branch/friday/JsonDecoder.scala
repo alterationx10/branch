@@ -76,6 +76,11 @@ object JsonDecoder {
       Try(json.numVal.toInt)
   }
 
+  given JsonDecoder[Long] with {
+    def decode(json: Json): Try[Long] =
+      Try(json.numVal.toLong)
+  }
+
   /** A JsonDecoder for Instant
     */
   given JsonDecoder[Instant] with {
