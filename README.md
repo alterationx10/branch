@@ -8,7 +8,7 @@ get things done quickly! Think of it as the framework for your side-project, not
 
 It's a pretty early stage project, and very much an evolving work-in-progress at the moment.
 
-The docs (so far ™️) are on : https://github.com/wishingtreedev/branch
+The docs (so far ™️) are on : https://wishingtreedev.github.io/branch/
 
 ## Development
 
