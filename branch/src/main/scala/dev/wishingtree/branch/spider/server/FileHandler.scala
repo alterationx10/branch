@@ -31,7 +31,8 @@ private[spider] case class FileHandler(rootFilePath: Path)
     extends RequestHandler[Unit, File] {
 
   override def handle(request: Request[Unit]): Response[File] = {
-    val filePath = (rootFilePath / request.uri.getPath.stripPrefix("/")).toString
+    val filePath =
+      (rootFilePath / request.uri.getPath.stripPrefix("/")).toString
     Response(
       body = new File(filePath)
     ).autoContent(filePath)

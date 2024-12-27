@@ -6,7 +6,18 @@ import scala.util.Try
 
 /** A type-class for encoding and decoding values to and from Json
   */
-trait JsonCodec[A] extends JsonDecoder[A], JsonEncoder[A]
+trait JsonCodec[A] extends JsonDecoder[A], JsonEncoder[A] { self =>
+
+  /** Transform the codec from one type to another, by providing the functions
+    * needed to map/contraMap the underlying decoder/encoders.
+    */
+  def transform[B](f: A => B)(g: B => A): JsonCodec[B] =
+    new JsonCodec[B] {
+      override def decode(json: Json): Try[B] = self.decode(json).map(f)
+      override def encode(b: B): Json         = self.encode(g(b))
+    }
+
+}
 
 object JsonCodec {
 
