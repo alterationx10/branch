@@ -43,6 +43,12 @@ object Json {
     JsonObject(fields.toMap)
   }
 
+  /** Creates a JSON array from the given values
+    */
+  def arr(values: Json*): JsonArray = {
+    JsonArray(values.toIndexedSeq)
+  }
+
   /** Encode the vale to JSON, returning [[JsonNull]] on failure */
   inline def jsonOrNull[A](a: => A)(using encoder: JsonEncoder[A]): Json = {
     Try(encoder.encode(a)).getOrElse(JsonNull)

@@ -7,6 +7,7 @@ import dev.wishingtree.branch.macaroni.meta.Summons.{
 }
 
 import java.time.Instant
+import scala.collection.*
 import scala.compiletime.*
 import scala.deriving.Mirror
 import scala.util.*
@@ -87,6 +88,32 @@ object JsonDecoder {
     def decode(json: Json): Try[Instant] =
       Try(Instant.parse(json.strVal))
   }
+
+  private[friday] def iterableDecoder[A, F[_]](
+      builder: mutable.Builder[A, F[A]]
+  )(using decoder: JsonDecoder[A]): JsonDecoder[F[A]] =
+    (json: Json) =>
+      Try {
+        json.arrVal.foldLeft(builder)((b, j) => {
+          b.addOne(decoder.decode(j).get)
+        })
+        builder.result()
+      }
+
+  implicit def seqDecoder[A: JsonDecoder]: JsonDecoder[Seq[A]] =
+    iterableDecoder[A, Seq](Seq.newBuilder[A])
+
+  implicit def listDecoder[A: JsonDecoder]: JsonDecoder[List[A]] =
+    iterableDecoder[A, List](List.newBuilder[A])
+
+  implicit def indexedSeqDecoder[A: JsonDecoder]: JsonDecoder[IndexedSeq[A]] =
+    iterableDecoder[A, IndexedSeq](IndexedSeq.newBuilder[A])
+
+  implicit def setDecoder[A: JsonDecoder]: JsonDecoder[Set[A]] =
+    iterableDecoder[A, Set](Set.newBuilder[A])
+
+  implicit def vectorDecoder[A: JsonDecoder]: JsonDecoder[Vector[A]] =
+    iterableDecoder[A, Vector](Vector.newBuilder[A])
 
   private[friday] inline def buildJsonProduct[A](
       p: Mirror.ProductOf[A],

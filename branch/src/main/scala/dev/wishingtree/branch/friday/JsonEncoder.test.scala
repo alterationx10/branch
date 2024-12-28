@@ -18,4 +18,36 @@ class JsonEncoderSpec extends FunSuite {
     )
   }
 
+  test("JsonEncoder A => Seq[A]") {
+    val strSeqEncoder = summon[JsonEncoder[Seq[String]]]
+    assertEquals(
+      strSeqEncoder.encode(Seq("Alice", "Bob")),
+      Json.arr(JsonString("Alice"), JsonString("Bob"))
+    )
+  }
+
+  test("JsonEncoder A => List[A]") {
+    val strListEncoder = summon[JsonEncoder[List[String]]]
+    assertEquals(
+      strListEncoder.encode(List("Alice", "Bob")),
+      Json.arr(JsonString("Alice"), JsonString("Bob"))
+    )
+  }
+
+  test("JsonEncoder A => Vector[A]") {
+    val strVectorEncoder = summon[JsonEncoder[Vector[String]]]
+    assertEquals(
+      strVectorEncoder.encode(Vector("Alice", "Bob")),
+      Json.arr(JsonString("Alice"), JsonString("Bob"))
+    )
+  }
+
+  test("JsonEncoder A => Set[A]") {
+    val strSetEncoder = summon[JsonEncoder[Set[String]]]
+    assertEquals(
+      strSetEncoder.encode(Set("Alice", "Bob")),
+      Json.arr(JsonString("Alice"), JsonString("Bob"))
+    )
+  }
+
 }
