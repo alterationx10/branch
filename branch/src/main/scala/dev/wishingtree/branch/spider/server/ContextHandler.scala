@@ -30,6 +30,12 @@ trait ContextHandler(val path: String) {
     RequestHandler[?, ?]
   ]
 
+  /** A default handler for requests that are not found. Override this to
+    * provide a custom 404 handler.
+    */
+  val notFoundRequestHandler: RequestHandler[?, ?] =
+    RequestHandler.notFoundHandler
+
   private[spider] inline def httpHandler: HttpHandler = {
     (exchange: HttpExchange) =>
       {
@@ -42,7 +48,7 @@ trait ContextHandler(val path: String) {
               )
               .filter(contextRouter.isDefinedAt)
               .map(contextRouter)
-              .getOrElse(RequestHandler.unimplementedHandler)
+              .getOrElse(notFoundRequestHandler)
           }
           .flatMap(_.lzyRun(exchange))
           .recover { e =>
