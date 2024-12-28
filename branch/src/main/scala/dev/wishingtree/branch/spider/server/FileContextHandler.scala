@@ -3,8 +3,9 @@ package dev.wishingtree.branch.spider.server
 import com.sun.net.httpserver.{Authenticator, Filter}
 import dev.wishingtree.branch.spider.*
 import dev.wishingtree.branch.macaroni.fs.PathOps.*
+
 import java.io.File
-import java.nio.file.Path
+import java.nio.file.{Files, Path}
 
 object FileContextHandler {
 
@@ -15,6 +16,15 @@ object FileContextHandler {
     "index.html",
     "index.htm"
   )
+
+  /** A list of default file endings to look for when a file is requested. E.g.
+    * /some/path -> /some/path.html
+    */
+  private[spider] val defaultEndings: List[String] = List(
+    ".html",
+    ".htm"
+  )
+
 }
 
 /** A built-in context handler for serving files from the file system.
@@ -32,19 +42,33 @@ case class FileContextHandler(
     file.exists() && file.isFile
   }
 
-  private def defaultExists(path: Path): Boolean = {
-    !path.toSeq.lastOption.exists(_.contains("\\.")) &&
-    FileContextHandler.defaultFiles.foldLeft(false) { (b, d) =>
-      val file = new File((rootFilePath / path / d).toString)
-      b || (file.exists() && file.isFile)
+  private[spider] def defaultExists(path: Path): Boolean = {
+    if Files.isDirectory(path) then {
+      // If the path is a folder, see if a default file exists...
+      FileContextHandler.defaultFiles.foldLeft(false) { (b, d) =>
+        val file = new File((rootFilePath / path / d).toString)
+        b || (file.exists() && file.isFile)
+      }
+    } else {
+      // ... otherwise see if a file with a default ending exists
+      FileContextHandler.defaultEndings.foldLeft(false) { (b, d) =>
+        val file = new File((rootFilePath / path).toString + d)
+        b || (file.exists() && file.isFile)
+      }
     }
+
   }
 
-  private def defaultFile(path: Path): File =
+  private[spider] def defaultFile(path: Path): File =
     FileContextHandler.defaultFiles.iterator
       .map(fn => new File((rootFilePath / path / fn).toString))
       .find(_.exists())
-      .getOrElse(throw new Exception("Not found"))
+      .orElse(
+        FileContextHandler.defaultEndings.iterator
+          .map(suffix => new File((rootFilePath / path).toString + suffix))
+          .find(_.exists())
+      )
+      .getOrElse(throw new IllegalArgumentException("Not found"))
 
   private val fileHandler: FileHandler =
     FileHandler(rootFilePath)

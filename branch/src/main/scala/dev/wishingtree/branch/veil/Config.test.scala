@@ -16,7 +16,7 @@ class ConfigSpec extends FileFixtureSuite {
   }
 
   val json = """{"host":"localhost","port":9000}"""
-  filesWithContent(json).test("Config.fromFile") { file =>
+  fileWithContent(json).test("Config.fromFile") { file =>
     for {
       config <-
         Config
