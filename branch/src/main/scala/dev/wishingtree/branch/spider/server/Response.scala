@@ -5,6 +5,7 @@ import dev.wishingtree.branch.spider.ContentType
 /** A response model for an HTTP request.
   */
 case class Response[A](
+    statusCode: Int,
     body: A,
     headers: Map[String, List[String]] = Map(
       ContentType.bin.toHeader
@@ -24,7 +25,7 @@ object Response {
       * }}}
       */
     def html(args: Any*): Response[String] = {
-      Response(sc.s(args*).trim, Map(ContentType.html.toHeader))
+      Response(200, sc.s(args*).trim, Map(ContentType.html.toHeader))
     }
 
     /** A string interpolator for creating an application/json response.
@@ -38,7 +39,7 @@ object Response {
       * }}}
       */
     def json(args: Any*): Response[String] =
-      Response(sc.s(args*).strip(), Map(ContentType.json.toHeader))
+      Response(200, sc.s(args*).strip(), Map(ContentType.json.toHeader))
   }
 
   extension [A](r: Response[A]) {

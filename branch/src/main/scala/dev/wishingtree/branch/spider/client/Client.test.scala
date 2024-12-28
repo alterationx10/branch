@@ -22,7 +22,7 @@ class ClientSpec extends HttpFixtureSuite {
 
   case class PersonHandler(name: String) extends RequestHandler[Unit, Person] {
     override def handle(request: Request[Unit]): Response[Person] =
-      Response(Person(name))
+      Response(200, Person(name))
   }
 
   val personHandler: PartialFunction[(HttpMethod, Path), RequestHandler[

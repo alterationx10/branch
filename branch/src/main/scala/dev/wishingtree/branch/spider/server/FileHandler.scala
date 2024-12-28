@@ -34,6 +34,7 @@ private[spider] case class FileHandler(rootFilePath: Path)
     val filePath =
       (rootFilePath / request.uri.getPath.stripPrefix("/")).toString
     Response(
+      200,
       body = new File(filePath)
     ).autoContent(filePath)
   }
@@ -46,6 +47,7 @@ private[spider] case class DefaultFileHandler(file: File)
 
   override def handle(request: Request[Unit]): Response[File] =
     Response(
+      200,
       body = file
     ).autoContent(file.getName)
 }

@@ -46,14 +46,17 @@ trait RequestHandler[I, O](using
       exchange: HttpExchange
   ): Lazy[Unit] = {
     for {
-      rawResponse <- Lazy.fn(responseEncoder(response.body))
-      _           <- Lazy.fn {
-                       response.headers.foreach { (k, v) =>
-                         exchange.getResponseHeaders.set(k, v.mkString(","))
-                       }
-                     }
-      _           <- Lazy.fn(exchange.sendResponseHeaders(200, rawResponse.length))
-      _           <- Lazy.fn(exchange.getResponseBody.write(rawResponse))
+      responseBody <- Lazy.fn(responseEncoder(response.body))
+      _            <- Lazy.fn {
+                        response.headers.foreach { (k, v) =>
+                          exchange.getResponseHeaders.set(k, v.mkString(","))
+                        }
+                      }
+      _            <-
+        Lazy.fn(
+          exchange.sendResponseHeaders(response.statusCode, responseBody.length)
+        )
+      _            <- Lazy.fn(exchange.getResponseBody.write(responseBody))
     } yield ()
   }
 

@@ -16,7 +16,7 @@ class RequestHandlerSpec extends HttpFixtureSuite {
 
   case class AlohaGreeter() extends RequestHandler[Unit, String] {
     override def handle(request: Request[Unit]): Response[String] = {
-      Response("Aloha")
+      Response(200, "Aloha")
     }
   }
 
