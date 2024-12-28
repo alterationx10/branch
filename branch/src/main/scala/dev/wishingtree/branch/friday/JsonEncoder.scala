@@ -1,11 +1,12 @@
 package dev.wishingtree.branch.friday
 
-import dev.wishingtree.branch.friday.Json.{JsonObject, JsonString}
+import dev.wishingtree.branch.friday.Json.{JsonArray, JsonObject, JsonString}
 import dev.wishingtree.branch.macaroni.meta.Summons.summonHigherListOf
 
 import java.time.Instant
 import scala.compiletime.*
 import scala.deriving.Mirror
+import scala.reflect.ClassTag
 
 /** A type-class for encoding values to Json
   */
@@ -82,11 +83,48 @@ object JsonEncoder {
     def encode(a: Int): Json = Json.JsonNumber(a.toDouble)
   }
 
+  /** A JsonEncoder for Longs
+    */
+  given JsonEncoder[Long] with {
+    def encode(a: Long): Json = Json.JsonNumber(a.toDouble)
+  }
+
   /** A JsonEncoder for Instants
     */
   given JsonEncoder[Instant] with {
     def encode(a: Instant): Json = JsonString(a.toString)
   }
+
+  /** Helper method for collection/iterable JsonEncoders */
+  private[friday] def iterableEncoder[A, F[X] <: Iterable[X]](using
+      jsonEncoder: JsonEncoder[A]
+  ): JsonEncoder[F[A]] =
+    (a: F[A]) => JsonArray(a.iterator.map(jsonEncoder.encode).toIndexedSeq)
+
+  /** A JsonEncoder for Seqs
+    */
+  implicit def seqEncoder[A: JsonEncoder]: JsonEncoder[Seq[A]] =
+    iterableEncoder[A, Seq]
+
+  /** A JsonEncoder for Lists
+    */
+  implicit def listEncoder[A: JsonEncoder]: JsonEncoder[List[A]] =
+    iterableEncoder[A, List]
+
+  /** A JsonEncoder for IndexedSeqs
+    */
+  implicit def indexedSeqEncoder[A: JsonEncoder]: JsonEncoder[IndexedSeq[A]] =
+    iterableEncoder[A, IndexedSeq]
+
+  /** A JsonEncoder for Sets
+    */
+  implicit def setEncoder[A: JsonEncoder]: JsonEncoder[Set[A]] =
+    iterableEncoder[A, Set]
+
+  /** A JsonEncoder for Vectors
+    */
+  implicit def vectorEncoder[A: JsonEncoder]: JsonEncoder[Vector[A]] =
+    iterableEncoder[A, Vector]
 
   private[friday] inline def buildJsonProduct[A](
       a: A
