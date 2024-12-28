@@ -15,15 +15,25 @@ class FileFixtureSuite extends FunSuite {
     }
   )
 
-  def filesWithContent(content: String) = FunFixture[Path](
+  def fileWithSuffix(suffix: String): FunFixture[Path] = FunFixture[Path](
     setup = { test =>
-      val path = Files.createTempFile("tmp", test.name)
-      Files.writeString(path, content)
-      path
+      Files.createTempFile("tmp", test.name + suffix)
     },
     teardown = { file =>
       Files.deleteIfExists(file)
     }
   )
+
+  def fileWithContent(content: String, suffix: String = ""): FunFixture[Path] =
+    FunFixture[Path](
+      setup = { test =>
+        val path = Files.createTempFile("tmp", test.name + suffix)
+        Files.writeString(path, content)
+        path
+      },
+      teardown = { file =>
+        Files.deleteIfExists(file)
+      }
+    )
 
 }
