@@ -59,7 +59,7 @@ class FileContextHandlerSpec extends FileFixtureSuite {
     assert(!ctxHandler.defaultExists(parent / fileName))
   }
 
-  fileWithSuffix(".txt").test("FileContextHandler.defaultExists .txt") { file =>
+  fileWithSuffix(".txt").test("FileContextHandler.defaultFile .txt") { file =>
     val parent     = file.getParent
     val fileName   = file.relativeTo(parent).toString.stripSuffix(".txt")
     val ctxHandler = FileContextHandler(parent)

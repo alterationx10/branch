@@ -43,7 +43,7 @@ case class FileContextHandler(
   }
 
   private[spider] def defaultExists(path: Path): Boolean = {
-    if Files.isDirectory(path) then {
+    if Files.isDirectory(rootFilePath / path) then {
       // If the path is a folder, see if a default file exists...
       FileContextHandler.defaultFiles.foldLeft(false) { (b, d) =>
         val file = new File((rootFilePath / path / d).toString)
