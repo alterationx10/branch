@@ -92,7 +92,7 @@ object RequestHandler {
   private[spider] val notFoundHandler: RequestHandler[Unit, String] =
     new RequestHandler[Unit, String] {
       override def handle(request: Request[Unit]): Response[String] =
-        Response(404, "Not found")
+        Response(404, "Not found").htmlContent
     }
 
 }
