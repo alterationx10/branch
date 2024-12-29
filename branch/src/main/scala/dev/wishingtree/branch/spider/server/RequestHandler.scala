@@ -1,9 +1,9 @@
 package dev.wishingtree.branch.spider.server
 
 import com.sun.net.httpserver.HttpExchange
-import dev.wishingtree.branch.lzy.Lazy
 
 import scala.jdk.CollectionConverters.*
+import scala.util.Try
 
 /** A base trait to extend for handling a Request and returning a Response.
   * @tparam I
@@ -28,44 +28,45 @@ trait RequestHandler[I, O](using
     */
   private final def decodeRequest(
       exchange: HttpExchange
-  ): Lazy[Request[I]] =
+  ): Try[Request[I]] =
     for {
-      headers <- Lazy
-                   .fn {
-                     exchange.getRequestHeaders.asScala
-                       .map((k, v) => k -> v.asScala.toList)
-                       .toMap
-                   }
-      rawBody <- Lazy.fn(exchange.getRequestBody.readAllBytes())
-      body    <- Lazy.fn(requestDecoder(rawBody))
+      headers <- Try {
+                   exchange.getRequestHeaders.asScala
+                     .map((k, v) => k -> v.asScala.toList)
+                     .toMap
+                 }
+      rawBody <- Try(exchange.getRequestBody.readAllBytes())
+      body    <- Try(requestDecoder(rawBody))
     } yield Request(exchange.getRequestURI, headers, body)
 
   /** Send the Response to the HttpExchange.
     */
   private final def sendResponse(response: Response[O])(
       exchange: HttpExchange
-  ): Lazy[Unit] = {
+  ): Try[Unit] = {
     for {
-      responseBody <- Lazy.fn(responseEncoder(response.body))
-      _            <- Lazy.fn {
+      responseBody <- Try(responseEncoder(response.body))
+      _            <- Try {
                         response.headers.foreach { (k, v) =>
                           exchange.getResponseHeaders.set(k, v.mkString(","))
                         }
                       }
-      _            <-
-        Lazy.fn(
-          exchange.sendResponseHeaders(response.statusCode, responseBody.length)
-        )
-      _            <- Lazy.fn(exchange.getResponseBody.write(responseBody))
+      _            <- Try {
+                        exchange.sendResponseHeaders(
+                          response.statusCode,
+                          responseBody.length
+                        )
+                      }
+      _            <- Try(exchange.getResponseBody.write(responseBody))
     } yield ()
   }
 
-  private[spider] inline final def lzyRun(
+  private[spider] final def tryRun(
       exchange: HttpExchange
-  ): Lazy[Unit] = {
+  ): Try[Unit] = {
     for {
       request  <- decodeRequest(exchange)
-      response <- Lazy.fn(this.handle(request))
+      response <- Try(this.handle(request))
       _        <- sendResponse(response)(exchange)
     } yield ()
   }

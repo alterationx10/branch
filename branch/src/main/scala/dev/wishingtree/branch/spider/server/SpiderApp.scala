@@ -1,7 +1,7 @@
 package dev.wishingtree.branch.spider.server
 
-import com.sun.net.httpserver.{HttpHandler, HttpServer}
-import dev.wishingtree.branch.lzy.LazyRuntime
+import com.sun.net.httpserver.HttpServer
+import dev.wishingtree.branch.macaroni.runtimes.BranchExecutors
 
 import java.net.InetSocketAddress
 
@@ -22,7 +22,7 @@ trait SpiderApp {
   final given server: HttpServer =
     HttpServer.create(new InetSocketAddress(port), backlog)
 
-  server.setExecutor(LazyRuntime.executorService)
+  server.setExecutor(BranchExecutors.executorService)
 
   Runtime.getRuntime.addShutdownHook {
     new Thread(() => server.stop(5))
