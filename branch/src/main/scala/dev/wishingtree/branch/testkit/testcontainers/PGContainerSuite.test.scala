@@ -5,8 +5,10 @@ import dev.wishingtree.branch.macaroni.poolers.ResourcePool
 import munit.*
 import org.postgresql.ds.PGSimpleDataSource
 import org.testcontainers.containers.GenericContainer
+import org.testcontainers.containers.startupcheck.MinimumDurationRunningStartupCheckStrategy
 
 import java.sql.Connection
+import java.time.Duration
 import javax.sql.DataSource
 
 class PGContainerSuite extends munit.FunSuite {
@@ -40,6 +42,11 @@ class PGContainerSuite extends munit.FunSuite {
   override def beforeEach(context: BeforeEach): Unit = {
     if (containerPerTest) {
       container = PGTestContainer()
+      // TODO Find a better way to wait for the pg to be ready
+      // https://java.testcontainers.org/features/startup_and_waits/#wait-strategies
+      container.withStartupCheckStrategy(
+        new MinimumDurationRunningStartupCheckStrategy(Duration.ofSeconds(2))
+      )
       container.start()
     }
   }
