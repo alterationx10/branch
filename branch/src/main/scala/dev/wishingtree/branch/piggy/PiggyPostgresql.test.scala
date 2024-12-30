@@ -3,7 +3,11 @@ package dev.wishingtree.branch.piggy
 import dev.wishingtree.branch.piggy.Sql.*
 import dev.wishingtree.branch.testkit.testcontainers.PGContainerSuite
 
+import scala.concurrent.duration.Duration
+
 class PiggyPostgresqlSpec extends PGContainerSuite {
+
+  override val munitTimeout = Duration(10, "s")
 
   val ddl =
     """
