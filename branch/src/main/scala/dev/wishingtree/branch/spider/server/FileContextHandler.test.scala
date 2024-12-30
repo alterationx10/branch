@@ -4,21 +4,30 @@ import dev.wishingtree.branch.spider.HttpMethod
 import dev.wishingtree.branch.macaroni.fs.PathOps.*
 import dev.wishingtree.branch.testkit.fixtures.FileFixtureSuite
 
+import java.nio.file.Files
+
 class FileContextHandlerSpec extends FileFixtureSuite {
 
-  // This test requires the book to be built
-  // cd site
-  // mdbook build
-  // TODO: Set up a Fixture to stage files
-  test("FileContextHandler") {
-    val staticFilesPath = wd / "site" / "book"
-    val files           = FileContextHandler(staticFilesPath)
+  tmpDir.test("FileContextHandler") { tmpDir =>
+
+    Files.createDirectory(tmpDir / "css")
+    Files.createDirectory(tmpDir / "blog")
+    Files.createFile(tmpDir / "index.html")
+    Files.createFile(tmpDir / "css" / "general.css")
+    Files.createFile(tmpDir / "blog" / "post1.html")
+
+    val files = FileContextHandler(tmpDir)
 
     assert(files.contextRouter.isDefinedAt((HttpMethod.GET, >> / "index.html")))
     assert(files.contextRouter.isDefinedAt((HttpMethod.GET, >>)))
     assert(
       files.contextRouter.isDefinedAt(
         (HttpMethod.GET, >> / "css" / "general.css")
+      )
+    )
+    assert(
+      files.contextRouter.isDefinedAt(
+        (HttpMethod.GET, >> / "blog" / "post1")
       )
     )
   }
