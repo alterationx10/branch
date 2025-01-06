@@ -6,7 +6,7 @@ import scala.annotation.{tailrec, targetName}
 
 object Mustachio {
 
-  def compile(template: String, context: Stache): String = {
+  def render(template: String, context: Stache): String = {
 
     var counter          = 0
     val templateIterator = template.iterator

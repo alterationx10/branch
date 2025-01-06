@@ -5,37 +5,68 @@ import dev.wishingtree.branch.friday.JsonDecoder.given
 import dev.wishingtree.branch.friday.{Json, JsonCodec, JsonDecoder}
 
 import scala.io.Source
-import scala.util.Using
+import scala.util.{Try, Using}
 
 case class SpecSuite(tests: IndexedSeq[Spec]) derives JsonCodec
 
-case class Spec(name: String, desc: String, template: String, expected: String)
-    derives JsonCodec
+object SpecSuite {
+
+  given decoder: JsonDecoder[SpecSuite] with {
+    def decode(json: Json): Try[SpecSuite] = Try {
+      for {
+        tests <- json ? "tests"
+      } yield SpecSuite(tests.arrVal.map(Spec.decoder.decode(_).get))
+    }.map(_.get)
+  }
+
+}
+
+case class Spec(
+    name: String,
+    desc: String,
+    data: Json,
+    template: String,
+    expected: String
+)
+
+object Spec {
+
+  given decoder: JsonDecoder[Spec] with {
+    def decode(json: Json): Try[Spec] = Try {
+      for {
+        name     <- json ? "name"
+        desc     <- json ? "desc"
+        data     <- json ? "data"
+        template <- json ? "template"
+        expected <- json ? "expected"
+      } yield Spec(
+        name.strVal,
+        desc.strVal,
+        data,
+        template.strVal,
+        expected.strVal
+      )
+    }.map(_.get)
+  }
+
+}
 
 class MustachioSpec extends munit.FunSuite {
 
-//  def runSpec(
-//      spec: Spec
-//  )(implicit loc: munit.Location): Unit = {
-//    test(spec.name) {
-//      val context = Stache.fromJson(spec.data)
-//      assertEquals(Mustachio.compile(spec.template, context), spec.expected)
-//    }
-//  }
+  def runSpec(
+      spec: Spec
+  )(implicit loc: munit.Location): Unit = {
+    test(spec.name) {
+      val context = Stache.fromJson(spec.data)
+      assertEquals(Mustachio.render(spec.template, context), spec.expected)
+    }
+  }
 
-  test("wtf") {
-    val jsonTest = Using(Source.fromResource("mustache/interpolation.json")) {
-      source =>
-        val jsString = source.mkString
-        val json = Json.parse(jsString)
-        println(s"json: $json")
-        val decoder: JsonDecoder[SpecSuite] = summon[JsonDecoder[SpecSuite]]
-        val decoded = decoder.decode(jsString)
-        println(s"decoded: $decoded")
-        decoded
+  val interpolationSpec: SpecSuite =
+    Using(Source.fromResource("mustache/interpolation.json")) { source =>
+      SpecSuite.decoder.decode(source.mkString)
     }.flatten.getOrElse(throw new Exception("Failed to parse json"))
 
-    val firstSpec = jsonTest.tests.head
-  }
+  interpolationSpec.tests.foreach(runSpec)
 
 }
