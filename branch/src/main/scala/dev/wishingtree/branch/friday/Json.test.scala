@@ -17,4 +17,22 @@ class JsonSpec extends FunSuite {
     } yield assertEquals(person, Person("Alice", 42))
   }
 
+  test("Parses \"") {
+    val json =
+      """
+        |    {
+        |      "name": "Ampersand",
+        |      "desc": "Ampersand should interpolate without HTML escaping.",
+        |      "data": {
+        |        "forbidden": "& \" < >"
+        |      },
+        |      "template": "These characters should not be HTML escaped: {{&forbidden}}\n",
+        |      "expected": "These characters should not be HTML escaped: & \" < >\n"
+        |    }
+        |""".stripMargin
+
+    val result = Json.parse(json)
+    assert(result.isRight)
+  }
+
 }
