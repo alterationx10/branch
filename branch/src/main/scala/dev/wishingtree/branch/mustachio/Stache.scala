@@ -13,14 +13,17 @@ enum Stache {
 object Stache {
 
   def fromJson(json: Json): Stache = json match {
-    case JsonNull => Str("")
+    case JsonNull          => Str("")
     case JsonString(value) => Str(value)
-    case JsonBool(value) => Str(value.toString)
-    case JsonNumber(value) => Str(value.toString) // Formatting
+    case JsonBool(value)   => Str(value.toString)
+    case JsonNumber(value) =>
+      // A hack for now to format as int
+      if value == value.toInt then Str(value.toInt.toString)
+      else Str(value.toString)
     case JsonObject(value) => Context(value.view.mapValues(fromJson).toMap)
-    case JsonArray(value) => Str("") // wut do?
+    case JsonArray(value)  => Str("") // wut do?
   }
-  
+
   def str(value: String): Stache.Str =
     Str(value)
 
