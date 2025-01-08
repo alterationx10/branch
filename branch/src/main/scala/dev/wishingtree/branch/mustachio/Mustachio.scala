@@ -6,7 +6,6 @@ object Mustachio {
 
   def render(template: String, context: Stache): String = {
 
-    var counter          = 0
     val templateIterator = template.iterator
 
     val sb: StringBuilder = new StringBuilder()
@@ -73,6 +72,11 @@ object Mustachio {
                   context ? section getOrElse (Stache.Str(""))
                 )
               )
+            case Some('!') =>
+            // Lots of `\` parsing here :-(
+            // \n
+            // \r\n
+            // Also need to strip preceding whitespace :_(
             case Some(_)   =>
               sb.append(
                 replace(replaceBuilder.dropRight(2).mkString, context, true)

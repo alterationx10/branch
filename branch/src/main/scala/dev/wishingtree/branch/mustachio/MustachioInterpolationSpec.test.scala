@@ -3,7 +3,7 @@ package dev.wishingtree.branch.mustachio
 import scala.io.Source
 import scala.util.Using
 
-class MustachioSpec extends MustacheSpecSuite {
+class MustachioInterpolationSpec extends MustacheSpecSuite {
 
   val interpolationSpec: SpecSuite =
     Using(Source.fromResource("mustache/interpolation.json")) { source =>
