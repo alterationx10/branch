@@ -30,6 +30,17 @@ trait MustacheSpecSuite extends munit.FunSuite {
 
   object Spec {
 
+    // Because we're reading the tests from a file,
+    // it will escape the newlines, tabs, and carriage returns.
+    // We need to unescape them.
+    extension (s: String) {
+      def unescape: String =
+        s
+          .replaceAll("\\\\n", "\n")
+          .replaceAll("\\\\r", "\r")
+          .replaceAll("\\\\t", "\t")
+    }
+
     given decoder: JsonDecoder[Spec] with {
       def decode(json: Json): Try[Spec] = Try {
         for {
@@ -39,11 +50,11 @@ trait MustacheSpecSuite extends munit.FunSuite {
           template <- json ? "template"
           expected <- json ? "expected"
         } yield Spec(
-          name.strVal,
-          desc.strVal,
+          name.strVal.unescape,
+          desc.strVal.unescape,
           data,
-          template.strVal,
-          expected.strVal
+          template.strVal.unescape,
+          expected.strVal.unescape
         )
       }.map(_.get)
     }

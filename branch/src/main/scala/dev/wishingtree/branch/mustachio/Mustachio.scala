@@ -73,10 +73,22 @@ object Mustachio {
                 )
               )
             case Some('!') =>
-            // Lots of `\` parsing here :-(
-            // \n
-            // \r\n
-            // Also need to strip preceding whitespace :_(
+              val preceding = sb.reverse.takeWhile(_ != '\n').mkString
+              if preceding.isBlank then
+                sb.setLength(sb.length - preceding.length)
+              strIter.nextOption() match {
+                case Some('\n') =>
+                  if preceding.isBlank then () // Do nothing
+                  else sb.append('\n')
+                case Some('\r') =>
+                  strIter.nextOption() match {
+                    case Some('\n') => // Do nothing
+                    case Some(c)    => sb.append('\r').append(c)
+                    case _          => ()
+                  }
+                case Some(c)    => sb.append(c)
+                case _          => ()
+              }
             case Some(_)   =>
               sb.append(
                 replace(replaceBuilder.dropRight(2).mkString, context, true)
