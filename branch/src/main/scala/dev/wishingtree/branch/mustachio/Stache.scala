@@ -7,32 +7,33 @@ import dev.wishingtree.branch.friday.Json.*
   */
 enum Stache {
   case Str(value: String)
-  case Context(value: Map[String, Stache])
+  case Arr(value: List[Stache])
+  case Obj(value: Map[String, Stache])
 }
 
 object Stache {
 
   def fromJson(json: Json): Stache = json match {
-    case JsonNull          => Str("")
+    case JsonNull          => Str("null")
     case JsonString(value) => Str(value)
     case JsonBool(value)   => Str(value.toString)
     case JsonNumber(value) =>
       // A hack for now to format as int
       if value == value.toInt then Str(value.toInt.toString)
       else Str(value.toString)
-    case JsonObject(value) => Context(value.view.mapValues(fromJson).toMap)
-    case JsonArray(value)  => Str("") // wut do?
+    case JsonObject(value) => Obj(value.view.mapValues(fromJson).toMap)
+    case JsonArray(value)  => Arr(value.map(fromJson).toList)
   }
 
   def str(value: String): Stache.Str =
     Str(value)
 
-  def context(fields: (String, Stache)*): Stache.Context =
-    Context(fields.toMap)
+  def context(fields: (String, Stache)*): Stache.Obj =
+    Obj(fields.toMap)
 
   extension (s: Stache) {
     def ?(field: String): Option[Stache] = s match {
-      case Context(value) => value.get(field)
+      case Obj(value) => value.get(field)
       case _              => None
     }
 

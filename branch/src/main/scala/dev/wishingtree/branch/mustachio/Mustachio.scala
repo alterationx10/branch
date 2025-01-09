@@ -4,7 +4,11 @@ import scala.annotation.tailrec
 
 object Mustachio {
 
-  def render(template: String, context: Stache): String = {
+  def render(
+      template: String,
+      context: Stache,
+      subContext: Option[Stache] = Option.empty
+  ): String = {
 
     val templateIterator = template.iterator
 
@@ -21,12 +25,14 @@ object Mustachio {
 
     def replace(
         fieldStr: String,
-        stache: Stache,
         escape: Boolean
     ): String = {
-      fieldStr.trim
-        .split("\\.")
-        .foldLeft(Option(stache))((s, field) => s ? field)
+      val fields = fieldStr.trim.split("\\.")
+      fields
+        .foldLeft(subContext)((s, field) => s ? field)
+        .orElse(
+          fields.foldLeft(Option(context))((s, field) => s ? field)
+        )
         .map(_.strVal)
         .map(str => if escape then htmlEscape(str) else str)
         .getOrElse("")
@@ -48,7 +54,6 @@ object Mustachio {
               sb.append(
                 replace(
                   replaceBuilder.drop(1).dropRight(2).mkString,
-                  context,
                   false
                 )
               )
@@ -56,7 +61,6 @@ object Mustachio {
               sb.append(
                 replace(
                   replaceBuilder.drop(1).dropRight(2).mkString,
-                  context,
                   false
                 )
               )
@@ -65,13 +69,19 @@ object Mustachio {
               replaceBuilder.clear()
               while !replaceBuilder.endsWith(s"{{/$section}}") do
                 replaceBuilder.append(strIter.next())
-              sb.append(
-                // the getOrElse probably is an edge case waiting to happen...
-                render(
-                  replaceBuilder.dropRight(5 + section.length).mkString,
-                  context ? section getOrElse (Stache.Str(""))
-                )
-              )
+              context ? section match {
+                case Some(Stache.Str("false")) => ()
+                case Some(Stache.Str("null"))  => ()
+                case _                         =>
+                  sb.append(
+                    // TODO the getOrElse probably is an edge case waiting to happen...
+                    render(
+                      replaceBuilder.dropRight(5 + section.length).mkString,
+                      context,
+                      context ? section
+                    )
+                  )
+              }
             case Some('!') =>
               val preceding = sb.reverse.takeWhile(_ != '\n').mkString
               if preceding.isBlank then
@@ -91,7 +101,7 @@ object Mustachio {
               }
             case Some(_)   =>
               sb.append(
-                replace(replaceBuilder.dropRight(2).mkString, context, true)
+                replace(replaceBuilder.dropRight(2).mkString, true)
               )
             case None      =>
               throw new Exception("Unexpected error parsing template")
