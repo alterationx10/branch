@@ -7,7 +7,7 @@ object Mustachio {
   def render(
       template: String,
       context: Stache,
-      subContext: Option[Stache] = Option.empty
+      sections: List[String] = List.empty
   ): String = {
 
     val templateIterator = template.iterator
@@ -27,12 +27,9 @@ object Mustachio {
         fieldStr: String,
         escape: Boolean
     ): String = {
-      val fields = fieldStr.trim.split("\\.")
-      fields
-        .foldLeft(subContext)((s, field) => s ? field)
-        .orElse(
-          fields.foldLeft(Option(context))((s, field) => s ? field)
-        )
+      val sectionedPrefix =
+        (sections.mkString(".") + "." + fieldStr).stripPrefix(".")
+      (context ? sectionedPrefix)
         .map(_.strVal)
         .map(str => if escape then htmlEscape(str) else str)
         .getOrElse("")
@@ -71,24 +68,23 @@ object Mustachio {
                 replaceBuilder.append(strIter.next())
               context ? section match {
                 case Some(Stache.Str("false")) => ()
-                case Some(Stache.Str("null"))  => ()
+                case Some(Stache.Null)  => ()
                 case Some(Stache.Arr(arr))     =>
                   arr.foreach { item =>
                     sb.append(
                       render(
                         replaceBuilder.dropRight(5 + section.length).mkString,
                         context,
-                        Some(item)
+                        sections :+ section
                       )
                     )
                   }
                 case _                         =>
                   sb.append(
-                    // TODO the getOrElse probably is an edge case waiting to happen...
                     render(
                       replaceBuilder.dropRight(5 + section.length).mkString,
                       context,
-                      context ? section
+                      sections :+ section
                     )
                   )
               }

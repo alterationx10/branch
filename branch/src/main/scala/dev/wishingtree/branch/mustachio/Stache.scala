@@ -9,12 +9,13 @@ enum Stache {
   case Str(value: String)
   case Arr(value: List[Stache])
   case Obj(value: Map[String, Stache])
+  case Null
 }
 
 object Stache {
 
   def fromJson(json: Json): Stache = json match {
-    case JsonNull          => Str("null")
+    case JsonNull          => Null
     case JsonString(value) => Str(value)
     case JsonBool(value)   => Str(value.toString)
     case JsonNumber(value) =>
@@ -32,13 +33,20 @@ object Stache {
     Obj(fields.toMap)
 
   extension (s: Stache) {
-    def ?(field: String): Option[Stache] = s match {
-      case Obj(value) => value.get(field)
-      case _              => None
+    def ?(field: String): Option[Stache] = {
+      val fields = field.trim.split("\\.")
+      fields
+        .foldLeft(Option(s))((s, field) => {
+          s match {
+            case Some(Obj(value)) => value.get(field)
+            case _                => None
+          }
+        })
     }
 
     def strVal: String = s match {
       case Str(value) => value
+      case Null       => ""
       case _          => ""
     }
   }
