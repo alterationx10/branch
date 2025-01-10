@@ -72,6 +72,16 @@ object Mustachio {
               context ? section match {
                 case Some(Stache.Str("false")) => ()
                 case Some(Stache.Str("null"))  => ()
+                case Some(Stache.Arr(arr))     =>
+                  arr.foreach { item =>
+                    sb.append(
+                      render(
+                        replaceBuilder.dropRight(5 + section.length).mkString,
+                        context,
+                        Some(item)
+                      )
+                    )
+                  }
                 case _                         =>
                   sb.append(
                     // TODO the getOrElse probably is an edge case waiting to happen...
