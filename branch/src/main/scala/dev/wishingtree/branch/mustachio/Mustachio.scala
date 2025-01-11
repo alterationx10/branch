@@ -7,7 +7,6 @@ object Mustachio {
   def render(
       template: String,
       context: Stache,
-      sections: List[String] = List.empty,
       sectionContexts: List[Stache] = List.empty
   ): String = {
 
@@ -35,61 +34,31 @@ object Mustachio {
         }
         .reverse
 
-    // Searched up the stack for the first context that
-    // we can look in.
-    def findContext(fieldStr: String): Stache = {
-
-      fieldStack(sections.mkString("."))
-        .map(section => context ? section)
-        .find { c =>
-          fieldStack(fieldStr)
-            .map(s => c ? s)
-            .exists(_.nonEmpty)
-        }
-        .flatten
-        .getOrElse(context)
-
-    }
-
     def replace(
         fieldStr: String,
         escape: Boolean
     ): String = {
 
-      val _field =
-        if fieldStr == "." then sections.lastOption.getOrElse(".")
-        else fieldStr
-
-      val subContext =
-        sectionContexts.find(c => (c ? _field).nonEmpty)
-
-      // independent sections
-      val otherContext =
-        sections
-          .map(context ? _)
-          .find(c => (c ? _field).nonEmpty)
-          .flatten
-
-      val lastSectionOfLastContext =
-        sections.lastOption.flatMap { section =>
-          sectionContexts.headOption.flatMap { ctx =>
-            ctx ? section
-          }
+      // only look up in context
+      // if NO fields are found in section contexts.
+      // should be able to check the head?
+      val canContext: Boolean =
+        fieldStr.split("\\.").headOption.forall { f =>
+          !sectionContexts.exists(c => (c ? f).isDefined)
         }
 
-      // This has gotten out of control
-      (findContext(_field) ? _field)   // hierarchical sections
-        .orElse(subContext ? _field)   // visited sections
-        .orElse(otherContext ? _field) // independent sections
-        .orElse(
-          lastSectionOfLastContext ? _field
-        )                              // last section of last context
+      val sectionOrContext =
+        sectionContexts
+          .find(c => (c ? fieldStr).nonEmpty)
+          .orElse(
+            Option(context).filter(_ => canContext)
+          )
+
+      (sectionOrContext ? fieldStr)
         .map(_.strVal)
         .map(str => if escape then htmlEscape(str) else str)
         .getOrElse {
-          println(s"sections: $sections")
           println(s"Could not find $fieldStr in context")
-          lastSectionOfLastContext.foreach(_.prettyPrint())
           sectionContexts.foreach(_.prettyPrint())
           ""
         }
@@ -152,15 +121,16 @@ object Mustachio {
                   .getOrElse("")
 
               context ? section match {
-                case Some(Stache.Str("false")) => sb.append(maybeNewLineAgain)
-                case Some(Stache.Null)         => sb.append(maybeNewLineAgain)
+                case Some(Stache.Str("false")) =>
+                  sb.append(maybeNewLineAgain)
+                case Some(Stache.Null)         =>
+                  sb.append(maybeNewLineAgain)
                 case Some(Stache.Arr(arr))     =>
                   arr.foreach { item =>
                     sb.append(
                       render(
                         replaceBuilder.dropRight(5 + section.length).mkString,
                         item,
-                        sections :+ section,
                         context +: sectionContexts
                       )
                     )
@@ -171,20 +141,11 @@ object Mustachio {
                     render(
                       replaceBuilder.dropRight(5 + section.length).mkString,
                       context,
-                      sections :+ section,
                       ctx +: sectionContexts
                     ) + maybeNewLineAgain
                   )
                 case None                      =>
-                  sb.append(
-                    render(
-                      replaceBuilder.dropRight(5 + section.length).mkString,
-                      context,
-                      sections :+ section,
-                      // The trick is to look in the last context, but this is a hack for now
-                      (sectionContexts.head ? section).get +: sectionContexts
-                    ) + maybeNewLineAgain
-                  )
+                  sb.append(maybeNewLineAgain)
               }
             case Some('!') =>
               val preceding = sb.reverse.takeWhile(_ != '\n').mkString
