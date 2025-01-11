@@ -137,6 +137,13 @@ object Mustachio {
               while !replaceBuilder.endsWith(s"{{/$section}}") do
                 replaceBuilder.append(strIter.next())
 
+              // TODO Need to do arbitrary nesting...
+              if replaceBuilder.mkString.contains(s"{{#$section}}") then {
+                replaceBuilder.append(strIter.next())
+                while !replaceBuilder.endsWith(s"{{/$section}}") do
+                  replaceBuilder.append(strIter.next())
+              }
+
               val maybeNewLineAgain =
                 strIter
                   .nextOption()
