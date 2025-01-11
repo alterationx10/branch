@@ -131,7 +131,7 @@ object Mustachio {
                       render(
                         replaceBuilder.dropRight(5 + section.length).mkString,
                         item,
-                        context +: sectionContexts
+                        item +: context +: sectionContexts
                       )
                     )
                   }
