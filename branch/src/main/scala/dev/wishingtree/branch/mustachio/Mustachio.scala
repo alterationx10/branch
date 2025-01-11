@@ -94,15 +94,6 @@ object Mustachio {
               val section = replaceBuilder.drop(1).dropRight(2).mkString
               replaceBuilder.clear()
 
-              val maybeNewline =
-                strIter
-                  .nextOption()
-                  .filterNot(_ == '\n')
-                  .map(_.toString)
-                  .getOrElse("")
-
-              replaceBuilder.append(maybeNewline)
-
               while !replaceBuilder.endsWith(s"{{/$section}}") do
                 replaceBuilder.append(strIter.next())
 
@@ -113,12 +104,22 @@ object Mustachio {
                   replaceBuilder.append(strIter.next())
               }
 
-              val maybeNewLineAgain =
-                strIter
-                  .nextOption()
-                  .filterNot(_ == '\n')
-                  .map(_.toString)
-                  .getOrElse("")
+              // Single-line sections should not alter surrounding whitespace.
+              val isSingleLine = !replaceBuilder.contains('\n')
+              // If the first char of replace is \n, remove it.
+              if !isSingleLine then
+                if replaceBuilder.charAt(0) == '\n' then
+                  replaceBuilder.deleteCharAt(0)
+
+              val maybeNewLineAgain = {
+                if !isSingleLine then
+                  strIter
+                    .nextOption()
+                    .filterNot(_ == '\n')
+                    .map(_.toString)
+                    .getOrElse("")
+                else ""
+              }
 
               context ? section match {
                 case Some(Stache.Str("false")) =>
