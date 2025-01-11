@@ -164,21 +164,24 @@ object Mustachio {
                   else sb.append(maybeNewLineAgain)
               }
             case Some('!') =>
-              val preceding = sb.reverse.takeWhile(_ != '\n').mkString
-              if preceding.isBlank then
-                sb.setLength(sb.length - preceding.length)
-              strIter.nextOption() match {
-                case Some('\n') =>
-                  if preceding.isBlank then () // Do nothing
-                  else sb.append('\n')
-                case Some('\r') =>
-                  strIter.nextOption() match {
-                    case Some('\n') => // Do nothing
-                    case Some(c)    => sb.append('\r').append(c)
-                    case _          => ()
-                  }
-                case Some(c)    => sb.append(c)
-                case _          => ()
+              val isInSection = sectionContexts.nonEmpty
+              if !isInSection then {
+                val preceding = sb.reverse.takeWhile(_ != '\n').mkString
+                if preceding.isBlank then
+                  sb.setLength(sb.length - preceding.length)
+                strIter.nextOption() match {
+                  case Some('\n') =>
+                    if preceding.isBlank then () // Do nothing
+                    else sb.append('\n')
+                  case Some('\r') =>
+                    strIter.nextOption() match {
+                      case Some('\n') => // Do nothing
+                      case Some(c)    => sb.append('\r').append(c)
+                      case _          => ()
+                    }
+                  case Some(c)    => sb.append(c)
+                  case _          => ()
+                }
               }
             case Some(_)   =>
               sb.append(
