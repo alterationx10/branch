@@ -7,7 +7,8 @@ object Mustachio {
   def render(
       template: String,
       context: Stache,
-      sections: List[String] = List.empty
+      sections: List[String] = List.empty,
+      sectionContexts: List[Stache] = List.empty
   ): String = {
 
     val templateIterator = template.iterator
@@ -23,16 +24,75 @@ object Mustachio {
         .replace("\\\"", "&quot;")
         .replace("'", "&#39;")
 
+    // given a.b.c should give a list of a.b.c, a.b, a
+    def fieldStack(fieldStr: String): List[String] =
+      fieldStr
+        .split("\\.")
+        .foldLeft(List.empty[String]) { (acc, field) =>
+          val next =
+            (acc.lastOption.getOrElse("") + "." + field).stripPrefix(".")
+          acc :+ next
+        }
+        .reverse
+
+    // Searched up the stack for the first context that
+    // we can look in.
+    def findContext(fieldStr: String): Stache = {
+
+      fieldStack(sections.mkString("."))
+        .map(section => context ? section)
+        .find { c =>
+          fieldStack(fieldStr)
+            .map(s => c ? s)
+            .exists(_.nonEmpty)
+        }
+        .flatten
+        .getOrElse(context)
+
+    }
+
     def replace(
         fieldStr: String,
         escape: Boolean
     ): String = {
-      val sectionedPrefix =
-        (sections.mkString(".") + "." + fieldStr).stripPrefix(".")
-      (context ? sectionedPrefix)
+
+      val _field =
+        if fieldStr == "." then sections.lastOption.getOrElse(".")
+        else fieldStr
+
+      val subContext =
+        sectionContexts.find(c => (c ? _field).nonEmpty)
+
+      // independent sections
+      val otherContext =
+        sections
+          .map(context ? _)
+          .find(c => (c ? _field).nonEmpty)
+          .flatten
+
+      val lastSectionOfLastContext =
+        sections.lastOption.flatMap { section =>
+          sectionContexts.headOption.flatMap { ctx =>
+            ctx ? section
+          }
+        }
+
+      // This has gotten out of control
+      (findContext(_field) ? _field)   // hierarchical sections
+        .orElse(subContext ? _field)   // visited sections
+        .orElse(otherContext ? _field) // independent sections
+        .orElse(
+          lastSectionOfLastContext ? _field
+        )                              // last section of last context
         .map(_.strVal)
         .map(str => if escape then htmlEscape(str) else str)
-        .getOrElse("")
+        .getOrElse {
+          println(s"sections: $sections")
+          println(s"Could not find $fieldStr in context")
+          lastSectionOfLastContext.foreach(_.prettyPrint())
+          sectionContexts.foreach(_.prettyPrint())
+          ""
+        }
     }
 
     @tailrec
@@ -64,28 +124,59 @@ object Mustachio {
             case Some('#') =>
               val section = replaceBuilder.drop(1).dropRight(2).mkString
               replaceBuilder.clear()
+
+              val maybeNewline =
+                strIter
+                  .nextOption()
+                  .filterNot(_ == '\n')
+                  .map(_.toString)
+                  .getOrElse("")
+
+              replaceBuilder.append(maybeNewline)
+
               while !replaceBuilder.endsWith(s"{{/$section}}") do
                 replaceBuilder.append(strIter.next())
+
+              val maybeNewLineAgain =
+                strIter
+                  .nextOption()
+                  .filterNot(_ == '\n')
+                  .map(_.toString)
+                  .getOrElse("")
+
               context ? section match {
-                case Some(Stache.Str("false")) => ()
-                case Some(Stache.Null)  => ()
+                case Some(Stache.Str("false")) => sb.append(maybeNewLineAgain)
+                case Some(Stache.Null)         => sb.append(maybeNewLineAgain)
                 case Some(Stache.Arr(arr))     =>
                   arr.foreach { item =>
                     sb.append(
                       render(
                         replaceBuilder.dropRight(5 + section.length).mkString,
-                        context,
-                        sections :+ section
+                        item,
+                        sections :+ section,
+                        context +: sectionContexts
                       )
                     )
                   }
-                case _                         =>
+                  sb.append(maybeNewLineAgain)
+                case Some(ctx)                 =>
                   sb.append(
                     render(
                       replaceBuilder.dropRight(5 + section.length).mkString,
                       context,
-                      sections :+ section
-                    )
+                      sections :+ section,
+                      ctx +: sectionContexts
+                    ) + maybeNewLineAgain
+                  )
+                case None                      =>
+                  sb.append(
+                    render(
+                      replaceBuilder.dropRight(5 + section.length).mkString,
+                      context,
+                      sections :+ section,
+                      // The trick is to look in the last context, but this is a hack for now
+                      (sectionContexts.head ? section).get +: sectionContexts
+                    ) + maybeNewLineAgain
                   )
               }
             case Some('!') =>

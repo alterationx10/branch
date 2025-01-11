@@ -34,6 +34,9 @@ object Stache {
 
   extension (s: Stache) {
     def ?(field: String): Option[Stache] = {
+      // Early exit if the field is a dot
+      if field == "." then return Some(s)
+
       val fields = field.trim.split("\\.")
       fields
         .foldLeft(Option(s))((s, field) => {
@@ -44,12 +47,26 @@ object Stache {
         })
     }
 
+    def toPrettyString: String = s match {
+      case Null       => "null"
+      case Str(value) => s"\"$value\""
+      case Arr(value) =>
+        "[" + value.map(_.toPrettyString).mkString(", ") + "]"
+      case Obj(value) =>
+        "{" + value
+          .map { case (k, v) => "\"" + k + "\": " + v.toPrettyString }
+          .mkString(", ") + "}"
+    }
+
+    def prettyPrint(): Unit = println(toPrettyString)
+
     def strVal: String = s match {
       case Str(value) => value
       case Null       => ""
       case _          => ""
     }
   }
+
 
   extension (s: Option[Stache]) {
     def ?(field: String): Option[Stache] =
