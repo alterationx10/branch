@@ -145,7 +145,23 @@ object Mustachio {
                     ) + maybeNewLineAgain
                   )
                 case None                      =>
-                  sb.append(maybeNewLineAgain)
+                  // if the section is a name of a field on the current context,
+                  // we need to handle that, otherwise we just skip the section
+                  val isFieldOfLastContext =
+                    sectionContexts.headOption
+                      .flatMap(_ ? section)
+                      .isDefined
+                  if isFieldOfLastContext then
+                    sb.append(
+                      render(
+                        replaceBuilder.dropRight(5 + section.length).mkString,
+                        context,
+                        sectionContexts.headOption
+                          .flatMap(_ ? section)
+                          .get +: sectionContexts
+                      ) + maybeNewLineAgain
+                    )
+                  else sb.append(maybeNewLineAgain)
               }
             case Some('!') =>
               val preceding = sb.reverse.takeWhile(_ != '\n').mkString
