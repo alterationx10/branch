@@ -64,6 +64,172 @@ object Mustachio {
         }
     }
 
+    def handleSection(
+        strIter: Iterator[Char],
+        section: String,
+        negated: Boolean = false
+    ): Unit = {
+      while !replaceBuilder.endsWith(s"{{/$section}}") do {
+        replaceBuilder.append(strIter.next())
+      }
+
+      // TODO Need to do arbitrary nesting...
+      if (
+        replaceBuilder.mkString.contains(s"{{#$section}}") ||
+        replaceBuilder.mkString.contains(s"{{^$section}}")
+      ) then {
+        replaceBuilder.append(strIter.next())
+        while !replaceBuilder.endsWith(s"{{/$section}}") do
+          replaceBuilder.append(strIter.next())
+      }
+
+      val openTagIsStandalone = {
+        val preceding = sb.reverse.takeWhile(_ != '\n').mkString
+        val following = replaceBuilder.takeWhile(_ != '\n').mkString
+        preceding.isBlank && following.isBlank
+      }
+
+      // preceding: remove white space UP TO a newline
+      // following: remove white space INCLUDING a newline
+      if openTagIsStandalone then {
+        val preceding = sb.reverse.takeWhile(_ != '\n').mkString
+        val toRemove  = preceding.length
+        if toRemove > sb.length() then sb.clear()
+        else sb.setLength(sb.length - toRemove)
+
+        val following = replaceBuilder.takeWhile(_ != '\n').mkString
+        replaceBuilder.delete(0, following.length + 1)
+      }
+
+      val appendAfterRender    = new StringBuilder()
+      val closeTagIsStandalone = {
+        val preceding = replaceBuilder
+          .dropRight(s"{{/$section}}".length)
+          .reverse
+          .takeWhile(_ != '\n')
+          .mkString
+
+        // TODO what about white space?
+        strIter.nextOption().foreach(appendAfterRender.append)
+        strIter.nextOption().foreach(appendAfterRender.append)
+        val following =
+          appendAfterRender.mkString == "\r\n" ||
+            appendAfterRender.headOption.contains('\n') ||
+            appendAfterRender.isEmpty
+        preceding.isBlank && following
+      }
+
+      // preceding: remove white space UP TO a newline
+      // following: remove white space INCLUDING a newline
+      if closeTagIsStandalone then {
+        val preceding = replaceBuilder
+          .dropRight(s"{{/$section}}".length)
+          .reverse
+          .takeWhile(_ != '\n')
+          .mkString
+        val toRemove  = preceding.length
+        if toRemove > replaceBuilder.length() then replaceBuilder.clear()
+        else replaceBuilder.setLength(replaceBuilder.length - toRemove)
+
+        if appendAfterRender.mkString == "\r\n" then {
+          appendAfterRender.clear()
+        } else if appendAfterRender.nonEmpty then {
+          appendAfterRender.deleteCharAt(0)
+        }
+      }
+
+      context ? section match {
+        case Some(ctx @ Stache.Str("false")) =>
+          if !negated then sb.append(appendAfterRender.mkString)
+          else
+            sb.append(
+              render(
+                replaceBuilder.dropRight(5 + section.length).mkString,
+                context,
+                ctx +: sectionContexts
+              ) + appendAfterRender.mkString
+            )
+        case Some(ctx @ Stache.Str("true"))  =>
+          if !negated then
+            sb.append(
+              render(
+                replaceBuilder.dropRight(5 + section.length).mkString,
+                context,
+                ctx +: sectionContexts
+              ) + appendAfterRender.mkString
+            )
+          else sb.append(appendAfterRender.mkString)
+        case Some(Stache.Null)               =>
+          if !negated then sb.append(appendAfterRender.mkString)
+          else
+            sb.append(
+              render(
+                replaceBuilder.dropRight(5 + section.length).mkString,
+                context,
+                sectionContexts
+              ) + appendAfterRender.mkString
+            )
+        case Some(Stache.Arr(arr))           =>
+          if !negated && arr.nonEmpty then {
+            arr.foreach { item =>
+              sb.append(
+                render(
+                  replaceBuilder.dropRight(5 + section.length).mkString,
+                  item,
+                  item +: context +: sectionContexts
+                )
+              )
+            }
+            sb.append(appendAfterRender.mkString)
+          } else if !(negated ^ arr.isEmpty) then {
+            println(s"double negated")
+            sb.append(
+              render(
+                replaceBuilder.dropRight(5 + section.length).mkString,
+                context,
+                context +: sectionContexts
+              ) + appendAfterRender.mkString
+            )
+          } else {
+            sb.append(appendAfterRender.mkString)
+          }
+        case Some(ctx)                       =>
+          if !negated then
+            sb.append(
+              render(
+                replaceBuilder.dropRight(5 + section.length).mkString,
+                context,
+                ctx +: sectionContexts
+              ) + appendAfterRender.mkString
+            )
+          else sb.append(appendAfterRender.mkString)
+        case None                            =>
+          if !negated then {
+            // if the section is a name of a field on the current context,
+            // we need to handle that, otherwise we just skip the section
+            val isFieldOfLastContext =
+              sectionContexts.headOption
+                .flatMap(_ ? section)
+                .isDefined
+            if isFieldOfLastContext then
+              sb.append(
+                render(
+                  replaceBuilder.dropRight(5 + section.length).mkString,
+                  context,
+                  sectionContexts.headOption
+                    .flatMap(_ ? section)
+                    .get +: sectionContexts
+                ) + appendAfterRender.mkString
+              )
+            else sb.append(appendAfterRender.mkString)
+          } else {
+            sb.append(appendAfterRender.mkString)
+          }
+
+      }
+
+    }
+
     @tailrec
     def loop(strIter: Iterator[Char]): String =
       if !strIter.hasNext then sb.result()
@@ -93,116 +259,7 @@ object Mustachio {
             case Some('#') =>
               val section = replaceBuilder.drop(1).dropRight(2).mkString
               replaceBuilder.clear()
-
-              while !replaceBuilder.endsWith(s"{{/$section}}") do
-                replaceBuilder.append(strIter.next())
-
-              // TODO Need to do arbitrary nesting...
-              if replaceBuilder.mkString.contains(s"{{#$section}}") then {
-                replaceBuilder.append(strIter.next())
-                while !replaceBuilder.endsWith(s"{{/$section}}") do
-                  replaceBuilder.append(strIter.next())
-              }
-
-              val openTagIsStandalone = {
-                val preceding = sb.reverse.takeWhile(_ != '\n').mkString
-                val following = replaceBuilder.takeWhile(_ != '\n').mkString
-                preceding.isBlank && following.isBlank
-              }
-
-              // preceding: remove white space UP TO a newline
-              // following: remove white space INCLUDING a newline
-              if openTagIsStandalone then {
-                val preceding = sb.reverse.takeWhile(_ != '\n').mkString
-                val toRemove  = preceding.length
-                if toRemove > sb.length() then sb.clear()
-                else sb.setLength(sb.length - toRemove)
-
-                val following = replaceBuilder.takeWhile(_ != '\n').mkString
-                replaceBuilder.delete(0, following.length + 1)
-              }
-
-              val appendAfterRender    = new StringBuilder()
-              val closeTagIsStandalone = {
-                val preceding = replaceBuilder
-                  .dropRight(s"{{/$section}}".length)
-                  .reverse
-                  .takeWhile(_ != '\n')
-                  .mkString
-
-                // TODO what about white space?
-                strIter.nextOption().foreach(appendAfterRender.append)
-                strIter.nextOption().foreach(appendAfterRender.append)
-                val following =
-                  appendAfterRender.mkString == "\r\n" ||
-                    appendAfterRender.headOption.contains('\n') ||
-                    appendAfterRender.isEmpty
-                preceding.isBlank && following
-              }
-
-              // preceding: remove white space UP TO a newline
-              // following: remove white space INCLUDING a newline
-              if closeTagIsStandalone then {
-                val preceding = replaceBuilder
-                  .dropRight(s"{{/$section}}".length)
-                  .reverse
-                  .takeWhile(_ != '\n')
-                  .mkString
-                val toRemove  = preceding.length
-                if toRemove > replaceBuilder.length() then
-                  replaceBuilder.clear()
-                else replaceBuilder.setLength(replaceBuilder.length - toRemove)
-
-                if appendAfterRender.mkString == "\r\n" then {
-                  appendAfterRender.clear()
-                } else if appendAfterRender.nonEmpty then {
-                  appendAfterRender.deleteCharAt(0)
-                }
-              }
-
-              context ? section match {
-                case Some(Stache.Str("false")) =>
-                  sb.append(appendAfterRender.mkString)
-                case Some(Stache.Null)         =>
-                  sb.append(appendAfterRender.mkString)
-                case Some(Stache.Arr(arr))     =>
-                  arr.foreach { item =>
-                    sb.append(
-                      render(
-                        replaceBuilder.dropRight(5 + section.length).mkString,
-                        item,
-                        item +: context +: sectionContexts
-                      )
-                    )
-                  }
-                  sb.append(appendAfterRender.mkString)
-                case Some(ctx)                 =>
-                  sb.append(
-                    render(
-                      replaceBuilder.dropRight(5 + section.length).mkString,
-                      context,
-                      ctx +: sectionContexts
-                    ) + appendAfterRender.mkString
-                  )
-                case None                      =>
-                  // if the section is a name of a field on the current context,
-                  // we need to handle that, otherwise we just skip the section
-                  val isFieldOfLastContext =
-                    sectionContexts.headOption
-                      .flatMap(_ ? section)
-                      .isDefined
-                  if isFieldOfLastContext then
-                    sb.append(
-                      render(
-                        replaceBuilder.dropRight(5 + section.length).mkString,
-                        context,
-                        sectionContexts.headOption
-                          .flatMap(_ ? section)
-                          .get +: sectionContexts
-                      ) + appendAfterRender.mkString
-                    )
-                  else sb.append(appendAfterRender.mkString)
-              }
+              handleSection(strIter, section)
             case Some('!') =>
               val isInSection = sectionContexts.nonEmpty
               if !isInSection then {
@@ -223,11 +280,16 @@ object Mustachio {
                   case _          => ()
                 }
               }
-            case Some(_)   =>
+            case Some('^') =>
+              val section = replaceBuilder.drop(1).dropRight(2).mkString
+              replaceBuilder.clear()
+              handleSection(strIter, section, true)
+
+            case Some(_) =>
               sb.append(
                 replace(replaceBuilder.dropRight(2).mkString, true)
               )
-            case None      =>
+            case None    =>
               throw new Exception("Unexpected error parsing template")
           }
 
