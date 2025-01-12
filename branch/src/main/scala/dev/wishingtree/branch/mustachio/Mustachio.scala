@@ -223,7 +223,13 @@ object Mustachio {
               )
             else sb.append(appendAfterRender.mkString)
           } else {
-            sb.append(appendAfterRender.mkString)
+            sb.append(
+              render(
+                replaceBuilder.dropRight(5 + section.length).mkString,
+                context,
+                sectionContexts
+              ) + appendAfterRender.mkString
+            )
           }
 
       }
