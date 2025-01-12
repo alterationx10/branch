@@ -3,10 +3,10 @@ package dev.wishingtree.branch.mustachio
 import scala.io.Source
 import scala.util.Using
 
-class MustachioSectionsSpec extends MustacheSpecSuite {
+class MustachioPartialsSpec extends MustachePartialsSpecSuite {
 
   val specSuite: SpecSuite =
-    Using(Source.fromResource("mustache/sections.json")) { source =>
+    Using(Source.fromResource("mustache/partials.json")) { source =>
       SpecSuite.decoder.decode(source.mkString)
     }.flatten.getOrElse(throw new Exception("Failed to parse json"))
 
