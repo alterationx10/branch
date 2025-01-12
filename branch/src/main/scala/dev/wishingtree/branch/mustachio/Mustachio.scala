@@ -306,6 +306,26 @@ object Mustachio {
               val partial = replaceBuilder.drop(1).dropRight(2).mkString
               replaceBuilder.clear()
 
+              val preceding = sb.reverse.takeWhile(_ != '\n').mkString
+
+              val appendAfterRender = new StringBuilder()
+              strIter.nextOption().foreach(appendAfterRender.append)
+              strIter.nextOption().foreach(appendAfterRender.append)
+
+              val isStandalone: Boolean =
+                if preceding.isBlank then
+                  if appendAfterRender.mkString == "\r\n" then {
+                    appendAfterRender.clear()
+                    true
+                  } else if appendAfterRender.headOption.contains('\n') then {
+                    appendAfterRender.deleteCharAt(0)
+                    true
+                  } else if appendAfterRender.isEmpty then true
+                  else false
+                else false
+
+              println(s"Is standalone: $isStandalone")
+
               sb.append(
                 render(
                   partials ? partial match {
@@ -319,7 +339,7 @@ object Mustachio {
                   context,
                   sectionContexts,
                   partials
-                )
+                ) + appendAfterRender.mkString
               )
 
             case Some(_) =>
