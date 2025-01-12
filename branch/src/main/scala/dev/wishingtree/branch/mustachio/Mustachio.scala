@@ -109,10 +109,10 @@ object Mustachio {
                 val following = replaceBuilder.takeWhile(_ != '\n').mkString
                 preceding.isBlank && following.isBlank
               }
-              println(s"openTagIsStandalone: $openTagIsStandalone")
+
               // preceding: remove white space UP TO a newline
               // following: remove white space INCLUDING a newline
-              if openTagIsStandalone && sb.nonEmpty then {
+              if openTagIsStandalone then {
                 val preceding = sb.reverse.takeWhile(_ != '\n').mkString
                 val toRemove  = preceding.length
                 if toRemove > sb.length() then sb.clear()
@@ -139,7 +139,7 @@ object Mustachio {
                     appendAfterRender.isEmpty
                 preceding.isBlank && following
               }
-              println(s"closeTagIsStandalone: $closeTagIsStandalone")
+
               // preceding: remove white space UP TO a newline
               // following: remove white space INCLUDING a newline
               if closeTagIsStandalone then {

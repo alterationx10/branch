@@ -67,7 +67,6 @@ object Stache {
     }
   }
 
-
   extension (s: Option[Stache]) {
     def ?(field: String): Option[Stache] =
       s.flatMap(_ ? field)
