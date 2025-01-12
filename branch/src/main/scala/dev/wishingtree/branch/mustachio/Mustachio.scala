@@ -104,22 +104,86 @@ object Mustachio {
                   replaceBuilder.append(strIter.next())
               }
 
-              // Single-line sections should not alter surrounding whitespace.
               val isSingleLine = !replaceBuilder.contains('\n')
-              // If the first char of replace is \n, remove it.
-              if !isSingleLine then
-                if replaceBuilder.charAt(0) == '\n' then
-                  replaceBuilder.deleteCharAt(0)
 
-              val maybeNewLineAgain = {
-                if !isSingleLine then
-                  strIter
-                    .nextOption()
-                    .filterNot(_ == '\n')
-                    .map(_.toString)
-                    .getOrElse("")
-                else ""
+              // we've read through the open tag
+              val openTagIsStandalone = {
+                val preceding = sb.reverse.takeWhile(_ != '\n').mkString
+                val following = replaceBuilder.takeWhile(_ != '\n').mkString
+                preceding.isBlank && following.isBlank
               }
+              println(s"openTagIsStandalone: $openTagIsStandalone")
+              // preceding: remove white space UP TO a newline
+              // following: remove white space INCLUDING a newline
+              if openTagIsStandalone && sb.nonEmpty then {
+                val preceding = sb.reverse.takeWhile(_ != '\n').mkString
+                val toRemove  = preceding.length
+                if toRemove > sb.length() then sb.clear()
+                else sb.setLength(sb.length - toRemove)
+
+                // maybe only do this in not single line sections?
+                val following = replaceBuilder.takeWhile(_ != '\n').mkString
+                replaceBuilder.delete(0, following.length + 1)
+              }
+
+              // we've read through the close tag
+              val appendAfterRender    = new StringBuilder()
+              val closeTagIsStandalone = {
+                val preceding = replaceBuilder
+                  .dropRight(s"{{/$section}}".length)
+                  .reverse
+                  .takeWhile(_ != '\n')
+                  .mkString
+
+                // TODO what about white space?
+                strIter.nextOption().foreach(appendAfterRender.append)
+                strIter.nextOption().foreach(appendAfterRender.append)
+                val following =
+                  appendAfterRender.mkString == "\r\n" ||
+                    appendAfterRender.headOption.contains('\n') ||
+                    appendAfterRender.isEmpty
+                preceding.isBlank && following
+              }
+              println(s"closeTagIsStandalone: $closeTagIsStandalone")
+              // preceding: remove white space UP TO a newline
+              // following: remove white space INCLUDING a newline
+              if closeTagIsStandalone then {
+                val preceding = replaceBuilder
+                  .dropRight(s"{{/$section}}".length)
+                  .reverse
+                  .takeWhile(_ != '\n')
+                  .mkString
+                val toRemove  = preceding.length
+                if toRemove > replaceBuilder.length() then
+                  replaceBuilder.clear()
+                else replaceBuilder.setLength(replaceBuilder.length - toRemove)
+
+                if appendAfterRender.mkString == "\r\n" then {
+                  appendAfterRender.clear()
+                } else if appendAfterRender.nonEmpty then {
+                  appendAfterRender.deleteCharAt(0)
+                }
+              }
+
+              if false then {
+                // Single-line sections should not alter surrounding whitespace.
+                val isSingleLine = !replaceBuilder.contains('\n')
+                // If the first char of replace is \n, remove it.
+                if !isSingleLine then
+                  if replaceBuilder.charAt(0) == '\n' then
+                    replaceBuilder.deleteCharAt(0)
+
+                val maybeNewLineAgain = {
+                  if !isSingleLine then
+                    strIter
+                      .nextOption()
+                      .filterNot(_ == '\n')
+                      .map(_.toString)
+                      .getOrElse("")
+                  else ""
+                }
+              }
+              val maybeNewLineAgain = appendAfterRender.mkString
 
               context ? section match {
                 case Some(Stache.Str("false")) =>
