@@ -104,9 +104,6 @@ object Mustachio {
                   replaceBuilder.append(strIter.next())
               }
 
-              val isSingleLine = !replaceBuilder.contains('\n')
-
-              // we've read through the open tag
               val openTagIsStandalone = {
                 val preceding = sb.reverse.takeWhile(_ != '\n').mkString
                 val following = replaceBuilder.takeWhile(_ != '\n').mkString
@@ -121,12 +118,10 @@ object Mustachio {
                 if toRemove > sb.length() then sb.clear()
                 else sb.setLength(sb.length - toRemove)
 
-                // maybe only do this in not single line sections?
                 val following = replaceBuilder.takeWhile(_ != '\n').mkString
                 replaceBuilder.delete(0, following.length + 1)
               }
 
-              // we've read through the close tag
               val appendAfterRender    = new StringBuilder()
               val closeTagIsStandalone = {
                 val preceding = replaceBuilder
@@ -165,31 +160,11 @@ object Mustachio {
                 }
               }
 
-              if false then {
-                // Single-line sections should not alter surrounding whitespace.
-                val isSingleLine = !replaceBuilder.contains('\n')
-                // If the first char of replace is \n, remove it.
-                if !isSingleLine then
-                  if replaceBuilder.charAt(0) == '\n' then
-                    replaceBuilder.deleteCharAt(0)
-
-                val maybeNewLineAgain = {
-                  if !isSingleLine then
-                    strIter
-                      .nextOption()
-                      .filterNot(_ == '\n')
-                      .map(_.toString)
-                      .getOrElse("")
-                  else ""
-                }
-              }
-              val maybeNewLineAgain = appendAfterRender.mkString
-
               context ? section match {
                 case Some(Stache.Str("false")) =>
-                  sb.append(maybeNewLineAgain)
+                  sb.append(appendAfterRender.mkString)
                 case Some(Stache.Null)         =>
-                  sb.append(maybeNewLineAgain)
+                  sb.append(appendAfterRender.mkString)
                 case Some(Stache.Arr(arr))     =>
                   arr.foreach { item =>
                     sb.append(
@@ -200,14 +175,14 @@ object Mustachio {
                       )
                     )
                   }
-                  sb.append(maybeNewLineAgain)
+                  sb.append(appendAfterRender.mkString)
                 case Some(ctx)                 =>
                   sb.append(
                     render(
                       replaceBuilder.dropRight(5 + section.length).mkString,
                       context,
                       ctx +: sectionContexts
-                    ) + maybeNewLineAgain
+                    ) + appendAfterRender.mkString
                   )
                 case None                      =>
                   // if the section is a name of a field on the current context,
@@ -224,9 +199,9 @@ object Mustachio {
                         sectionContexts.headOption
                           .flatMap(_ ? section)
                           .get +: sectionContexts
-                      ) + maybeNewLineAgain
+                      ) + appendAfterRender.mkString
                     )
-                  else sb.append(maybeNewLineAgain)
+                  else sb.append(appendAfterRender.mkString)
               }
             case Some('!') =>
               val isInSection = sectionContexts.nonEmpty
