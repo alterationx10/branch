@@ -14,9 +14,20 @@ enum Stache {
 
 object Stache {
 
+  def empty: Stache =
+    Stache.Obj(Map.empty)
+
+  extension (s: String) {
+    def unescape: String =
+      s
+        .replaceAll("\\\\n", "\n")
+        .replaceAll("\\\\r", "\r")
+        .replaceAll("\\\\t", "\t")
+  }
+
   def fromJson(json: Json): Stache = json match {
     case JsonNull          => Null
-    case JsonString(value) => Str(value)
+    case JsonString(value) => Str(value.unescape)
     case JsonBool(value)   => Str(value.toString)
     case JsonNumber(value) =>
       // A hack for now to format as int

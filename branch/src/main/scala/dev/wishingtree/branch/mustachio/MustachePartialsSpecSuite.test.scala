@@ -68,8 +68,12 @@ trait MustachePartialsSpecSuite extends munit.FunSuite {
       spec: Spec
   )(implicit loc: munit.Location): Unit = {
     test(spec.name) {
-      val context = Stache.fromJson(spec.data)
-      assertEquals(Mustachio.render(spec.template, context), spec.expected)
+      val context  = Stache.fromJson(spec.data)
+      val partials = Stache.fromJson(spec.partials)
+      assertEquals(
+        Mustachio.render(spec.template, context, List.empty, partials),
+        spec.expected
+      )
     }
   }
 }

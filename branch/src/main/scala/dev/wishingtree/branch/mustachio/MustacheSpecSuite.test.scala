@@ -66,7 +66,10 @@ trait MustacheSpecSuite extends munit.FunSuite {
   )(implicit loc: munit.Location): Unit = {
     test(spec.name) {
       val context = Stache.fromJson(spec.data)
-      assertEquals(Mustachio.render(spec.template, context), spec.expected)
+      assertEquals(
+        Mustachio.render(spec.template, context, List.empty, Stache.empty),
+        spec.expected
+      )
     }
   }
 }

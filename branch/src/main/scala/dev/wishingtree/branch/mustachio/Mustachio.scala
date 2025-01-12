@@ -1,5 +1,7 @@
 package dev.wishingtree.branch.mustachio
 
+import dev.wishingtree.branch.mustachio.Stache.Str
+
 import scala.annotation.tailrec
 
 object Mustachio {
@@ -7,7 +9,8 @@ object Mustachio {
   def render(
       template: String,
       context: Stache,
-      sectionContexts: List[Stache] = List.empty
+      sectionContexts: List[Stache],
+      partials: Stache
   ): String = {
 
     val templateIterator = template.iterator
@@ -146,7 +149,8 @@ object Mustachio {
               render(
                 replaceBuilder.dropRight(5 + section.length).mkString,
                 context,
-                ctx +: sectionContexts
+                ctx +: sectionContexts,
+                partials
               ) + appendAfterRender.mkString
             )
         case Some(ctx @ Stache.Str("true"))  =>
@@ -155,7 +159,8 @@ object Mustachio {
               render(
                 replaceBuilder.dropRight(5 + section.length).mkString,
                 context,
-                ctx +: sectionContexts
+                ctx +: sectionContexts,
+                partials
               ) + appendAfterRender.mkString
             )
           else sb.append(appendAfterRender.mkString)
@@ -166,7 +171,8 @@ object Mustachio {
               render(
                 replaceBuilder.dropRight(5 + section.length).mkString,
                 context,
-                sectionContexts
+                sectionContexts,
+                partials
               ) + appendAfterRender.mkString
             )
         case Some(Stache.Arr(arr))           =>
@@ -176,7 +182,8 @@ object Mustachio {
                 render(
                   replaceBuilder.dropRight(5 + section.length).mkString,
                   item,
-                  item +: context +: sectionContexts
+                  item +: context +: sectionContexts,
+                  partials
                 )
               )
             }
@@ -187,7 +194,8 @@ object Mustachio {
               render(
                 replaceBuilder.dropRight(5 + section.length).mkString,
                 context,
-                context +: sectionContexts
+                context +: sectionContexts,
+                partials
               ) + appendAfterRender.mkString
             )
           } else {
@@ -199,7 +207,8 @@ object Mustachio {
               render(
                 replaceBuilder.dropRight(5 + section.length).mkString,
                 context,
-                ctx +: sectionContexts
+                ctx +: sectionContexts,
+                partials
               ) + appendAfterRender.mkString
             )
           else sb.append(appendAfterRender.mkString)
@@ -218,7 +227,8 @@ object Mustachio {
                   context,
                   sectionContexts.headOption
                     .flatMap(_ ? section)
-                    .get +: sectionContexts
+                    .get +: sectionContexts,
+                  partials
                 ) + appendAfterRender.mkString
               )
             else sb.append(appendAfterRender.mkString)
@@ -227,7 +237,8 @@ object Mustachio {
               render(
                 replaceBuilder.dropRight(5 + section.length).mkString,
                 context,
-                sectionContexts
+                sectionContexts,
+                partials
               ) + appendAfterRender.mkString
             )
           }
@@ -237,7 +248,7 @@ object Mustachio {
     }
 
     @tailrec
-    def loop(strIter: Iterator[Char]): String =
+    def loop(strIter: Iterator[Char]): String = {
       if !strIter.hasNext then sb.result()
       else {
         sb.append(strIter.next())
@@ -291,6 +302,26 @@ object Mustachio {
               replaceBuilder.clear()
               handleSection(strIter, section, true)
 
+            case Some('>') =>
+              val partial = replaceBuilder.drop(1).dropRight(2).mkString
+              replaceBuilder.clear()
+
+              sb.append(
+                render(
+                  partials ? partial match {
+                    case Some(Stache.Str(str)) =>
+                      println(s"Partial found: $str")
+                      str
+                    case _                     =>
+                      println(s"no partial found")
+                      ""
+                  },
+                  context,
+                  sectionContexts,
+                  partials
+                )
+              )
+
             case Some(_) =>
               sb.append(
                 replace(replaceBuilder.dropRight(2).mkString, true)
@@ -304,6 +335,7 @@ object Mustachio {
 
         loop(strIter)
       }
+    }
 
     loop(templateIterator)
   }
