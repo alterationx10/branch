@@ -61,8 +61,6 @@ object Mustachio {
         .map(_.strVal)
         .map(str => if escape then htmlEscape(str) else str)
         .getOrElse {
-          println(s"Could not find $fieldStr in context")
-          sectionContexts.foreach(_.prettyPrint())
           ""
         }
     }
@@ -189,7 +187,6 @@ object Mustachio {
             }
             sb.append(appendAfterRender.mkString)
           } else if !(negated ^ arr.isEmpty) then {
-            println(s"double negated")
             sb.append(
               render(
                 replaceBuilder.dropRight(5 + section.length).mkString,
@@ -324,19 +321,18 @@ object Mustachio {
                   else false
                 else false
 
-              println(s"Is standalone: $isStandalone")
-
               sb.append(
                 render(
                   partials ? partial match {
                     case Some(Stache.Str(str)) =>
-                      println(s"Partial found: $str")
                       if isStandalone then {
-                        str
+                        val indented = str
                           .replaceAll("\n", s"\n$preceding")
+                        if indented.endsWith(s"\n$preceding") then {
+                          indented.dropRight(preceding.length)
+                        } else indented
                       } else str
                     case _                     =>
-                      println(s"no partial found")
                       ""
                   },
                   context,
