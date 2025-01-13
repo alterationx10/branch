@@ -109,7 +109,6 @@
       "data": {
       },
       "template": "  {{>partial}}\n>",
-      "template": "  {{>partial}}\n>",
       "partials": {
         "partial": ">\n>"
       },

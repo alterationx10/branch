@@ -331,7 +331,10 @@ object Mustachio {
                   partials ? partial match {
                     case Some(Stache.Str(str)) =>
                       println(s"Partial found: $str")
-                      str
+                      if isStandalone then {
+                        str
+                          .replaceAll("\n", s"\n$preceding")
+                      } else str
                     case _                     =>
                       println(s"no partial found")
                       ""
