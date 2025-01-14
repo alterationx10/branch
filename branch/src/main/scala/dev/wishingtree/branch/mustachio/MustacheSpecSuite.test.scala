@@ -1,7 +1,6 @@
 package dev.wishingtree.branch.mustachio
 
 import dev.wishingtree.branch.friday.{Json, JsonDecoder}
-import dev.wishingtree.branch.mustachio.Mustachio.Delimiter
 
 import scala.util.Try
 
@@ -70,10 +69,7 @@ trait MustacheSpecSuite extends munit.FunSuite {
       assertEquals(
         Mustachio.render(
           spec.template,
-          context,
-          List.empty,
-          Stache.empty,
-          Delimiter.default
+          context
         ),
         spec.expected
       )

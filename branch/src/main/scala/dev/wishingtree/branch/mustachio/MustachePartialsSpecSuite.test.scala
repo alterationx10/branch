@@ -1,7 +1,7 @@
 package dev.wishingtree.branch.mustachio
 
 import dev.wishingtree.branch.friday.{Json, JsonDecoder}
-import dev.wishingtree.branch.mustachio.Mustachio.Delimiter
+import dev.wishingtree.branch.mustachio.Delimiter
 
 import scala.util.Try
 
@@ -70,14 +70,12 @@ trait MustachePartialsSpecSuite extends munit.FunSuite {
   )(implicit loc: munit.Location): Unit = {
     test(spec.name) {
       val context  = Stache.fromJson(spec.data)
-      val partials = Stache.fromJson(spec.partials)
+      val partials = Option(Stache.fromJson(spec.partials))
       assertEquals(
         Mustachio.render(
           spec.template,
           context,
-          List.empty,
-          partials,
-          Delimiter.default
+          partials
         ),
         spec.expected
       )

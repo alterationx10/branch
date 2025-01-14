@@ -2,44 +2,11 @@ package dev.wishingtree.branch.mustachio
 
 import dev.wishingtree.branch.mustachio.Stache.Str
 
-import java.util.regex.Pattern
 import scala.annotation.tailrec
 
 object Mustachio {
 
-  case class Delimiter(open: String, close: String) {
-
-    def closing(str: String): String =
-      s"$open/$str$close"
-
-    def section(str: String): String =
-      s"$open#$str$close"
-
-    def inversion(str: String): String =
-      s"$open^$str$close"
-
-    def partial(str: String): String =
-      s"$open>$str$close"
-
-    def comment(str: String): String =
-      s"$open!$str$close"
-
-    lazy val isDefault: Boolean =
-      Delimiter.default.open.equals(open) &&
-        Delimiter.default.close.equals(close)
-  }
-
-  object Delimiter {
-    val default: Delimiter = Delimiter("{{", "}}")
-
-    def replaceDefaultWith(content: String, newDelimiter: Delimiter): String =
-      content
-        .replaceAll(Pattern.quote(default.open), newDelimiter.open)
-        .replaceAll(Pattern.quote(default.close), newDelimiter.close)
-
-  }
-
-  def htmlEscape(str: String): String =
+  private[mustachio] def htmlEscape(str: String): String =
     str
       .replace("&", "&amp;")
       .replace("<", "&lt;")
@@ -48,6 +15,20 @@ object Mustachio {
       .replace("'", "&#39;")
 
   def render(
+      template: String,
+      context: Stache,
+      partials: Option[Stache] = Option.empty[Stache]
+  ): String =
+    internalRender(
+      template,
+      context,
+      List.empty,
+      partials.getOrElse(Stache.empty),
+      Delimiter.default
+    )
+
+  
+  private[mustachio] def internalRender(
       template: String,
       context: Stache,
       sectionContexts: List[Stache],
@@ -65,14 +46,14 @@ object Mustachio {
         escape: Boolean
     ): String = {
 
-      // only look up in context
-      // if NO fields are found in section contexts.
-      // should be able to check the head?
+      // We should only look up in the root context if no fields are found in the visited contexts.
+      // E.g. If we're looking for a.b.c, then both b and a have to not exist.
       val canContext: Boolean =
         fieldStr.split("\\.").headOption.forall { f =>
           !sectionContexts.exists(c => (c ? f).isDefined)
         }
 
+      // Get the first stache that has the field, if any.
       val sectionOrContext =
         sectionContexts
           .find(c => (c ? fieldStr).nonEmpty)
@@ -168,7 +149,7 @@ object Mustachio {
           if !negated then sb.append(appendAfterRender.mkString)
           else
             sb.append(
-              render(
+              internalRender(
                 replaceBuilder
                   .dropRight(delimiter.closing(section).length)
                   .mkString,
@@ -181,7 +162,7 @@ object Mustachio {
         case Some(ctx @ Stache.Str("true"))  =>
           if !negated then
             sb.append(
-              render(
+              internalRender(
                 replaceBuilder
                   .dropRight(delimiter.closing(section).length)
                   .mkString,
@@ -196,7 +177,7 @@ object Mustachio {
           if !negated then sb.append(appendAfterRender.mkString)
           else
             sb.append(
-              render(
+              internalRender(
                 replaceBuilder
                   .dropRight(delimiter.closing(section).length)
                   .mkString,
@@ -210,7 +191,7 @@ object Mustachio {
           if !negated && arr.nonEmpty then {
             arr.foreach { item =>
               sb.append(
-                render(
+                internalRender(
                   replaceBuilder
                     .dropRight(delimiter.closing(section).length)
                     .mkString,
@@ -224,7 +205,7 @@ object Mustachio {
             sb.append(appendAfterRender.mkString)
           } else if !(negated ^ arr.isEmpty) then {
             sb.append(
-              render(
+              internalRender(
                 replaceBuilder
                   .dropRight(delimiter.closing(section).length)
                   .mkString,
@@ -240,7 +221,7 @@ object Mustachio {
         case Some(ctx)                       =>
           if !negated then
             sb.append(
-              render(
+              internalRender(
                 replaceBuilder
                   .dropRight(delimiter.closing(section).length)
                   .mkString,
@@ -261,7 +242,7 @@ object Mustachio {
                 .isDefined
             if isFieldOfLastContext then
               sb.append(
-                render(
+                internalRender(
                   replaceBuilder
                     .dropRight(delimiter.closing(section).length)
                     .mkString,
@@ -276,7 +257,7 @@ object Mustachio {
             else sb.append(appendAfterRender.mkString)
           } else {
             sb.append(
-              render(
+              internalRender(
                 replaceBuilder
                   .dropRight(delimiter.closing(section).length)
                   .mkString,
@@ -398,7 +379,7 @@ object Mustachio {
                 else false
 
               sb.append(
-                render(
+                internalRender(
                   partials ? partial match {
                     case Some(Stache.Str(str)) =>
                       if isStandalone then {
