@@ -27,7 +27,6 @@ object Mustachio {
       Delimiter.default
     )
 
-  
   private[mustachio] def internalRender(
       template: String,
       context: Stache,
@@ -79,15 +78,25 @@ object Mustachio {
         replaceBuilder.append(strIter.next())
       }
 
-      // TODO Need to do arbitrary nesting...
-      if (
-        replaceBuilder.mkString.contains(delimiter.section(section)) ||
-        replaceBuilder.mkString.contains(delimiter.inversion(section))
-      ) then {
+      // Handle nested sections
+      val delimiterSection = delimiter.section(section)
+      val inversionSection = delimiter.inversion(section)
+      val nestedCount      =
+        replaceBuilder.mkString
+          .sliding(delimiterSection.length)
+          .count(_ == delimiterSection) +
+          replaceBuilder.mkString
+            .sliding(inversionSection.length)
+            .count(_ == inversionSection)
+
+      for (_ <- 0 until nestedCount) do {
         replaceBuilder.append(strIter.next())
-        while !replaceBuilder.endsWith(delimiter.closing(section)) do
+        while !replaceBuilder.endsWith(delimiter.closing(section)) do {
           replaceBuilder.append(strIter.next())
+        }
       }
+
+      // handle standalone removal, etc...
 
       val openTagIsStandalone = {
         val preceding = sb.reverse.takeWhile(_ != '\n').mkString
