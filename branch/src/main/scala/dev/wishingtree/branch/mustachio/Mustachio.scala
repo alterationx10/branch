@@ -14,6 +14,20 @@ object Mustachio {
       .replace("\\\"", "&quot;")
       .replace("'", "&#39;")
 
+  private[mustachio] def parseTagAndClear(
+      stringBuilder: StringBuilder,
+      delimiter: Delimiter
+  ): String = {
+    val tag =
+      stringBuilder
+        .drop(1)
+        .dropRight(delimiter.close.length)
+        .mkString
+
+    stringBuilder.clear()
+    tag
+  }
+
   def render(
       template: String,
       context: Stache,
@@ -309,10 +323,7 @@ object Mustachio {
               strIter.next() // This should be '}'. TODO Validate later...
               sb.append(
                 replace(
-                  replaceBuilder
-                    .drop(1)
-                    .dropRight(delimiter.close.length)
-                    .mkString,
+                  parseTagAndClear(replaceBuilder, delimiter),
                   false
                 )
               )
@@ -320,19 +331,14 @@ object Mustachio {
             case Some('&')                                =>
               sb.append(
                 replace(
-                  replaceBuilder
-                    .drop(1)
-                    .dropRight(delimiter.close.length)
-                    .mkString,
+                  parseTagAndClear(replaceBuilder, delimiter),
                   false
                 )
               )
             case Some('#')                                =>
-              val section = replaceBuilder
-                .drop(1)
-                .dropRight(delimiter.close.length)
-                .mkString
-              replaceBuilder.clear()
+              val section =
+                parseTagAndClear(replaceBuilder, delimiter)
+
               handleSection(strIter, section, false, delimiter)
             case Some('!')                                =>
               val isInSection = sectionContexts.nonEmpty
@@ -355,19 +361,14 @@ object Mustachio {
                 }
               }
             case Some('^')                                =>
-              val section = replaceBuilder
-                .drop(1)
-                .dropRight(delimiter.close.length)
-                .mkString
-              replaceBuilder.clear()
+              val section =
+                parseTagAndClear(replaceBuilder, delimiter)
+
               handleSection(strIter, section, true, delimiter)
 
             case Some('>') =>
-              val partial = replaceBuilder
-                .drop(1)
-                .dropRight(delimiter.close.length)
-                .mkString
-              replaceBuilder.clear()
+              val partial =
+                parseTagAndClear(replaceBuilder, delimiter)
 
               val preceding = sb.reverse.takeWhile(_ != '\n').mkString
 
