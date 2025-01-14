@@ -1,6 +1,7 @@
 package dev.wishingtree.branch.mustachio
 
 import dev.wishingtree.branch.friday.{Json, JsonDecoder}
+import dev.wishingtree.branch.mustachio.Mustachio.Delimiter
 
 import scala.util.Try
 
@@ -50,7 +51,7 @@ trait MustachePartialsSpecSuite extends munit.FunSuite {
           data     <- json ? "data"
           template <- json ? "template"
           expected <- json ? "expected"
-          partials <- json ? "partials"
+          partials <- (json ? "partials").orElse(Some(Json.obj()))
         } yield Spec(
           name.strVal.unescape,
           desc.strVal.unescape,
@@ -64,8 +65,6 @@ trait MustachePartialsSpecSuite extends munit.FunSuite {
 
   }
 
-  val defaultDelimiter: Mustachio.Delimiter = Mustachio.Delimiter("{{", "}}")
-
   def runSpec(
       spec: Spec
   )(implicit loc: munit.Location): Unit = {
@@ -78,7 +77,7 @@ trait MustachePartialsSpecSuite extends munit.FunSuite {
           context,
           List.empty,
           partials,
-          defaultDelimiter
+          Delimiter.default
         ),
         spec.expected
       )

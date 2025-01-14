@@ -24,6 +24,10 @@ object Mustachio {
       s"$open!$str$close"
   }
 
+  object Delimiter {
+    val default: Delimiter = Delimiter("{{", "}}")
+  }
+
   def htmlEscape(str: String): String =
     str
       .replace("&", "&amp;")
@@ -37,7 +41,7 @@ object Mustachio {
       context: Stache,
       sectionContexts: List[Stache],
       partials: Stache,
-      delimiter: Delimiter
+      renderDelimiter: Delimiter
   ): String = {
 
     val templateIterator = template.iterator
@@ -76,7 +80,8 @@ object Mustachio {
     def handleSection(
         strIter: Iterator[Char],
         section: String,
-        negated: Boolean = false
+        negated: Boolean,
+        delimiter: Delimiter
     ): Unit = {
       while !replaceBuilder.endsWith(delimiter.closing(section)) do {
         replaceBuilder.append(strIter.next())
@@ -153,7 +158,9 @@ object Mustachio {
           else
             sb.append(
               render(
-                replaceBuilder.dropRight(delimiter.closing(section).length).mkString,
+                replaceBuilder
+                  .dropRight(delimiter.closing(section).length)
+                  .mkString,
                 context,
                 ctx +: sectionContexts,
                 partials,
@@ -164,7 +171,9 @@ object Mustachio {
           if !negated then
             sb.append(
               render(
-                replaceBuilder.dropRight(delimiter.closing(section).length).mkString,
+                replaceBuilder
+                  .dropRight(delimiter.closing(section).length)
+                  .mkString,
                 context,
                 ctx +: sectionContexts,
                 partials,
@@ -177,7 +186,9 @@ object Mustachio {
           else
             sb.append(
               render(
-                replaceBuilder.dropRight(delimiter.closing(section).length).mkString,
+                replaceBuilder
+                  .dropRight(delimiter.closing(section).length)
+                  .mkString,
                 context,
                 sectionContexts,
                 partials,
@@ -189,7 +200,9 @@ object Mustachio {
             arr.foreach { item =>
               sb.append(
                 render(
-                  replaceBuilder.dropRight(delimiter.closing(section).length).mkString,
+                  replaceBuilder
+                    .dropRight(delimiter.closing(section).length)
+                    .mkString,
                   item,
                   item +: context +: sectionContexts,
                   partials,
@@ -201,7 +214,9 @@ object Mustachio {
           } else if !(negated ^ arr.isEmpty) then {
             sb.append(
               render(
-                replaceBuilder.dropRight(delimiter.closing(section).length).mkString,
+                replaceBuilder
+                  .dropRight(delimiter.closing(section).length)
+                  .mkString,
                 context,
                 context +: sectionContexts,
                 partials,
@@ -215,7 +230,9 @@ object Mustachio {
           if !negated then
             sb.append(
               render(
-                replaceBuilder.dropRight(delimiter.closing(section).length).mkString,
+                replaceBuilder
+                  .dropRight(delimiter.closing(section).length)
+                  .mkString,
                 context,
                 ctx +: sectionContexts,
                 partials,
@@ -234,7 +251,9 @@ object Mustachio {
             if isFieldOfLastContext then
               sb.append(
                 render(
-                  replaceBuilder.dropRight(delimiter.closing(section).length).mkString,
+                  replaceBuilder
+                    .dropRight(delimiter.closing(section).length)
+                    .mkString,
                   context,
                   sectionContexts.headOption
                     .flatMap(_ ? section)
@@ -247,7 +266,9 @@ object Mustachio {
           } else {
             sb.append(
               render(
-                replaceBuilder.dropRight(delimiter.closing(section).length).mkString,
+                replaceBuilder
+                  .dropRight(delimiter.closing(section).length)
+                  .mkString,
                 context,
                 sectionContexts,
                 partials,
@@ -261,37 +282,58 @@ object Mustachio {
     }
 
     @tailrec
-    def loop(strIter: Iterator[Char]): String = {
-      if !strIter.hasNext then sb.result()
-      else {
-        sb.append(strIter.next())
+    def loop(strIter: Iterator[Char], delimiter: Delimiter): String = {
+      var _delimiter = delimiter
+      if !strIter.hasNext then {
+        sb.result()
+      } else {
+
+        if delimiter.open.length > 1 then {
+          sb.append(strIter.next())
+        } else if delimiter.open.length == 1 &&
+          !sb.takeRight(1).toString().equals(delimiter.open)
+        then {
+          sb.append(strIter.next())
+        }
+
         if sb.takeRight(delimiter.open.length).mkString == delimiter.open then {
           sb.setLength(sb.length - delimiter.open.length)
-          while replaceBuilder.takeRight(delimiter.close.length).mkString != delimiter.close do
-            replaceBuilder.append(strIter.next())
+          while replaceBuilder
+              .takeRight(delimiter.close.length)
+              .mkString != delimiter.close
+          do replaceBuilder.append(strIter.next())
 
           replaceBuilder.headOption match {
-            case Some('{') if delimiter.open.equals("{{")=> {
+            case Some('{') if delimiter.open.equals("{{") => {
               strIter.next() // This should be '}'. TODO Validate later...
               sb.append(
                 replace(
-                  replaceBuilder.drop(1).dropRight(delimiter.close.length).mkString,
+                  replaceBuilder
+                    .drop(1)
+                    .dropRight(delimiter.close.length)
+                    .mkString,
                   false
                 )
               )
             }
-            case Some('&') =>
+            case Some('&')                                =>
               sb.append(
                 replace(
-                  replaceBuilder.drop(1).dropRight(delimiter.close.length).mkString,
+                  replaceBuilder
+                    .drop(1)
+                    .dropRight(delimiter.close.length)
+                    .mkString,
                   false
                 )
               )
-            case Some('#') =>
-              val section = replaceBuilder.drop(1).dropRight(delimiter.close.length).mkString
+            case Some('#')                                =>
+              val section = replaceBuilder
+                .drop(1)
+                .dropRight(delimiter.close.length)
+                .mkString
               replaceBuilder.clear()
-              handleSection(strIter, section)
-            case Some('!') =>
+              handleSection(strIter, section, false, delimiter)
+            case Some('!')                                =>
               val isInSection = sectionContexts.nonEmpty
               if !isInSection then {
                 val preceding = sb.reverse.takeWhile(_ != '\n').mkString
@@ -311,13 +353,19 @@ object Mustachio {
                   case _          => ()
                 }
               }
-            case Some('^') =>
-              val section = replaceBuilder.drop(1).dropRight(delimiter.close.length).mkString
+            case Some('^')                                =>
+              val section = replaceBuilder
+                .drop(1)
+                .dropRight(delimiter.close.length)
+                .mkString
               replaceBuilder.clear()
-              handleSection(strIter, section, true)
+              handleSection(strIter, section, true, delimiter)
 
             case Some('>') =>
-              val partial = replaceBuilder.drop(1).dropRight(delimiter.close.length).mkString
+              val partial = replaceBuilder
+                .drop(1)
+                .dropRight(delimiter.close.length)
+                .mkString
               replaceBuilder.clear()
 
               val preceding = sb.reverse.takeWhile(_ != '\n').mkString
@@ -359,9 +407,45 @@ object Mustachio {
                 ) + appendAfterRender.mkString
               )
 
+            case Some('=') =>
+              val rawDelimiter    = replaceBuilder
+                .drop(1)
+                .dropRight(delimiter.close.length + 1)
+                .mkString
+                .trim
+              val openDelimiter   = rawDelimiter.takeWhile(!_.isWhitespace)
+              val closeDelimiter  =
+                rawDelimiter.reverse.takeWhile(!_.isWhitespace).reverse
+              val parsedDelimiter = Delimiter(
+                openDelimiter,
+                closeDelimiter
+              )
+
+              val preceding = sb.reverse.takeWhile(_ != '\n').mkString
+              if preceding.isBlank then
+                sb.setLength(sb.length - preceding.length)
+              strIter.nextOption() match {
+                case Some('\n') =>
+                  if preceding.isBlank then () // Do nothing
+                  else sb.append('\n')
+                case Some('\r') =>
+                  strIter.nextOption() match {
+                    case Some('\n') => // Do nothing
+                    case Some(c)    => sb.append('\r').append(c)
+                    case _          => ()
+                  }
+                case Some(c)    => sb.append(c)
+                case _          => ()
+              }
+
+              _delimiter = parsedDelimiter
+
             case Some(_) =>
               sb.append(
-                replace(replaceBuilder.dropRight(delimiter.close.length).mkString, true)
+                replace(
+                  replaceBuilder.dropRight(delimiter.close.length).mkString,
+                  true
+                )
               )
             case None    =>
               throw new Exception("Unexpected error parsing template")
@@ -370,11 +454,11 @@ object Mustachio {
           replaceBuilder.clear()
         }
 
-        loop(strIter)
+        loop(strIter, _delimiter)
       }
     }
 
-    loop(templateIterator)
+    loop(templateIterator, renderDelimiter)
   }
 
 }
