@@ -5,7 +5,7 @@ import dev.wishingtree.branch.friday.{Json, JsonDecoder}
 import scala.util.Try
 
 trait MustacheSpecSuite extends munit.FunSuite {
-
+  
   case class SpecSuite(tests: IndexedSeq[Spec])
 
   object SpecSuite {
@@ -61,13 +61,15 @@ trait MustacheSpecSuite extends munit.FunSuite {
 
   }
 
+  val defaultDelimiter: Mustachio.Delimiter = Mustachio.Delimiter("{{", "}}")
+
   def runSpec(
       spec: Spec
   )(implicit loc: munit.Location): Unit = {
     test(spec.name) {
       val context = Stache.fromJson(spec.data)
       assertEquals(
-        Mustachio.render(spec.template, context, List.empty, Stache.empty),
+        Mustachio.render(spec.template, context, List.empty, Stache.empty, defaultDelimiter),
         spec.expected
       )
     }

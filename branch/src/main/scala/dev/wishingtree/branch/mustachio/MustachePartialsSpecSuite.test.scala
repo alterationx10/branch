@@ -64,6 +64,8 @@ trait MustachePartialsSpecSuite extends munit.FunSuite {
 
   }
 
+  val defaultDelimiter: Mustachio.Delimiter = Mustachio.Delimiter("{{", "}}")
+
   def runSpec(
       spec: Spec
   )(implicit loc: munit.Location): Unit = {
@@ -71,7 +73,13 @@ trait MustachePartialsSpecSuite extends munit.FunSuite {
       val context  = Stache.fromJson(spec.data)
       val partials = Stache.fromJson(spec.partials)
       assertEquals(
-        Mustachio.render(spec.template, context, List.empty, partials),
+        Mustachio.render(
+          spec.template,
+          context,
+          List.empty,
+          partials,
+          defaultDelimiter
+        ),
         spec.expected
       )
     }

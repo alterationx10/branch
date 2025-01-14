@@ -6,36 +6,45 @@ import scala.annotation.tailrec
 
 object Mustachio {
 
+  case class Delimiter(open: String, close: String) {
+    val enclosingLength: Int = open.length + close.length + 1
+
+    def closing(str: String): String =
+      s"$open/$str$close"
+
+    def section(str: String): String =
+      s"$open#$str$close"
+
+    def inversion(str: String): String =
+      s"$open^$str$close"
+
+    def partial(str: String): String =
+      s"$open>$str$close"
+
+    def comment(str: String): String =
+      s"$open!$str$close"
+  }
+
+  def htmlEscape(str: String): String =
+    str
+      .replace("&", "&amp;")
+      .replace("<", "&lt;")
+      .replace(">", "&gt;")
+      .replace("\\\"", "&quot;")
+      .replace("'", "&#39;")
+
   def render(
       template: String,
       context: Stache,
       sectionContexts: List[Stache],
-      partials: Stache
+      partials: Stache,
+      delimiter: Delimiter
   ): String = {
 
     val templateIterator = template.iterator
 
     val sb: StringBuilder = new StringBuilder()
     val replaceBuilder    = new StringBuilder()
-
-    def htmlEscape(str: String): String =
-      str
-        .replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-        .replace("\\\"", "&quot;")
-        .replace("'", "&#39;")
-
-    // given a.b.c should give a list of a.b.c, a.b, a
-    def fieldStack(fieldStr: String): List[String] =
-      fieldStr
-        .split("\\.")
-        .foldLeft(List.empty[String]) { (acc, field) =>
-          val next =
-            (acc.lastOption.getOrElse("") + "." + field).stripPrefix(".")
-          acc :+ next
-        }
-        .reverse
 
     def replace(
         fieldStr: String,
@@ -70,17 +79,17 @@ object Mustachio {
         section: String,
         negated: Boolean = false
     ): Unit = {
-      while !replaceBuilder.endsWith(s"{{/$section}}") do {
+      while !replaceBuilder.endsWith(delimiter.closing(section)) do {
         replaceBuilder.append(strIter.next())
       }
 
       // TODO Need to do arbitrary nesting...
       if (
-        replaceBuilder.mkString.contains(s"{{#$section}}") ||
-        replaceBuilder.mkString.contains(s"{{^$section}}")
+        replaceBuilder.mkString.contains(delimiter.section(section)) ||
+        replaceBuilder.mkString.contains(delimiter.inversion(section))
       ) then {
         replaceBuilder.append(strIter.next())
-        while !replaceBuilder.endsWith(s"{{/$section}}") do
+        while !replaceBuilder.endsWith(delimiter.closing(section)) do
           replaceBuilder.append(strIter.next())
       }
 
@@ -105,7 +114,7 @@ object Mustachio {
       val appendAfterRender    = new StringBuilder()
       val closeTagIsStandalone = {
         val preceding = replaceBuilder
-          .dropRight(s"{{/$section}}".length)
+          .dropRight(delimiter.closing(section).length)
           .reverse
           .takeWhile(_ != '\n')
           .mkString
@@ -124,7 +133,7 @@ object Mustachio {
       // following: remove white space INCLUDING a newline
       if closeTagIsStandalone then {
         val preceding = replaceBuilder
-          .dropRight(s"{{/$section}}".length)
+          .dropRight(delimiter.closing(section).length)
           .reverse
           .takeWhile(_ != '\n')
           .mkString
@@ -148,7 +157,8 @@ object Mustachio {
                 replaceBuilder.dropRight(5 + section.length).mkString,
                 context,
                 ctx +: sectionContexts,
-                partials
+                partials,
+                delimiter
               ) + appendAfterRender.mkString
             )
         case Some(ctx @ Stache.Str("true"))  =>
@@ -158,7 +168,8 @@ object Mustachio {
                 replaceBuilder.dropRight(5 + section.length).mkString,
                 context,
                 ctx +: sectionContexts,
-                partials
+                partials,
+                delimiter
               ) + appendAfterRender.mkString
             )
           else sb.append(appendAfterRender.mkString)
@@ -170,7 +181,8 @@ object Mustachio {
                 replaceBuilder.dropRight(5 + section.length).mkString,
                 context,
                 sectionContexts,
-                partials
+                partials,
+                delimiter
               ) + appendAfterRender.mkString
             )
         case Some(Stache.Arr(arr))           =>
@@ -181,7 +193,8 @@ object Mustachio {
                   replaceBuilder.dropRight(5 + section.length).mkString,
                   item,
                   item +: context +: sectionContexts,
-                  partials
+                  partials,
+                  delimiter
                 )
               )
             }
@@ -192,7 +205,8 @@ object Mustachio {
                 replaceBuilder.dropRight(5 + section.length).mkString,
                 context,
                 context +: sectionContexts,
-                partials
+                partials,
+                delimiter
               ) + appendAfterRender.mkString
             )
           } else {
@@ -205,7 +219,8 @@ object Mustachio {
                 replaceBuilder.dropRight(5 + section.length).mkString,
                 context,
                 ctx +: sectionContexts,
-                partials
+                partials,
+                delimiter
               ) + appendAfterRender.mkString
             )
           else sb.append(appendAfterRender.mkString)
@@ -225,7 +240,8 @@ object Mustachio {
                   sectionContexts.headOption
                     .flatMap(_ ? section)
                     .get +: sectionContexts,
-                  partials
+                  partials,
+                  delimiter
                 ) + appendAfterRender.mkString
               )
             else sb.append(appendAfterRender.mkString)
@@ -235,7 +251,8 @@ object Mustachio {
                 replaceBuilder.dropRight(5 + section.length).mkString,
                 context,
                 sectionContexts,
-                partials
+                partials,
+                delimiter
               ) + appendAfterRender.mkString
             )
           }
@@ -337,7 +354,8 @@ object Mustachio {
                   },
                   context,
                   sectionContexts,
-                  partials
+                  partials,
+                  delimiter
                 ) + appendAfterRender.mkString
               )
 
