@@ -7,7 +7,6 @@ import scala.annotation.tailrec
 object Mustachio {
 
   case class Delimiter(open: String, close: String) {
-    val enclosingLength: Int = open.length + close.length + 1
 
     def closing(str: String): String =
       s"$open/$str$close"
@@ -154,7 +153,7 @@ object Mustachio {
           else
             sb.append(
               render(
-                replaceBuilder.dropRight(5 + section.length).mkString,
+                replaceBuilder.dropRight(delimiter.closing(section).length).mkString,
                 context,
                 ctx +: sectionContexts,
                 partials,
@@ -165,7 +164,7 @@ object Mustachio {
           if !negated then
             sb.append(
               render(
-                replaceBuilder.dropRight(5 + section.length).mkString,
+                replaceBuilder.dropRight(delimiter.closing(section).length).mkString,
                 context,
                 ctx +: sectionContexts,
                 partials,
@@ -178,7 +177,7 @@ object Mustachio {
           else
             sb.append(
               render(
-                replaceBuilder.dropRight(5 + section.length).mkString,
+                replaceBuilder.dropRight(delimiter.closing(section).length).mkString,
                 context,
                 sectionContexts,
                 partials,
@@ -190,7 +189,7 @@ object Mustachio {
             arr.foreach { item =>
               sb.append(
                 render(
-                  replaceBuilder.dropRight(5 + section.length).mkString,
+                  replaceBuilder.dropRight(delimiter.closing(section).length).mkString,
                   item,
                   item +: context +: sectionContexts,
                   partials,
@@ -202,7 +201,7 @@ object Mustachio {
           } else if !(negated ^ arr.isEmpty) then {
             sb.append(
               render(
-                replaceBuilder.dropRight(5 + section.length).mkString,
+                replaceBuilder.dropRight(delimiter.closing(section).length).mkString,
                 context,
                 context +: sectionContexts,
                 partials,
@@ -216,7 +215,7 @@ object Mustachio {
           if !negated then
             sb.append(
               render(
-                replaceBuilder.dropRight(5 + section.length).mkString,
+                replaceBuilder.dropRight(delimiter.closing(section).length).mkString,
                 context,
                 ctx +: sectionContexts,
                 partials,
@@ -235,7 +234,7 @@ object Mustachio {
             if isFieldOfLastContext then
               sb.append(
                 render(
-                  replaceBuilder.dropRight(5 + section.length).mkString,
+                  replaceBuilder.dropRight(delimiter.closing(section).length).mkString,
                   context,
                   sectionContexts.headOption
                     .flatMap(_ ? section)
@@ -248,7 +247,7 @@ object Mustachio {
           } else {
             sb.append(
               render(
-                replaceBuilder.dropRight(5 + section.length).mkString,
+                replaceBuilder.dropRight(delimiter.closing(section).length).mkString,
                 context,
                 sectionContexts,
                 partials,
@@ -266,29 +265,30 @@ object Mustachio {
       if !strIter.hasNext then sb.result()
       else {
         sb.append(strIter.next())
-        if sb.takeRight(2).mkString == "{{" then {
-          sb.setLength(sb.length - 2)
-          while replaceBuilder.takeRight(2).mkString != "}}" do
+        if sb.takeRight(delimiter.open.length).mkString == delimiter.open then {
+          sb.setLength(sb.length - delimiter.open.length)
+          while replaceBuilder.takeRight(delimiter.close.length).mkString != delimiter.close do
             replaceBuilder.append(strIter.next())
 
           replaceBuilder.headOption match {
-            case Some('{') =>
+            case Some('{') if delimiter.open.equals("{{")=> {
               strIter.next() // This should be '}'. TODO Validate later...
               sb.append(
                 replace(
-                  replaceBuilder.drop(1).dropRight(2).mkString,
+                  replaceBuilder.drop(1).dropRight(delimiter.close.length).mkString,
                   false
                 )
               )
+            }
             case Some('&') =>
               sb.append(
                 replace(
-                  replaceBuilder.drop(1).dropRight(2).mkString,
+                  replaceBuilder.drop(1).dropRight(delimiter.close.length).mkString,
                   false
                 )
               )
             case Some('#') =>
-              val section = replaceBuilder.drop(1).dropRight(2).mkString
+              val section = replaceBuilder.drop(1).dropRight(delimiter.close.length).mkString
               replaceBuilder.clear()
               handleSection(strIter, section)
             case Some('!') =>
@@ -312,12 +312,12 @@ object Mustachio {
                 }
               }
             case Some('^') =>
-              val section = replaceBuilder.drop(1).dropRight(2).mkString
+              val section = replaceBuilder.drop(1).dropRight(delimiter.close.length).mkString
               replaceBuilder.clear()
               handleSection(strIter, section, true)
 
             case Some('>') =>
-              val partial = replaceBuilder.drop(1).dropRight(2).mkString
+              val partial = replaceBuilder.drop(1).dropRight(delimiter.close.length).mkString
               replaceBuilder.clear()
 
               val preceding = sb.reverse.takeWhile(_ != '\n').mkString
@@ -361,7 +361,7 @@ object Mustachio {
 
             case Some(_) =>
               sb.append(
-                replace(replaceBuilder.dropRight(2).mkString, true)
+                replace(replaceBuilder.dropRight(delimiter.close.length).mkString, true)
               )
             case None    =>
               throw new Exception("Unexpected error parsing template")
