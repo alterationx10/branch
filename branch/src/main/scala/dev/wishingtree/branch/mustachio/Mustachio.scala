@@ -2,6 +2,7 @@ package dev.wishingtree.branch.mustachio
 
 import dev.wishingtree.branch.mustachio.Stache.Str
 
+import java.util.regex.Pattern
 import scala.annotation.tailrec
 
 object Mustachio {
@@ -22,10 +23,20 @@ object Mustachio {
 
     def comment(str: String): String =
       s"$open!$str$close"
+
+    lazy val isDefault: Boolean =
+      Delimiter.default.open.equals(open) &&
+        Delimiter.default.close.equals(close)
   }
 
   object Delimiter {
     val default: Delimiter = Delimiter("{{", "}}")
+
+    def replaceDefaultWith(content: String, newDelimiter: Delimiter): String =
+      content
+        .replaceAll(Pattern.quote(default.open), newDelimiter.open)
+        .replaceAll(Pattern.quote(default.close), newDelimiter.close)
+
   }
 
   def htmlEscape(str: String): String =
@@ -394,9 +405,24 @@ object Mustachio {
                         val indented = str
                           .replaceAll("\n", s"\n$preceding")
                         if indented.endsWith(s"\n$preceding") then {
-                          indented.dropRight(preceding.length)
-                        } else indented
-                      } else str
+                          if !delimiter.isDefault
+                          then
+                            Delimiter.replaceDefaultWith(
+                              indented.dropRight(preceding.length),
+                              delimiter
+                            )
+                          else indented.dropRight(preceding.length)
+
+                        } else {
+                          if !delimiter.isDefault then
+                            Delimiter.replaceDefaultWith(indented, delimiter)
+                          else indented
+                        }
+                      } else {
+                        if !delimiter.isDefault then
+                          Delimiter.replaceDefaultWith(str, delimiter)
+                        else str
+                      }
                     case _                     =>
                       ""
                   },
