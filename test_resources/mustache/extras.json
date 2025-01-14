@@ -1,0 +1,14 @@
+{
+  "overview": "A collection of cases to test things not in the official spec files",
+  "tests": [
+    {
+      "name": "Triply Nested Sections",
+      "desc": "Used to test parsing arbitrary levels of nesting.",
+      "data": {
+        "bool": true
+      },
+      "template": "| A {{#bool}}B {{#bool}}{{#bool}}C{{/bool}}{{/bool}} D{{/bool}} E |",
+      "expected": "| A B C D E |"
+    }
+  ]
+}
