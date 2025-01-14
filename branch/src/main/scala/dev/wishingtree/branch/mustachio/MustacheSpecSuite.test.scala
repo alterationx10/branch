@@ -2,7 +2,8 @@ package dev.wishingtree.branch.mustachio
 
 import dev.wishingtree.branch.friday.{Json, JsonDecoder}
 
-import scala.util.Try
+import scala.io.Source
+import scala.util.{Try, Using}
 
 trait MustacheSpecSuite extends munit.FunSuite {
 
@@ -25,7 +26,8 @@ trait MustacheSpecSuite extends munit.FunSuite {
       desc: String,
       data: Json,
       template: String,
-      expected: String
+      expected: String,
+      partials: Json
   )
 
   object Spec {
@@ -49,12 +51,14 @@ trait MustacheSpecSuite extends munit.FunSuite {
           data     <- json ? "data"
           template <- json ? "template"
           expected <- json ? "expected"
+          partials <- (json ? "partials").orElse(Some(Json.obj()))
         } yield Spec(
           name.strVal.unescape,
           desc.strVal.unescape,
           data,
           template.strVal.unescape,
-          expected.strVal.unescape
+          expected.strVal.unescape,
+          partials
         )
       }.map(_.get)
     }
@@ -65,14 +69,25 @@ trait MustacheSpecSuite extends munit.FunSuite {
       spec: Spec
   )(implicit loc: munit.Location): Unit = {
     test(spec.name) {
-      val context = Stache.fromJson(spec.data)
+      val context  = Stache.fromJson(spec.data)
+      val partials = Option(Stache.fromJson(spec.partials))
       assertEquals(
         Mustachio.render(
           spec.template,
-          context
+          context,
+          partials
         ),
         spec.expected
       )
     }
   }
+
+  /** Attempts to load and parse a Moustache spec suite from a resource file.
+    * @return
+    */
+  def specSuite(resource: String): SpecSuite =
+    Using(Source.fromResource(resource)) { source =>
+      SpecSuite.decoder.decode(source.mkString)
+    }.flatten
+      .getOrElse(throw new Exception("Failed to parse json for specSuite"))
 }
