@@ -13,4 +13,6 @@ jobs:
       - uses: docker/setup-buildx-action@v3
       - uses: coursier/cache-action@v6.4
       - uses: VirtusLab/scala-cli-setup@v1.5
+      - run: ls -R test_resources
+      - run: scala-cli --power test branch --test-only 'dev.wishingtree.branch.mustachio.*'
       - run: scala-cli --power test branch
