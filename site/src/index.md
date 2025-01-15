@@ -18,10 +18,4 @@ things done quickly! Think of it as the framework for your side-project, not you
 - **Blammo** - It's better than bad, it's (Json) logging!
 - **Keanu** - A simple *typed* EventBus implementation, and a mediocre *untyped* ActorSystem.
 - **Ursula** - A slim CLI framework.
-
-... and *more to come*!
-
-A list of other things important to this framework's goals are (but not limited to):
-
-- Web Sockets
-- (HTML) Templating
+- **Mustachio** - A Mustache template engine, great for HTML templating.
