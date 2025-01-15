@@ -6,18 +6,40 @@ import dev.wishingtree.branch.friday.Json.*
 /** It's like a cache for your mustache templates.
   */
 enum Stache {
+
+  /** A string value.
+    */
   case Str(value: String)
+
+  /** An array of staches.
+    */
   case Arr(value: List[Stache])
+
+  /** An object of staches.
+    */
   case Obj(value: Map[String, Stache])
+
+  /** A null value.
+    */
   case Null
 }
 
 object Stache {
 
+  /** An empty Stache.Obj
+    */
   def empty: Stache =
     Stache.Obj(Map.empty)
 
   extension (s: String) {
+
+    /** A String extension method to unescape some special characters, that
+      * would normally be escaped when reading from a file.
+      *
+      *   - \n
+      *   - \r
+      *   - \t
+      */
     def unescape: String =
       s
         .replaceAll("\\\\n", "\n")
@@ -25,6 +47,14 @@ object Stache {
         .replaceAll("\\\\t", "\t")
   }
 
+  /** Convert Json to a Stache representation.
+    *
+    * Note that number fields are tested for int equality and formatted as int
+    * if so.
+    *
+    * @param json
+    * @return
+    */
   def fromJson(json: Json): Stache = json match {
     case JsonNull          => Null
     case JsonString(value) => Str(value.unescape)
@@ -37,13 +67,23 @@ object Stache {
     case JsonArray(value)  => Arr(value.map(fromJson).toList)
   }
 
+  /** Helper method for constructing Stash.Str */
   def str(value: String): Stache.Str =
     Str(value)
 
-  def context(fields: (String, Stache)*): Stache.Obj =
+  /** Helper method for constructing Stash.Obj */
+  def obj(fields: (String, Stache)*): Stache.Obj =
     Obj(fields.toMap)
 
   extension (s: Stache) {
+
+    /** Get a field from a Stache object, if present.
+      *
+      * This will parse ".", so you can for example pass "a.b.c" to access the
+      * field "c" of object b in object a.
+      *
+      * Passing in "." will return the Stache object itself.
+      */
     def ?(field: String): Option[Stache] = {
       // Early exit if the field is a dot
       if field == "." then return Some(s)
@@ -58,6 +98,7 @@ object Stache {
         })
     }
 
+    /** Convert the Stache to a nice String representation */
     def toPrettyString: String = s match {
       case Null       => "null"
       case Str(value) => s"\"$value\""
@@ -69,8 +110,13 @@ object Stache {
           .mkString(", ") + "}"
     }
 
+    /** Print the Stache to the console via the [[toPrettyString]] method. */
     def prettyPrint(): Unit = println(toPrettyString)
 
+    /** Get a String representation of a Stache.
+      *
+      * Note, anything that's not a Stache.Str default to an empty String
+      */
     def strVal: String = s match {
       case Str(value) => value
       case Null       => ""
@@ -79,6 +125,14 @@ object Stache {
   }
 
   extension (s: Option[Stache]) {
+
+    /** Get a field from a Stache object, if present.
+      *
+      * This will parse ".", so you can for example pass "a.b.c" to access the
+      * field "c" of object b in object a.
+      *
+      * Passing in "." will return the Stache object itself.
+      */
     def ?(field: String): Option[Stache] =
       s.flatMap(_ ? field)
   }

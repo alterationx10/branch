@@ -28,6 +28,9 @@ object Mustachio {
     tag
   }
 
+  /** Render a mustache template with the given context and partials.
+    * @return
+    */
   def render(
       template: String,
       context: Stache,
