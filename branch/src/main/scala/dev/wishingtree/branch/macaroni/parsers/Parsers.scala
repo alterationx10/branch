@@ -29,8 +29,12 @@ trait Parsers[Parser[+_]] {
 
   def quoted: Parser[String] = string("\"") *> thru("\"").map(_.dropRight(1))
 
+  def escapedThru(s: String) = regex(
+    ("((?:[^\"\\\\]|\\\\.)*)" + Pattern.quote(s)).r
+  )
+
   def escapedQuoted: Parser[String] =
-    quoted.label("string literal").token
+    (string("\"") *> escapedThru("\"").map(_.dropRight(1))).token
 
   def doubleString: Parser[String] =
     regex("[-+]?([0-9]*\\.)?[0-9]+([eE][-+]?[0-9]+)?".r).token

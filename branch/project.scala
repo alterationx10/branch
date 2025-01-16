@@ -13,9 +13,9 @@
 
 //> using repository sonatype:public
 
-//> using test.dep org.scalameta::munit:1.0.3
+//> using test.dep org.scalameta::munit:1.0.4
 //> using test.dep org.testcontainers:testcontainers:1.20.4
-//> using test.dep org.postgresql:postgresql:42.7.4
+//> using test.dep org.postgresql:postgresql:42.7.5
 //> using test.resourceDir ../test_resources
 
 //> using publish.version 0.0.1-SNAPSHOT
