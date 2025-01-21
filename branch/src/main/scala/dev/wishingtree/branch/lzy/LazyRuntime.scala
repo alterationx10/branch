@@ -1,66 +1,83 @@
 package dev.wishingtree.branch.lzy
 
-import dev.wishingtree.branch.macaroni.runtimes.BranchExecutors
-
-import java.util.concurrent.{CompletableFuture, ExecutorService}
-import scala.concurrent.{ExecutionContext, Future}
+import scala.annotation.tailrec
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.jdk.FutureConverters.*
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 private[lzy] trait LazyRuntime {
-  def runSync[A](lzy: Lazy[A]): Try[A]
-  def runAsync[A](lzy: Lazy[A]): Future[A]
+  def runSync[A](lzy: Lazy[A])(d: Duration)(using
+      executionContext: ExecutionContext
+  ): Try[A]
+  def runAsync[A](lzy: Lazy[A])(using
+      executionContext: ExecutionContext
+  ): Future[A]
 }
 
 object LazyRuntime extends LazyRuntime {
 
-  /** The default executor service for running Lazy values. Uses
-    * [[BranchExecutors.executorService]]
-    */
-  final val executorService: ExecutorService =
-    BranchExecutors.executorService
-
-  /** The default execution context for running Lazy values. Uses
-    * [[BranchExecutors.executionContext]]
-    */
-  final val executionContext: ExecutionContext =
-    BranchExecutors.executionContext
-
   /** Run a Lazy value synchronously.
     */
-  override final def runSync[A](lzy: Lazy[A]): Try[A] =
-    eval(lzy).get()
+  override final def runSync[A](lzy: Lazy[A])(d: Duration = Duration.Inf)(using
+      executionContext: ExecutionContext
+  ): Try[A] =
+    Try(
+      Await.result(evalF(lzy), d)
+    )
 
   /** Run a Lazy value asynchronously.
     */
-  override final def runAsync[A](lzy: Lazy[A]): Future[A] =
-    eval(lzy).asScala.flatMap(t => Future.fromTry(t))(executionContext)
+  override final def runAsync[A](lzy: Lazy[A])(using
+      executionContext: ExecutionContext
+  ): Future[A] =
+    evalF(lzy)
 
-  private final def eval[A](lzy: Lazy[A]): CompletableFuture[Try[A]] = {
-    CompletableFuture.supplyAsync(
-      () => {
+  @tailrec
+  private final def evalF[A](
+      lzy: Lazy[A]
+  )(using executionContext: ExecutionContext): Future[A] = {
+    lzy match {
+      case Lazy.Fn(a)           => Future(a())
+      case Lazy.Suspend(s)      => evalF(s())
+      case Lazy.FlatMap(lzy, f) =>
         lzy match {
-          case Lazy.Fn(a)                               =>
-            Try(a())
-          case Lazy.FlatMap(lzy, f: (Any => Lazy[Any])) =>
-            eval(lzy).get() match {
-              case Success(a) => eval(f(a)).get()
-              case Failure(e) => Failure(e)
-            }
-          case Lazy.Fail(e)                             =>
-            Failure[A](e)
-          case Lazy.Recover(lzy, f)                     =>
-            eval(lzy).get match {
-              case Failure(e) => eval(f(e)).get
-              case success    => success
-            }
-          case Lazy.Sleep(duration)                     =>
-            Thread.sleep(duration.toMillis)
-            Success(())
+          case Lazy.Suspend(s)    => evalF(Lazy.FlatMap(s(), f))
+          case Lazy.FlatMap(l, g) => evalF(l.flatMap(g(_).flatMap(f)))
+          case Lazy.Fn(a)         => evalF(f(a()))
+          case Lazy.Fail(e)       => Future.failed(e)
+          case Lazy.Recover(l, r) => evalFFlatMapRecover(l, r, f)
+          case Lazy.Sleep(d)      => evalFFlatMapSleep(d, f)
         }
-      },
-      executorService
-    )
+      case Lazy.Fail(e)         => Future.failed(e)
+      case Lazy.Recover(lzy, f) => evalFRecover(lzy, f)
+      case Lazy.Sleep(d)        => Future(Thread.sleep(d.toMillis))
+    }
   }
 
+  private final def evalFFlatMapSleep[A](d: Duration, f: Unit => Lazy[A])(using
+      executionContext: ExecutionContext
+  ): Future[A] = {
+    Future {
+      Thread.sleep(d.toMillis)
+    }.flatMap(_ => evalF(f(())))
+  }
+
+  private final def evalFFlatMapRecover[A, B](
+      lzy: Lazy[A],
+      r: Throwable => Lazy[A],
+      f: A => Lazy[B]
+  )(using executionContext: ExecutionContext): Future[B] = {
+    evalFRecover(lzy, r).flatMap(z => evalF(f(z)))
+  }
+
+  private final def evalFRecover[A](
+      lzy: Lazy[A],
+      f: Throwable => Lazy[A]
+  )(using executionContext: ExecutionContext): Future[A] = {
+    lzy match {
+      case Lazy.Fail(e) => evalF(f(e))
+      case _            => evalF(lzy).recoverWith { case t: Throwable => evalF(f(t)) }
+    }
+  }
 }

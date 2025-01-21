@@ -1,5 +1,7 @@
 package dev.wishingtree.branch.lzy
 
+import dev.wishingtree.branch.macaroni.runtimes.BranchExecutors
+
 import java.time.{Clock, Instant}
 import java.util
 import java.util.logging.{Level, Logger}
@@ -151,15 +153,18 @@ object Lazy {
   extension [A](lzy: Lazy[A]) {
 
     /** Run the Lazy value synchronously */
-    def runSync(): Try[A] = LazyRuntime.runSync(lzy)
+    def runSync(): Try[A] =
+      LazyRuntime.runSync(lzy)()(using BranchExecutors.executionContext)
 
     /** Run the Lazy value asynchronously */
-    def runAsync(): Future[A] = LazyRuntime.runAsync(lzy)
+    def runAsync(): Future[A] =
+      LazyRuntime.runAsync(lzy)(using BranchExecutors.executionContext)
   }
 
   private[lzy] final case class Fn[A](a: () => A)     extends Lazy[A]
   private[lzy] final case class Fail[A](e: Throwable) extends Lazy[A]
-
+  private[lzy] final case class Suspend[A](resume: () => Lazy[A])
+      extends Lazy[A]
   private[lzy] final case class FlatMap[A, B](lzy: Lazy[A], f: A => Lazy[B])
       extends Lazy[B]
   private[lzy] final case class Recover[A](
@@ -191,6 +196,7 @@ object Lazy {
       xs: Iterator[A]
   )(xb: mutable.Builder[B, F[B]])(fn: A => Lazy[B]): Lazy[F[B]] = {
     xs.foldLeft(Lazy.fn(xb))((acc, curr) => {
+//      acc.flatMap(b => Lazy.Suspend(() => fn(curr).map(b.addOne)))
       acc.flatMap(b => fn(curr).map(b.addOne))
     }).as(xb.result())
   }
