@@ -39,6 +39,9 @@ object LazyRuntime extends LazyRuntime {
   )(using executionContext: ExecutionContext): Future[A] = {
     lzy match {
       case Lazy.Fn(a)           => Future(a())
+      case Lazy.Fail(e)         => Future.failed(e)
+      case Lazy.Recover(lzy, f) => evalRecover(lzy, f)
+      case Lazy.Sleep(d)        => Future(Thread.sleep(d.toMillis))
       case Lazy.FlatMap(lzy, f) =>
         lzy match {
           case Lazy.FlatMap(l, g) => eval(l.flatMap(g(_).flatMap(f)))
@@ -47,9 +50,6 @@ object LazyRuntime extends LazyRuntime {
           case Lazy.Recover(l, r) => evalFlatMapRecover(l, r, f)
           case Lazy.Sleep(d)      => evalFlatMapSleep(d, f)
         }
-      case Lazy.Fail(e)         => Future.failed(e)
-      case Lazy.Recover(lzy, f) => evalRecover(lzy, f)
-      case Lazy.Sleep(d)        => Future(Thread.sleep(d.toMillis))
     }
   }
 
