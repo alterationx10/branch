@@ -7,7 +7,7 @@ import java.util
 import java.util.logging.{Level, Logger}
 import scala.annotation.targetName
 import scala.collection.mutable
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
 import scala.util.Try
@@ -153,12 +153,14 @@ object Lazy {
   extension [A](lzy: Lazy[A]) {
 
     /** Run the Lazy value synchronously */
-    def runSync(): Try[A] =
-      LazyRuntime.runSync(lzy)(using BranchExecutors.executionContext)
+    def runSync(d: Duration = Duration.Inf)(using
+        executionContext: ExecutionContext
+    ): Try[A] =
+      LazyRuntime.runSync(lzy, d)
 
     /** Run the Lazy value asynchronously */
-    def runAsync(): Future[A] =
-      LazyRuntime.runAsync(lzy)(using BranchExecutors.executionContext)
+    def runAsync(using executionContext: ExecutionContext): Future[A] =
+      LazyRuntime.runAsync(lzy)
   }
 
   private[lzy] final case class Fn[A](a: () => A)     extends Lazy[A]

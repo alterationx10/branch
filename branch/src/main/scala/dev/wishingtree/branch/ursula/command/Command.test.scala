@@ -1,8 +1,11 @@
 package dev.wishingtree.branch.ursula.command
 
+import dev.wishingtree.branch.macaroni.runtimes.BranchExecutors
 import dev.wishingtree.branch.ursula.args.*
 import dev.wishingtree.branch.ursula.extensions.Extensions.splitSeq
 import munit.*
+
+import scala.concurrent.ExecutionContext
 
 // A <-> B Conflict
 // C requires an argument
@@ -60,6 +63,7 @@ object NonStrictTestCommand extends TestCommand {
 }
 
 class CommandSpec extends FunSuite {
+  given ExecutionContext = BranchExecutors.executionContext
 
   val goodCommand: Seq[String] = "-a -d -c 123".splitSeq()
   val missingFlag: Seq[String] = "-c 123".splitSeq()
