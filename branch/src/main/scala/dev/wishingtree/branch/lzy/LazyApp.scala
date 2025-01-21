@@ -8,7 +8,11 @@ import scala.concurrent.ExecutionContext
   */
 trait LazyApp {
 
-  given ec: ExecutionContext = BranchExecutors.executionContext
+  /** The execution context used for the LazyRuntime, Defaults to
+    * BranchExecutors.executionContext (Virtual Thread per Task)
+    */
+  val executionContext: ExecutionContext =
+    BranchExecutors.executionContext
 
   /** The main Lazy chain to run the application.
     */
@@ -17,5 +21,5 @@ trait LazyApp {
   /** The main method to run the application.
     */
   final def main(args: Array[String]): Unit =
-    LazyRuntime.runSync(run)()
+    LazyRuntime.runSync(run)(using executionContext)
 }

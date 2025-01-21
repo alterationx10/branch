@@ -154,7 +154,7 @@ object Lazy {
 
     /** Run the Lazy value synchronously */
     def runSync(): Try[A] =
-      LazyRuntime.runSync(lzy)()(using BranchExecutors.executionContext)
+      LazyRuntime.runSync(lzy)(using BranchExecutors.executionContext)
 
     /** Run the Lazy value asynchronously */
     def runAsync(): Future[A] =
@@ -163,8 +163,6 @@ object Lazy {
 
   private[lzy] final case class Fn[A](a: () => A)     extends Lazy[A]
   private[lzy] final case class Fail[A](e: Throwable) extends Lazy[A]
-  private[lzy] final case class Suspend[A](resume: () => Lazy[A])
-      extends Lazy[A]
   private[lzy] final case class FlatMap[A, B](lzy: Lazy[A], f: A => Lazy[B])
       extends Lazy[B]
   private[lzy] final case class Recover[A](
@@ -196,7 +194,6 @@ object Lazy {
       xs: Iterator[A]
   )(xb: mutable.Builder[B, F[B]])(fn: A => Lazy[B]): Lazy[F[B]] = {
     xs.foldLeft(Lazy.fn(xb))((acc, curr) => {
-//      acc.flatMap(b => Lazy.Suspend(() => fn(curr).map(b.addOne)))
       acc.flatMap(b => fn(curr).map(b.addOne))
     }).as(xb.result())
   }
