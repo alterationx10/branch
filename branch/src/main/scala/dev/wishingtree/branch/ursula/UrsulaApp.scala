@@ -1,8 +1,11 @@
 package dev.wishingtree.branch.ursula
 
 import dev.wishingtree.branch.lzy.Lazy
+import dev.wishingtree.branch.macaroni.runtimes.BranchExecutors
 import dev.wishingtree.branch.ursula.command.Command
 import dev.wishingtree.branch.ursula.command.builtin.HelpCommand
+
+import scala.concurrent.ExecutionContext
 import scala.util.*
 
 trait UrsulaApp {
@@ -42,8 +45,14 @@ trait UrsulaApp {
     val default = _allCommands.filter(_.isDefaultCommand)
     default.headOption
   }
+
+  /** The executor service to run the Lazy[A] evaluation powering the app.
+    */
+  val executionContext: ExecutionContext =
+    BranchExecutors.executionContext
+
   @volatile
-  private var dropOne                                  = true
+  private var dropOne = true
 
   final def main(args: Array[String]): Unit = {
     val lzyApp = for {
@@ -62,7 +71,7 @@ trait UrsulaApp {
       result <- cmd.lazyAction(if dropOne then args.drop(1) else args)
     } yield result
 
-    lzyApp.runSync() match {
+    lzyApp.runSync()(using executionContext) match {
       case Success(value)     =>
         System.exit(0)
       case Failure(exception) =>

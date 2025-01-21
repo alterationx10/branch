@@ -1,14 +1,18 @@
 import dev.wishingtree.branch.lzy.{Lazy, LazyRuntime}
+import dev.wishingtree.branch.macaroni.runtimes.BranchExecutors
 import dev.wishingtree.branch.testkit.fixtures.LoggerFixtureSuite
 import munit.FunSuite
 
 import java.time.*
 import java.util.logging.Logger
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
 import scala.util.Try
 
 class LazySpec extends LoggerFixtureSuite {
+
+  given ExecutionContext = BranchExecutors.executionContext
 
   override def munitValueTransforms = super.munitValueTransforms ++ List(
     new ValueTransform(
@@ -87,14 +91,14 @@ class LazySpec extends LoggerFixtureSuite {
 
   test("Lazy.iterate") {
     for {
-      l     <- Lazy.iterate((1 to 10000).iterator)(List.newBuilder[Int])(_ =>
+      l     <- Lazy.iterate((1 to 1000000).iterator)(List.newBuilder[Int])(_ =>
                  Lazy.fn(1)
                )
       empty <-
         Lazy.iterate(Iterator.empty)(List.newBuilder[Int])(_ => Lazy.fn(1))
     } yield {
-      assertEquals(l.size, 10000)
-      assertEquals(l.sum, 10000)
+      assertEquals(l.size, 1000000)
+      assertEquals(l.sum, 1000000)
       assertEquals(empty.size, 0)
     }
   }

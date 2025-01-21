@@ -2,7 +2,7 @@
 package dev.wishingtree.branch.testkit.fixtures
 
 import com.sun.net.httpserver.HttpServer
-import dev.wishingtree.branch.lzy.LazyRuntime
+import dev.wishingtree.branch.macaroni.runtimes.BranchExecutors
 import dev.wishingtree.branch.spider.HttpMethod
 import dev.wishingtree.branch.spider.server.{ContextHandler, RequestHandler}
 import munit.FunSuite
@@ -19,7 +19,7 @@ trait HttpFixtureSuite extends FunSuite {
       setup = { test =>
         val port: Int = scala.util.Random.between(10000, 11000)
         val server    = HttpServer.create(new InetSocketAddress(port), 0)
-        server.setExecutor(LazyRuntime.executorService)
+        server.setExecutor(BranchExecutors.executorService)
         server.start()
         ContextHandler.registerHandler(new ContextHandler("/") {
           override val contextRouter: PF = routes
