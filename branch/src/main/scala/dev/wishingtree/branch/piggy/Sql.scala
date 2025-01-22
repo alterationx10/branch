@@ -4,7 +4,8 @@ import dev.wishingtree.branch.macaroni.poolers.ResourcePool
 
 import java.sql.{Connection, PreparedStatement, ResultSet}
 import scala.compiletime.*
-import scala.concurrent.Future
+import scala.concurrent.duration.Duration
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.*
 
 sealed trait Sql[+A] {
@@ -60,26 +61,38 @@ object Sql {
     /** Execute this Sql operation using the given Connection. See
       * [[SqlRuntime.execute]].
       */
-    def execute(using connection: Connection): Try[A]         = {
-      SqlRuntime.execute(a)
+    def execute(d: Duration = Duration.Inf)(using
+        connection: Connection,
+        executionContext: ExecutionContext
+    ): Try[A] = {
+      SqlRuntime.execute(a, d)
 
       /** Execute this Sql operation using the given Connection, returning the
         * result as a Future. See [[SqlRuntime.executeAsync]].
         */
     }
-    def executeAsync(using connection: Connection): Future[A] =
+    def executeAsync(using
+        connection: Connection,
+        executionContext: ExecutionContext
+    ): Future[A] =
       SqlRuntime.executeAsync(a)
 
     /** Execute this Sql operation using the given ResourcePool[Connection]. See
       * [[SqlRuntime.executePool]].
       */
-    def executePool(using pool: ResourcePool[Connection]): Try[A] =
-      SqlRuntime.executePool(a)
+    def executePool(d: Duration = Duration.Inf)(using
+        pool: ResourcePool[Connection],
+        executionContext: ExecutionContext
+    ): Try[A] =
+      SqlRuntime.executePool(a, d)
 
     /** Execute this Sql operation using the given ResourcePool[Connection],
       * returning the result as a Future. See [[SqlRuntime.executePoolAsync]].
       */
-    def executePoolAsync(using pool: ResourcePool[Connection]): Future[A] =
+    def executePoolAsync(using
+        pool: ResourcePool[Connection],
+        executionContext: ExecutionContext
+    ): Future[A] =
       SqlRuntime.executePoolAsync(a)
   }
 
