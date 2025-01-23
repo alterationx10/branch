@@ -1,0 +1,24 @@
+name: Dependency Updates
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: coursier/cache-action@v6.4
+      - uses: VirtusLab/scala-cli-setup@v1.5
+
+      - name: Create a new branch
+        run: git checkout -b dependency-update
+
+      - run: scala-cli --power dependency-update branch --all
+
+      - run: | 
+          git push -u origin dependency-update
+          gh pr create --title "Dependency Updates" --body "Dependency updates from scala-cli" --fill
