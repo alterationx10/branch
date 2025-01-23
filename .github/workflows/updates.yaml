@@ -48,7 +48,7 @@ jobs:
           scala-cli --power dependency-update branch --all
           git config --global user.name "Mark Rudolph"
           git config --global user.email "mark@k8ty.app"
-          git commit -am "Update dependencies" || echo "No changes to commit"
+          git commit -am "Update dependencies" && echo "changes_exists=true" >> $GITHUB_ENV || echo "No changes to commit" && echo "changes_exists=false" >> $GITHUB_ENV
 
       - name: Push changes
         run: |
@@ -60,4 +60,12 @@ jobs:
             --title "Dependency Updates" \
             --body "Dependency updates from scala-cli" \
             --head dependency-update \
-            --base main || echo "Pull request already exists or no changes to push"
+            --base main && gh workflow run pr-tests.yml || echo "Pull request already exists or no changes to push"
+
+      - name: Trigger PR Tests
+        run: |
+          if [ "$changes_exists" = "true" ]; then
+            gh workflow run pr-tests.yml  || echo "Error running PR tests"
+          else
+            echo "No changes; not running PR tests"
+          fi
