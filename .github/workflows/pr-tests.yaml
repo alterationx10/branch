@@ -3,6 +3,10 @@ on:
   pull_request:
     branches:
       - main
+  workflow_run:
+    workflows: [ "Update Dependencies" ]
+    types:
+      - completed
 jobs:
   build:
     runs-on: "ubuntu-latest"
