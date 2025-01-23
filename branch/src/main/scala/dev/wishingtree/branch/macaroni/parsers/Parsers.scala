@@ -30,7 +30,7 @@ trait Parsers[Parser[+_]] {
   def thru(s: String): Parser[String] = regex((".*?" + Pattern.quote(s)).r)
 
   def quoted: Parser[String] = string("\"") *> thru("\"").map(_.dropRight(1))
-  
+
   def escapedQuoted: Parser[String] =
     (string("\"") *> parseThruEscaped("\"").map(_.dropRight(1))).token
 
