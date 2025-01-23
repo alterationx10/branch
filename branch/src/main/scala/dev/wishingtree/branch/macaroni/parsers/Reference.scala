@@ -36,6 +36,24 @@ object Reference extends Parsers[Reference.Parser] {
     }
   }
 
+  override def parseThruEscaped(s: String): Parser[String] = { l =>
+    val remainingIterator = l.remaining.iterator
+    val sb: StringBuilder = new StringBuilder
+    var found             = false
+    while !found && remainingIterator.hasNext do {
+      remainingIterator.next() match {
+        case '\\' =>
+          sb.append('\\')
+          remainingIterator.nextOption().foreach(sb.append)
+        case c    =>
+          sb.append(c)
+          found = sb.endsWith(s)
+      }
+    }
+    if found then Success(sb.result(), sb.length)
+    else Failure(l.toError(s"parseThruEscaped $s"), false)
+  }
+
   extension [A](p: Parser[A]) {
     override def run(input: String): Either[ParseError, A] =
       p(Location(input)).extract

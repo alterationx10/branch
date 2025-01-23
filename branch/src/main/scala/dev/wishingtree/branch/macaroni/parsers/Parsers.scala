@@ -21,6 +21,8 @@ trait Parsers[Parser[+_]] {
 
   def regex(r: Regex): Parser[String]
 
+  def parseThruEscaped(s: String): Parser[String]
+
   def whitespace: Parser[String] = regex("\\s*".r)
 
   def digits: Parser[String] = regex("\\d+".r)
@@ -28,13 +30,9 @@ trait Parsers[Parser[+_]] {
   def thru(s: String): Parser[String] = regex((".*?" + Pattern.quote(s)).r)
 
   def quoted: Parser[String] = string("\"") *> thru("\"").map(_.dropRight(1))
-
-  def escapedThru(s: String) = regex(
-    ("((?:[^\"\\\\]|\\\\.)*)" + Pattern.quote(s)).r
-  )
-
+  
   def escapedQuoted: Parser[String] =
-    (string("\"") *> escapedThru("\"").map(_.dropRight(1))).token
+    (string("\"") *> parseThruEscaped("\"").map(_.dropRight(1))).token
 
   def doubleString: Parser[String] =
     regex("[-+]?([0-9]*\\.)?[0-9]+([eE][-+]?[0-9]+)?".r).token
