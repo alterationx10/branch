@@ -46,6 +46,8 @@ jobs:
       - name: Update dependencies
         run: |
           scala-cli --power dependency-update branch --all
+          git config --global user.name "Mark Rudolph"
+          git config --global user.email "mark@k8ty.app"
           git commit -am "Update dependencies" || echo "No changes to commit"
 
       - name: Push changes
