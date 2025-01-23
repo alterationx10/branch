@@ -13,7 +13,7 @@
 
 //> using repository sonatype:public
 
-//> using test.dep org.scalameta::munit:1.0.4
+//> using test.dep org.scalameta::munit:1.1.0
 //> using test.dep org.testcontainers:testcontainers:1.20.4
 //> using test.dep org.postgresql:postgresql:42.7.5
 //> using test.resourceDir ../test_resources
