@@ -69,11 +69,13 @@ jobs:
             --head dependency-update \
             --base main || echo "Pull request already exists or no changes to push"
 
-      - uses: docker/setup-buildx-action@v3
+      - name: Set up Docker
+        if: env.changes_exists == 'true'
+        uses: docker/setup-buildx-action@v3
+
       - name: PR Tests
         if: env.changes_exists == 'true'
         run: |
-          gh pr comment --body "Running PR tests..."
           if scala-cli --power test branch; then
             echo "tests_passed=true" >> $GITHUB_ENV
           else
@@ -87,7 +89,7 @@ jobs:
           gh pr merge --squash --delete-branch --body "Auto-merged dependency updates"
 
       - name: Close PR
-        if: env.tests_passed == 'false'
+        if: env.changes_exists == 'true' && env.tests_passed == 'false'
         run: |
           gh pr comment --body "PR tests failed :cry: Closing PR..."
           gh pr close --delete-branch --body "PR tests failed"
