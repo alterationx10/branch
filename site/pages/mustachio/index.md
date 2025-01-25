@@ -1,3 +1,14 @@
+---
+title: Mustachio
+description: A Mustache template engine
+author: Mark Rudolph
+published: 2025-01-25T04:37:00Z
+lastUpdated: 2025-01-25T04:37:00Z
+tags: 
+  - mustache
+  - template
+---
+
 # Mustachio
 
 This module is a [Mustache](https://mustache.github.io) template engine. It is built/tested against

@@ -1,3 +1,15 @@
+---
+title: Spider
+description: A layer over the built-in Java HttpServer
+author: Mark Rudolph
+published: 2025-01-25T04:38:00Z
+lastUpdated: 2025-01-25T04:38:00Z
+tags: 
+  - http
+  - server
+  - client
+---
+
 # Spider
 
 *Oh, what a tangled web we weave when first we practice http*

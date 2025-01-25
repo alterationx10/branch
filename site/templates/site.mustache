@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark"/>
+    <link rel="icon" href="/img/favicon.png"/>
+    <link rel="mask-icon" href="/img/logo.png" color="white">
+    <link
+            rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.violet.min.css"
+    >
+    <script defer data-domain="wishingtreedev.github.io/branch"
+            src="https://plausible.io/js/script.file-downloads.hash.outbound-links.js"></script>
+    <title>
+        {{content.fm.title}}{{^content.fm.title}}Branch Framework{{/content.fm.title}}
+    </title>
+    <meta name="keywords" content="{{content.fm.tags}}">
+    <meta name="author" content="{{content.fm.author}}">
+    <meta name="description" content="{{content.fm.description}}">
+</head>
+<body>
+<header class="container">
+    <div class="container">
+        <a href="index.html" class="contrast">
+            <img src="/img/logo.png" height="64" width="64" style="vertical-align:middle">
+            <strong>Branch Framework</strong>
+        </a>
+    </div>
+    <nav>
+        <ul>
+            <li><a href="/lzy" class="contrast">Lzy</a></li>
+            <li><a href="/spider" class="contrast">Spider</a></li>
+            <li><a href="/piggy" class="contrast">Piggy</a></li>
+            <li><a href="/friday" class="contrast">Friday</a></li>
+            <li><a href="/macaroni" class="contrast">Macaroni</a></li>
+            <li><a href="/veil" class="contrast">Veil</a></li>
+            <li><a href="/blammo" class="contrast">Blammo</a></li>
+            <li><a href="/keanu" class="contrast">Keanu</a></li>
+            <li><a href="/ursula" class="contrast">Ursula</a></li>
+            <li><a href="/mustachio" class="contrast">Musachio</a></li>
+            <li><a href="/tags" class="contrast">Tags</a></li>
+        </ul>
+    </nav>
+</header>
+<main class="container">
+    <div id="site-content">
+        {{>content}}
+    </div>
+</main>
+<footer class="container">
+    <p>
+        GitHub: <a href="https://github.com/wishingtreedev/branch" class="contrast">https://github.com/wishingtreedev/branch</a>
+    </p>
+</footer>
+</body>
+</html>

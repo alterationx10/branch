@@ -1,3 +1,15 @@
+---
+title: Lzy
+description: Somewhere between lazy Futures, and a tiny Effect System.
+author: Mark Rudolph
+published: 2025-01-25T04:37:00Z
+lastUpdated: 2025-01-25T04:37:00Z
+tags: 
+  - future
+  - effect
+  - lazy
+---
+
 # Lzy
 
 *Lzy* is somewhere between lazy Futures, and a tiny Effect System.

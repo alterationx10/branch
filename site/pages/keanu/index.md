@@ -1,3 +1,13 @@
+---
+title: Keanu
+description: EventBus and ActorSystem
+author: Mark Rudolph
+published: 2025-01-25T04:36:00Z
+lastUpdated: 2025-01-25T04:36:00Z
+tags: 
+  - eventbus
+  - actor
+---
 # Keanu
 
 This module currently contains a simple *typed* EventBus, and a (local) ActorSystem.
