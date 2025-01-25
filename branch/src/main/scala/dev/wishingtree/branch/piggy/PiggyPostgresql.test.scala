@@ -27,7 +27,7 @@ class PiggyPostgresqlSpec extends PGContainerSuite {
   val ins = (p: Person) =>
     ps"INSERT INTO person (name, age) values (${p.name}, ${p.age})"
 
-  val find: PsArg[Tuple1[String]] = a =>
+  val find = (a: String) =>
     ps"SELECT id, name, age from person where name like $a"
 
   val tenPeople = (1 to 10).map(i => Person(0, s"Mark-$i", i))
@@ -37,9 +37,9 @@ class PiggyPostgresqlSpec extends PGContainerSuite {
       _             <- Sql.statement(ddl)
       nIns          <- Sql.prepareUpdate(ins, tenPeople*)
       fetchedPeople <- Sql
-                         .prepareQuery[Tuple1[String], (Int, String, Int)](
+                         .prepareQuery[String, (Int, String, Int)](
                            find,
-                           Tuple1("Mark-%")
+                           "Mark-%"
                          )
                          .map(_.map(Person.apply))
     } yield (nIns, fetchedPeople)
@@ -61,9 +61,9 @@ class PiggyPostgresqlSpec extends PGContainerSuite {
 
     val sql    = for {
       fetchedPeople <- Sql
-                         .prepareQuery[Tuple1[String], (Int, String, Int)](
+                         .prepareQuery[String, (Int, String, Int)](
                            find,
-                           Tuple1("Mark-%")
+                           "Mark-%"
                          )
                          .map(_.map(Person.apply))
     } yield {

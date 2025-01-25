@@ -51,7 +51,7 @@ sealed trait Lazy[+A] {
 
   /** Run the Lazy value forever, repeating the computation indefinitely.
     */
-  final def forever[A] = {
+  final def forever: Lazy[A] = {
     lazy val loop: Lazy[A] = this.flatMap(_ => loop)
     loop
   }
