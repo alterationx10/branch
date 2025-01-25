@@ -21,8 +21,10 @@ jobs:
       - name: Setup coursier cache
         uses: coursier/cache-action@v6.4
 
-      - name: Setup Scala CLI
-        uses: VirtusLab/scala-cli-setup@v1.5
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin' # See 'Supported distributions' for available options
+          java-version: '23'
 
       - name: Install blarg
         run: |
