@@ -1,3 +1,13 @@
+---
+title: Ursula
+description: A slim framework to make Scala CLI apps.
+author: Mark Rudolph
+published: 2025-01-25T04:38:00Z
+lastUpdated: 2025-01-25T04:38:00Z
+tags: 
+  - cli
+---
+
 # Ursula
 
 A slim framework to make Scala CLI apps.

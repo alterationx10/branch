@@ -1,3 +1,13 @@
+---
+title: Friday
+description: A(nother) Scala JSON library
+author: Mark Rudolph
+published: 2025-01-25T04:36:00Z
+lastUpdated: 2025-01-25T04:36:00Z
+tags: 
+  - json
+---
+
 # Friday
 
 *Friday* is built off of a parser that is the topic of a chapter in

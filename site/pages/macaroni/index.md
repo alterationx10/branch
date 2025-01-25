@@ -1,3 +1,15 @@
+---
+title: Macaroni
+description: A collection of reusable modules
+author: Mark Rudolph
+published: 2025-01-25T04:37:00Z
+lastUpdated: 2025-01-25T04:37:00Z
+tags:
+  - parser
+  - pool
+  - metaprogramming
+---
+
 # Macaroni
 
 This module has a collection of reusable modules that could be helpful in any project.

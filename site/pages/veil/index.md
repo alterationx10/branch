@@ -1,3 +1,14 @@
+---
+title: Veil
+description: Configs and Environment Variables
+author: Mark Rudolph
+published: 2025-01-25T04:38:00Z
+lastUpdated: 2025-01-25T04:38:00Z
+tags:
+  - env
+  - config
+---
+
 # Veil
 
 Veil is a small layer to help with configs and environment variables.
