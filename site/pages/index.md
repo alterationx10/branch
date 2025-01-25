@@ -1,3 +1,12 @@
+---
+title: Branch Framework
+description: A zero-dependency framework for Scala 3 on Java 21+.
+author: Mark Rudolph
+published:
+lastUpdated:
+tags: scala
+---
+
 # Branch Framework
 
 *Branch* is a zero-dependency framework for Scala 3 on Java 21+.
