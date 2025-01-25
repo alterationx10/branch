@@ -12,7 +12,7 @@
     >
 
     <title>
-        {{content.fm.title}}{{^content.fm.title}}Blarg!{{/content.fm.title}}
+        {{content.fm.title}}{{^content.fm.title}}Branch Framework{{/content.fm.title}}
     </title>
     <meta name="keywords" content="{{content.fm.tags}}">
     <meta name="author" content="{{content.fm.author}}">
@@ -20,15 +20,13 @@
 </head>
 <body>
 <header class="container">
+    <div class="container">
+        <a href="index.html" class="contrast">
+            <img src="/img/logo.png" height="64" width="64" style="vertical-align:middle">
+            <strong>Branch Framework</strong>
+        </a>
+    </div>
     <nav>
-        <ul>
-            <li>
-                <a href="index.html" class="contrast">
-                    <img src="/img/logo.png" height="64" width="64" style="vertical-align:middle">
-                    <strong>Blarg!</strong>
-                </a>
-            </li>
-        </ul>
         <ul>
             <li><a href="/lzy" class="contrast">Lzy</a></li>
             <li><a href="/spider" class="contrast">Spider</a></li>
@@ -40,9 +38,7 @@
             <li><a href="/keanu" class="contrast">Keanu</a></li>
             <li><a href="/ursula" class="contrast">Ursula</a></li>
             <li><a href="/mustachio" class="contrast">Musachio</a></li>
-            <li><a href="/latest" class="contrast">Blog</a></li>
             <li><a href="/tags" class="contrast">Tags</a></li>
-            <li><a href="/about" class="contrast">About</a></li>
         </ul>
     </nav>
 </header>
@@ -52,7 +48,9 @@
     </div>
 </main>
 <footer class="container">
-    <p>&copy; {{year}} me! All rights reserved.</p>
+    <p>
+        GitHub: <a href="https://github.com/wishingtreedev/branch" class="contrast">https://github.com/wishingtreedev/branch</a>
+    </p>
 </footer>
 </body>
 </html>
