@@ -22,7 +22,7 @@ sealed trait Sql[+A] {
 
   /** Flatten the result of this Sql operation.
     */
-  final def flatten[B](using ev: A <:< Sql[B]) =
+  final def flatten[B](using ev: A <:< Sql[B]): Sql[B] =
     this.flatMap(a => ev(a))
 
   /** Attempt to recover from a failure in this Sql operation by executing the
@@ -34,13 +34,6 @@ sealed trait Sql[+A] {
 }
 
 object Sql {
-
-  extension [T](t: T) {
-
-    /** Convert a value to a Tuple1.
-      */
-    def tuple1: Tuple1[T] = Tuple1(t)
-  }
 
   /** A Helper type equivalent to X => PsArgHolder */
   type PsArg[X] = X => PsArgHolder
@@ -184,12 +177,12 @@ object Sql {
 
   }
 
-  private[piggy] final case class PreparedExec[A, P <: Product](
+  private[piggy] final case class PreparedExec[A, P](
       sqlFn: P => PsArgHolder,
       args: Seq[P]
   ) extends Sql[Unit]
 
-  private[piggy] final case class PreparedUpdate[A, P <: Product](
+  private[piggy] final case class PreparedUpdate[A, P](
       sqlFn: P => PsArgHolder,
       args: Seq[P]
   ) extends Sql[Int]
@@ -212,6 +205,8 @@ object Sql {
 
   private[piggy] final case class MappedValue[A](a: A) extends Sql[A]
 
+  private[piggy] final case class Fail[A](e: Throwable) extends Sql[A]
+
   /** Create a Sql operation from a statement and a function to parse the
     * ResultSet.
     */
@@ -227,22 +222,25 @@ object Sql {
   /** Create a Sql operation from a prepared statement function and a sequence
     * of arguments.
     */
-  def prepare[I <: Product](q: I => PsArgHolder, args: I*): Sql[Unit] =
+  def prepare[I](q: I => PsArgHolder, args: I*): Sql[Unit] =
     Sql.PreparedExec(q, args.toSeq)
 
   /** Create a Sql operation from a prepared statement function and a sequence
     * of arguments, returning the number of rows affected.
     */
-  def prepareUpdate[I <: Product](q: I => PsArgHolder, args: I*): Sql[Int] =
+  def prepareUpdate[I](q: I => PsArgHolder, args: I*): Sql[Int] =
     Sql.PreparedUpdate(q, args.toSeq)
 
   /** Create a Sql operation from a prepared statement function and a sequence
     * of arguments, returning a sequence of Tuples.
     */
-  inline def prepareQuery[I <: Product, R <: Tuple](
+  inline def prepareQuery[I, R <: Tuple](
       q: I => PsArgHolder,
       args: I*
   ): Sql[Seq[R]] =
     Sql.PreparedQuery(q, rs => rs.tupledList[R], args.toSeq)
 
+  /** Create a Sql that always fails with the given Throwable.
+    */
+  def fail[A](throwable: Throwable): Sql[A] = Sql.Fail(throwable)
 }

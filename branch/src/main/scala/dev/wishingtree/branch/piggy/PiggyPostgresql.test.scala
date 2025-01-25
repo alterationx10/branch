@@ -6,6 +6,7 @@ import dev.wishingtree.branch.testkit.testcontainers.PGContainerSuite
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.Duration
+import scala.util.Try
 
 class PiggyPostgresqlSpec extends PGContainerSuite {
 
@@ -24,10 +25,10 @@ class PiggyPostgresqlSpec extends PGContainerSuite {
 
   case class Person(id: Int, name: String, age: Int)
 
-  val ins = (p: Person) =>
+  val ins: Person => PsArgHolder = (p: Person) =>
     ps"INSERT INTO person (name, age) values (${p.name}, ${p.age})"
 
-  val find: PsArg[Tuple1[String]] = a =>
+  val find: String => PsArgHolder = (a: String) =>
     ps"SELECT id, name, age from person where name like $a"
 
   val tenPeople = (1 to 10).map(i => Person(0, s"Mark-$i", i))
@@ -37,9 +38,9 @@ class PiggyPostgresqlSpec extends PGContainerSuite {
       _             <- Sql.statement(ddl)
       nIns          <- Sql.prepareUpdate(ins, tenPeople*)
       fetchedPeople <- Sql
-                         .prepareQuery[Tuple1[String], (Int, String, Int)](
+                         .prepareQuery[String, (Int, String, Int)](
                            find,
-                           Tuple1("Mark-%")
+                           "Mark-%"
                          )
                          .map(_.map(Person.apply))
     } yield (nIns, fetchedPeople)
@@ -61,15 +62,15 @@ class PiggyPostgresqlSpec extends PGContainerSuite {
 
     val sql    = for {
       fetchedPeople <- Sql
-                         .prepareQuery[Tuple1[String], (Int, String, Int)](
+                         .prepareQuery[String, (Int, String, Int)](
                            find,
-                           Tuple1("Mark-%")
+                           "Mark-%"
                          )
                          .map(_.map(Person.apply))
     } yield {
       fetchedPeople
     }
-    val result = sql.executePool()
+    val result: Try[Seq[Person]] = sql.executePool()
     assert(result.isSuccess)
     assertEquals(result.get.size, 0)
 
@@ -103,4 +104,20 @@ class PiggyPostgresqlSpec extends PGContainerSuite {
     assert(readBack.forall(_._2.startsWith("Mark")))
   }
 
+  test("Sql.fail") {
+    val sql    = for {
+      _             <- Sql.statement(ddl)
+      nIns          <- Sql.prepareUpdate(ins, tenPeople*)
+      _             <- Sql.fail(new Exception("boom"))
+      fetchedPeople <- Sql
+                         .prepareQuery[String, (Int, String, Int)](
+                           find,
+                           "Mark-%"
+                         )
+                         .map(_.map(Person.apply))
+    } yield (nIns, fetchedPeople)
+    val result = sql.executePool()(using pgPool)
+    assert(result.isFailure)
+    assert(result.toEither.left.exists(_.getMessage == "boom"))
+  }
 }
