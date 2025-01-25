@@ -24,10 +24,10 @@ class PiggyPostgresqlSpec extends PGContainerSuite {
 
   case class Person(id: Int, name: String, age: Int)
 
-  val ins = (p: Person) =>
+  val ins: Person => PsArgHolder = (p: Person) =>
     ps"INSERT INTO person (name, age) values (${p.name}, ${p.age})"
 
-  val find = (a: String) =>
+  val find: String => PsArgHolder = (a: String) =>
     ps"SELECT id, name, age from person where name like $a"
 
   val tenPeople = (1 to 10).map(i => Person(0, s"Mark-$i", i))
