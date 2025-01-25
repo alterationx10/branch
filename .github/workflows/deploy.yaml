@@ -11,34 +11,37 @@ jobs:
       contents: write  # To push a branch 
       pages: write  # To push to a GitHub Pages site
       id-token: write # To update the deployment status
+    env:
+      BLARG_VERSION: 0.0.3
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Install latest mdbook
+
+      - name: Setup coursier cache
+        uses: coursier/cache-action@v6.4
+
+      - name: Setup Scala CLI
+        uses: VirtusLab/scala-cli-setup@v1.5
+
+      - name: Install blarg
         run: |
-          tag=$(curl 'https://api.github.com/repos/rust-lang/mdbook/releases/latest' | jq -r '.tag_name')
-          url="https://github.com/rust-lang/mdbook/releases/download/${tag}/mdbook-${tag}-x86_64-unknown-linux-gnu.tar.gz"
-          mkdir mdbook
-          curl -sSL $url | tar -xz --directory=./mdbook
-          echo `pwd`/mdbook >> $GITHUB_PATH
-      - name: Install mermaid preprocessor
-        run: |
-          url="https://github.com/badboy/mdbook-mermaid/releases/download/v0.14.0/mdbook-mermaid-v0.14.0-x86_64-unknown-linux-gnu.tar.gz"
-          curl -sSL $url | tar xz --directory=./mdbook
-      - name: Build Book
-        run: |
-          # This assumes your book is in the root of your repository.
-          # Just add a `cd` here if you need to change to another directory.
-          cd site
-          mdbook build
+          curl -fLO https://github.com/wishingtreedev/blarg/releases/download/v${BLARG_VERSION}/blarg-linux-x64-v${BLARG_VERSION}.zip 
+          unzip -o blarg-linux-x64-v${BLARG_VERSION}.zip
+          chmod +x blarg
+
+      - name: Build Site
+        run: ./blarg build
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           # Upload entire repository
-          path: 'site/book'
+          path: 'build'
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
