@@ -150,6 +150,8 @@ object SqlRuntime extends SqlRuntime {
             }
           }
         }
+      case Sql.Fail(e)                          =>
+        Future.failed(e)
       case Sql.MappedValue(a)                   =>
         Future.successful(a)
       case Sql.Recover(sql, fm)                 =>

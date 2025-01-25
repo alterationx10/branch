@@ -35,13 +35,6 @@ sealed trait Sql[+A] {
 
 object Sql {
 
-  extension [T](t: T) {
-
-    /** Convert a value to a Tuple1.
-      */
-    def tuple1: Tuple1[T] = Tuple1(t)
-  }
-
   /** A Helper type equivalent to X => PsArgHolder */
   type PsArg[X] = X => PsArgHolder
 
@@ -212,6 +205,8 @@ object Sql {
 
   private[piggy] final case class MappedValue[A](a: A) extends Sql[A]
 
+  private[piggy] final case class Fail[A](e: Throwable) extends Sql[A]
+
   /** Create a Sql operation from a statement and a function to parse the
     * ResultSet.
     */
@@ -245,4 +240,7 @@ object Sql {
   ): Sql[Seq[R]] =
     Sql.PreparedQuery(q, rs => rs.tupledList[R], args.toSeq)
 
+  /** Create a Sql that always fails with the given Throwable.
+    */
+  def fail[A](throwable: Throwable): Sql[A] = Sql.Fail(throwable)
 }
