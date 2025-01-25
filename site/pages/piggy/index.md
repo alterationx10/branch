@@ -1,6 +1,6 @@
 ---
 title: Piggy
-description: Lzy SQL
+description: Lazy SQL
 author: Mark Rudolph
 published: 2025-01-25T04:38:00Z
 lastUpdated: 2025-01-25T04:38:00Z
@@ -281,10 +281,10 @@ val sql = for {
 } yield (nIns, fetchedPeople)
 ```
 
-and evaluate to a result with
+and evaluate to a result (using a `Connection` and `ExecutionContext` in scope) with
 
 ```scala 3
-    val result = sql.execute()
+val result: Try[Seq[Person]] = sql.executePool()
 ```
 
 ## Other Libraries

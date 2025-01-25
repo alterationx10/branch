@@ -6,6 +6,7 @@ import dev.wishingtree.branch.testkit.testcontainers.PGContainerSuite
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.Duration
+import scala.util.Try
 
 class PiggyPostgresqlSpec extends PGContainerSuite {
 
@@ -69,7 +70,7 @@ class PiggyPostgresqlSpec extends PGContainerSuite {
     } yield {
       fetchedPeople
     }
-    val result = sql.executePool()
+    val result: Try[Seq[Person]] = sql.executePool()
     assert(result.isSuccess)
     assertEquals(result.get.size, 0)
 
