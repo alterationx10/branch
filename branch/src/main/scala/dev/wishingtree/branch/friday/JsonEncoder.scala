@@ -6,27 +6,42 @@ import dev.wishingtree.branch.macaroni.meta.Summons.summonHigherListOf
 import java.time.Instant
 import scala.compiletime.*
 import scala.deriving.Mirror
-import scala.reflect.ClassTag
 
-/** A type-class for encoding values to Json
+/** A type-class for encoding values to JSON
+  * @tparam A
+  *   the type of the value to encode
   */
 trait JsonEncoder[-A] {
 
-  /** Encodes the value to Json
+  /** Encodes the value to JSON
+    * @param a
+    *   the value to encode
+    * @return
+    *   the encoded JSON value
     */
   def encode(a: A): Json
 
-  /** Contramap the encoder
+  /** Contramap the encoder to a new JsonEncoder
+    * @param f
+    *   the function to map the value before encoding
+    * @tparam B
+    *   the new type to map from
+    * @return
+    *   a new JsonEncoder for the mapped type
     */
   def contraMap[B](f: B => A): JsonEncoder[B] =
     a => encode(f(a))
 
-  extension [A](a: A) {
+  extension [B](b: B) {
 
-    /** Encodes the value to Json using the given encoder
+    /** Encodes the value to JSON using the given encoder
+      * @param encoder
+      *   the JsonEncoder for the type
+      * @return
+      *   the encoded JSON value
       */
-    def toJson(using encoder: JsonEncoder[A]): Json =
-      encoder.encode(a)
+    def toJson(using encoder: JsonEncoder[B]): Json =
+      encoder.encode(b)
   }
 
 }
@@ -65,13 +80,13 @@ object JsonEncoder {
     def encode(a: Boolean): Json = Json.JsonBool(a)
   }
 
-  /** A JsonEncoder for Json Arrays
+  /** A JsonEncoder for JSON Arrays
     */
   given JsonEncoder[IndexedSeq[Json]] with {
     def encode(a: IndexedSeq[Json]): Json = Json.JsonArray(a)
   }
 
-  /** A JsonEncoder for Json Objects / Map[String, Json]
+  /** A JsonEncoder for JSON Objects / Map[String, Json]
     */
   given JsonEncoder[Map[String, Json]] with {
     def encode(a: Map[String, Json]): Json = Json.JsonObject(a)
@@ -95,37 +110,76 @@ object JsonEncoder {
     def encode(a: Instant): Json = JsonString(a.toString)
   }
 
-  /** Helper method for collection/iterable JsonEncoders */
+  /** Helper method for collection/iterable JsonEncoders
+    * @param jsonEncoder
+    *   the JsonEncoder for the element type
+    * @tparam A
+    *   the element type
+    * @tparam F
+    *   the iterable type
+    * @return
+    *   a new JsonEncoder for the iterable type
+    */
   private[friday] def iterableEncoder[A, F[X] <: Iterable[X]](using
       jsonEncoder: JsonEncoder[A]
   ): JsonEncoder[F[A]] =
     (a: F[A]) => JsonArray(a.iterator.map(jsonEncoder.encode).toIndexedSeq)
 
   /** A JsonEncoder for Seqs
+    * @tparam A
+    *   the element type
+    * @return
+    *   a new JsonEncoder for Seqs
     */
   implicit def seqEncoder[A: JsonEncoder]: JsonEncoder[Seq[A]] =
     iterableEncoder[A, Seq]
 
   /** A JsonEncoder for Lists
+    * @tparam A
+    *   the element type
+    * @return
+    *   a new JsonEncoder for Lists
     */
   implicit def listEncoder[A: JsonEncoder]: JsonEncoder[List[A]] =
     iterableEncoder[A, List]
 
   /** A JsonEncoder for IndexedSeqs
+    * @tparam A
+    *   the element type
+    * @return
+    *   a new JsonEncoder for IndexedSeqs
     */
   implicit def indexedSeqEncoder[A: JsonEncoder]: JsonEncoder[IndexedSeq[A]] =
     iterableEncoder[A, IndexedSeq]
 
   /** A JsonEncoder for Sets
+    * @tparam A
+    *   the element type
+    * @return
+    *   a new JsonEncoder for Sets
     */
   implicit def setEncoder[A: JsonEncoder]: JsonEncoder[Set[A]] =
     iterableEncoder[A, Set]
 
   /** A JsonEncoder for Vectors
+    * @tparam A
+    *   the element type
+    * @return
+    *   a new JsonEncoder for Vectors
     */
   implicit def vectorEncoder[A: JsonEncoder]: JsonEncoder[Vector[A]] =
     iterableEncoder[A, Vector]
 
+  /** Builds a product type from a value
+    * @param a
+    *   the value to encode
+    * @param m
+    *   the Mirror for the product type
+    * @tparam A
+    *   the product type
+    * @return
+    *   the encoded JSON object
+    */
   private[friday] inline def buildJsonProduct[A](
       a: A
   )(using m: Mirror.Of[A]): Json = {
@@ -148,6 +202,12 @@ object JsonEncoder {
   }
 
   /** Derives a JsonEncoder for a product type
+    * @param m
+    *   the Mirror for the product type
+    * @tparam A
+    *   the product type
+    * @return
+    *   a new JsonEncoder for the product type
     */
   inline given derived[A](using m: Mirror.Of[A]): JsonEncoder[A] = {
     inline m match {
@@ -160,7 +220,15 @@ object JsonEncoder {
     }
   }
 
-  /** Encodes a value to Json using the given encoder
+  /** Encodes a value to JSON using the given encoder
+    * @param t
+    *   the value to encode
+    * @param encoder
+    *   the JsonEncoder for the type
+    * @tparam T
+    *   the type of the value
+    * @return
+    *   the encoded JSON value
     */
   inline def encode[T](t: T)(using encoder: JsonEncoder[T]): Json =
     encoder.encode(t)
