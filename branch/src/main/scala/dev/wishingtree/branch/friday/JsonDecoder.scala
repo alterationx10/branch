@@ -13,19 +13,36 @@ import scala.deriving.Mirror
 import scala.util.*
 
 /** A type-class for decoding JSON into a given type
+  * @tparam A
+  *   the type of the value to decode
   */
 trait JsonDecoder[+A] {
 
   /** Attempts to decode a JSON value into a given type
+    * @param json
+    *   the JSON value to decode
+    * @return
+    *   a Try containing the decoded value or an exception on failure
     */
   def decode(json: Json): Try[A]
 
   /** Attempts to decode a JSON string into a given type
+    * @param json
+    *   the JSON string to decode
+    * @return
+    *   a Try containing the decoded value or an exception on failure
     */
   def decode(json: String): Try[A] =
     decode(Json.parse(json).toOption.get)
 
-  /** Map the decoder type to a new JsonDecoder */
+  /** Map the decoder type to a new JsonDecoder
+    * @param f
+    *   the function to map the decoded value
+    * @tparam B
+    *   the new type to map to
+    * @return
+    *   a new JsonDecoder for the mapped type
+    */
   def map[B](f: A => B): JsonDecoder[B] =
     json => decode(json).map(f)
 
@@ -77,6 +94,8 @@ object JsonDecoder {
       Try(json.numVal.toInt)
   }
 
+  /** A JsonDecoder for Longs
+    */
   given JsonDecoder[Long] with {
     def decode(json: Json): Try[Long] =
       Try(json.numVal.toLong)
@@ -89,6 +108,18 @@ object JsonDecoder {
       Try(Instant.parse(json.strVal))
   }
 
+  /** Creates a JsonDecoder for an iterable type
+    * @param builder
+    *   the builder for the iterable type
+    * @param decoder
+    *   the JsonDecoder for the element type
+    * @tparam A
+    *   the element type
+    * @tparam F
+    *   the iterable type
+    * @return
+    *   a new JsonDecoder for the iterable type
+    */
   private[friday] def iterableDecoder[A, F[_]](
       builder: mutable.Builder[A, F[A]]
   )(using decoder: JsonDecoder[A]): JsonDecoder[F[A]] =
@@ -100,21 +131,61 @@ object JsonDecoder {
         builder.result()
       }
 
+  /** A JsonDecoder for Sequences
+    * @tparam A
+    *   the element type
+    * @return
+    *   a new JsonDecoder for Sequences
+    */
   implicit def seqDecoder[A: JsonDecoder]: JsonDecoder[Seq[A]] =
     iterableDecoder[A, Seq](Seq.newBuilder[A])
 
+  /** A JsonDecoder for Lists
+    * @tparam A
+    *   the element type
+    * @return
+    *   a new JsonDecoder for Lists
+    */
   implicit def listDecoder[A: JsonDecoder]: JsonDecoder[List[A]] =
     iterableDecoder[A, List](List.newBuilder[A])
 
+  /** A JsonDecoder for IndexedSequences
+    * @tparam A
+    *   the element type
+    * @return
+    *   a new JsonDecoder for IndexedSequences
+    */
   implicit def indexedSeqDecoder[A: JsonDecoder]: JsonDecoder[IndexedSeq[A]] =
     iterableDecoder[A, IndexedSeq](IndexedSeq.newBuilder[A])
 
+  /** A JsonDecoder for Sets
+    * @tparam A
+    *   the element type
+    * @return
+    *   a new JsonDecoder for Sets
+    */
   implicit def setDecoder[A: JsonDecoder]: JsonDecoder[Set[A]] =
     iterableDecoder[A, Set](Set.newBuilder[A])
 
+  /** A JsonDecoder for Vectors
+    * @tparam A
+    *   the element type
+    * @return
+    *   a new JsonDecoder for Vectors
+    */
   implicit def vectorDecoder[A: JsonDecoder]: JsonDecoder[Vector[A]] =
     iterableDecoder[A, Vector](Vector.newBuilder[A])
 
+  /** Builds a product type from a JSON object
+    * @param p
+    *   the Mirror for the product type
+    * @param b
+    *   the JSON object to decode
+    * @tparam A
+    *   the product type
+    * @return
+    *   an instance of the product type
+    */
   private[friday] inline def buildJsonProduct[A](
       p: Mirror.ProductOf[A],
       b: Json
@@ -135,7 +206,14 @@ object JsonDecoder {
     }
   }
 
-  /** Derives a JsonDecoder for a product type */
+  /** Derives a JsonDecoder for a product type
+    * @param m
+    *   the Mirror for the product type
+    * @tparam A
+    *   the product type
+    * @return
+    *   a new JsonDecoder for the product type
+    */
   inline given derived[A](using m: Mirror.Of[A]): JsonDecoder[A] = {
     inline m match {
       case _: Mirror.SumOf[A]     =>
@@ -151,6 +229,14 @@ object JsonDecoder {
   }
 
   /** Attempt to decode a JSON value into a given type
+    * @param json
+    *   the JSON value to decode
+    * @param decoder
+    *   the JsonDecoder for the type
+    * @tparam T
+    *   the type to decode
+    * @return
+    *   a Try containing the decoded value or an exception on failure
     */
   inline def decode[T](json: Json)(using decoder: JsonDecoder[T]): Try[T] =
     decoder.decode(json)

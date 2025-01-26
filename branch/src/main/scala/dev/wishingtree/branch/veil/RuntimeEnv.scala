@@ -1,7 +1,20 @@
 package dev.wishingtree.branch.veil
 
 /** An enum representing the level of the runtime environment.
+  *
+  * This enum defines three possible runtime environments:
+  *   - `DEV`: Development environment
+  *   - `TEST`: Testing environment
+  *   - `PROD`: Production environment
   */
 enum RuntimeEnv {
-  case DEV, TEST, PROD
+
+  /** Development environment */
+  case DEV
+
+  /** Testing environment */
+  case TEST
+
+  /** Production environment */
+  case PROD
 }

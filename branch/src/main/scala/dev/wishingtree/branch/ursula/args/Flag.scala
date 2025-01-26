@@ -15,13 +15,13 @@ import dev.wishingtree.branch.veil.Veil
   */
 trait Flag[R] {
 
-  /** The name of the flag, e.g. "help". This will be parsed as s"--\\$name",
+  /** The name of the flag, e.g. "help". This will be parsed as s"--$name",
     * e.g. "--help"
     */
   val name: String
 
   /** A short-key version of name, e.g. "h". This will be parsed as
-    * s"-\\$shortKey", e.g. "-h"
+    * s"-$shortKey", e.g. "-h"
     */
   val shortKey: String
 
@@ -127,6 +127,7 @@ trait Flag[R] {
     *   if the flag is present but the value is not in the options (if options
     *   is defined and non-empty)
     * @return
+    *   An optional parsed value of type R
     * @see
     *   [[multiple]]
     */
@@ -145,9 +146,11 @@ trait Flag[R] {
     * through [[parse]]
     * @param args
     *   The arguments passed to the command
-    * @throws InvalidOptionFlagException
+    * @throws IllegalArgumentException
     *   if the flag is present but the value is not in the options (if options
     *   is defined and non-empty)
+    * @return
+    *   A sequence of parsed values of type R
     */
   def parseArgs(args: Seq[String]): Seq[R] = {
     recursiveParse(parse)(args) :~ envArg.toSeq :~ default.toSeq

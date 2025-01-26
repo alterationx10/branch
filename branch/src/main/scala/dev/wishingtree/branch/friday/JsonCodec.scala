@@ -5,11 +5,21 @@ import scala.deriving.Mirror
 import scala.util.Try
 
 /** A type-class for encoding and decoding values to and from Json
+  * @tparam A
+  *   the type of the value to encode/decode
   */
 trait JsonCodec[A] extends JsonDecoder[A], JsonEncoder[A] { self =>
 
   /** Transform the codec from one type to another, by providing the functions
     * needed to map/contraMap the underlying decoder/encoders.
+    * @param f
+    *   the function to map the decoded value
+    * @param g
+    *   the function to contraMap the encoded value
+    * @tparam B
+    *   the new type to transform to
+    * @return
+    *   a new JsonCodec for the transformed type
     */
   def transform[B](f: A => B)(g: B => A): JsonCodec[B] =
     new JsonCodec[B] {
@@ -23,6 +33,14 @@ object JsonCodec {
 
   /** Creates a JsonCodec for a given type using the provided JsonEncoder and
     * JsonDecoder.
+    * @param encoder
+    *   the JsonEncoder for the type
+    * @param decoder
+    *   the JsonDecoder for the type
+    * @tparam A
+    *   the type of the value to encode/decode
+    * @return
+    *   a new JsonCodec for the given type
     */
   def apply[A](using
       encoder: JsonEncoder[A],
@@ -35,6 +53,12 @@ object JsonCodec {
     }
 
   /** Derives a JsonCodec for a given type using the given product type
+    * @param m
+    *   the Mirror for the type
+    * @tparam A
+    *   the type of the value to encode/decode
+    * @return
+    *   a new JsonCodec for the derived type
     */
   inline given derived[A](using m: Mirror.Of[A]): JsonCodec[A] = {
     inline m match {

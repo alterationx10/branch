@@ -60,7 +60,7 @@ class PiggyPostgresqlSpec extends PGContainerSuite {
     } yield nIns
     assert(blowup.executePool().isFailure)
 
-    val sql    = for {
+    val sql                      = for {
       fetchedPeople <- Sql
                          .prepareQuery[String, (Int, String, Int)](
                            find,
