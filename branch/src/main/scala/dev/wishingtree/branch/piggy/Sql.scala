@@ -4,7 +4,6 @@ import dev.wishingtree.branch.macaroni.poolers.ResourcePool
 
 import java.sql.{Connection, PreparedStatement, ResultSet}
 import scala.compiletime.*
-import scala.concurrent.duration.Duration
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.*
 
@@ -54,11 +53,11 @@ object Sql {
     /** Execute this Sql operation using the given Connection. See
       * [[SqlRuntime.execute]].
       */
-    def execute(d: Duration = Duration.Inf)(using
+    def execute(using
         connection: Connection,
         executionContext: ExecutionContext
     ): Try[A] = {
-      SqlRuntime.execute(a, d)
+      SqlRuntime.execute(a)
 
       /** Execute this Sql operation using the given Connection, returning the
         * result as a Future. See [[SqlRuntime.executeAsync]].
@@ -73,11 +72,11 @@ object Sql {
     /** Execute this Sql operation using the given ResourcePool[Connection]. See
       * [[SqlRuntime.executePool]].
       */
-    def executePool(d: Duration = Duration.Inf)(using
+    def executePool(using
         pool: ResourcePool[Connection],
         executionContext: ExecutionContext
     ): Try[A] =
-      SqlRuntime.executePool(a, d)
+      SqlRuntime.executePool(a)
 
     /** Execute this Sql operation using the given ResourcePool[Connection],
       * returning the result as a Future. See [[SqlRuntime.executePoolAsync]].

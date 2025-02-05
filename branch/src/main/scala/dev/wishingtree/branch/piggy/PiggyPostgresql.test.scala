@@ -44,7 +44,7 @@ class PiggyPostgresqlSpec extends PGContainerSuite {
                          )
                          .map(_.map(Person.apply))
     } yield (nIns, fetchedPeople)
-    val result = sql.executePool()(using pgPool)
+    val result = sql.executePool(using pgPool)
     assert(result.isSuccess)
     assertEquals(result.get._1, 10)
     assertEquals(result.get._2.distinct.size, 10)
@@ -52,13 +52,13 @@ class PiggyPostgresqlSpec extends PGContainerSuite {
 
   test("PiggyPostgresql Rollback") {
     given PgConnectionPool = pgPool
-    assert(Sql.statement(ddl).executePool().isSuccess)
+    assert(Sql.statement(ddl).executePool.isSuccess)
 
     val blowup = for {
       nIns <- Sql.prepareUpdate(ins, tenPeople*)
       _    <- Sql.statement("this is not valid sql")
     } yield nIns
-    assert(blowup.executePool().isFailure)
+    assert(blowup.executePool.isFailure)
 
     val sql                      = for {
       fetchedPeople <- Sql
@@ -70,7 +70,7 @@ class PiggyPostgresqlSpec extends PGContainerSuite {
     } yield {
       fetchedPeople
     }
-    val result: Try[Seq[Person]] = sql.executePool()
+    val result: Try[Seq[Person]] = sql.executePool
     assert(result.isSuccess)
     assertEquals(result.get.size, 0)
 
@@ -80,7 +80,7 @@ class PiggyPostgresqlSpec extends PGContainerSuite {
     given pool: PgConnectionPool = pgPool
 
     val tple =
-      Sql.statement(s"SELECT 1, 'two'", _.tupled[(Int, String)]).executePool()
+      Sql.statement(s"SELECT 1, 'two'", _.tupled[(Int, String)]).executePool
 
     assertEquals(tple.get.get, (1, "two"))
   }
@@ -98,7 +98,7 @@ class PiggyPostgresqlSpec extends PGContainerSuite {
                            _.tupledList[(Int, String, Int)]
                          )
       } yield fetchedPeople
-    }.executePool().get
+    }.executePool.get
 
     assert(readBack.size == 10)
     assert(readBack.forall(_._2.startsWith("Mark")))
@@ -116,7 +116,7 @@ class PiggyPostgresqlSpec extends PGContainerSuite {
                          )
                          .map(_.map(Person.apply))
     } yield (nIns, fetchedPeople)
-    val result = sql.executePool()(using pgPool)
+    val result = sql.executePool(using pgPool)
     assert(result.isFailure)
     assert(result.toEither.left.exists(_.getMessage == "boom"))
   }
