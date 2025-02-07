@@ -13,5 +13,8 @@ jobs:
           fetch-depth: 0
       - uses: docker/setup-buildx-action@v3
       - uses: coursier/cache-action@v6.4
-      - uses: VirtusLab/scala-cli-setup@v1.5
-      - run: scala-cli --power test branch
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+      - run: sbt test

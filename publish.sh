@@ -18,28 +18,18 @@ WORKDIR=$(pwd)
 git clone --branch v${BRANCH_VERSION} --single-branch git@github.com:wishingtreedev/branch.git
 
 # Publish the project locally
-scala-cli publish local branch \
-  --project-version ${BRANCH_VERSION} \
-  --signer gpg \
-  --gpg-key ${PGP_KEY_ID} \
-  --ivy2-home ${WORKDIR}/.ivy2
-
+sbt publishLocalSigned
 
 # Create the bundle
-for DIR in srcs docs poms jars; do
-  mkdir -p ${WORKDIR}/bundle/dev/wishingtree/branch_3/${BRANCH_VERSION}
-  cp  ${WORKDIR}/.ivy2/local/dev.wishingtree/branch_3/${BRANCH_VERSION}/$DIR/* ${WORKDIR}/bundle/dev/wishingtree/branch_3/${BRANCH_VERSION}
-done
+mkdir bundle
+cp ./branch/target/scala-3.5.2/branch_3-* ./bundle/
 
-cd $WORKDIR/bundle/dev/wishingtree/branch_3/${BRANCH_VERSION}
-rename "s/branch_3/branch_3-${BRANCH_VERSION}/" *
-
-cd $WORKDIR/bundle
+cd ./bundle
 zip -r branch-${BRANCH_VERSION}.zip .
 
 # Publish the bundle
 curl \
   --request POST \
   --header "Authorization: Bearer ${CENTRAL_TOKEN}" \
-  --form bundle=@branch-${BRANCH_VERSION}.zip \
+  --form bundle=@branch-${BRANCH_VERSION}-2.zip \
   "https://central.sonatype.com/api/v1/publisher/upload?publishingType=USER_MANAGED"

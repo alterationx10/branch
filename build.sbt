@@ -21,6 +21,15 @@ ThisBuild / developers           := List(
   )
 )
 
+version                   := sys.env.getOrElse("BRANCH_VERSION", "0.0.0-SNAPSHOT")
+ThisBuild / versionScheme := Some("early-semver")
+credentials += Credentials(
+  "GnuPG Key ID",
+  "gpg",
+  "401126ef4e40ebab",
+  ""
+)
+
 ThisBuild / scalacOptions ++= Seq(
   "-no-indent",
   "-rewrite",
