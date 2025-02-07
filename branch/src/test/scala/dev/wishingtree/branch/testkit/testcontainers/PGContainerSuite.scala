@@ -1,4 +1,3 @@
-//> using target.scope test
 package dev.wishingtree.branch.testkit.testcontainers
 
 import dev.wishingtree.branch.macaroni.poolers.ResourcePool
