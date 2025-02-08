@@ -88,8 +88,6 @@ object Sql {
       SqlRuntime.executePoolAsync(a)
   }
 
-  
-
   extension (rs: ResultSet) {
 
     /** Parse the ResultSet into a List of Tuples.

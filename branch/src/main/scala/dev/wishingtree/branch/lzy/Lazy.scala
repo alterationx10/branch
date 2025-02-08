@@ -1,6 +1,5 @@
 package dev.wishingtree.branch.lzy
 
-
 import java.time.{Clock, Instant}
 import java.util
 import java.util.logging.{Level, Logger}
