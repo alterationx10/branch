@@ -1,0 +1,55 @@
+name: Publish Central
+on:
+  release:
+    types:
+      - created
+jobs:
+  build:
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: Set BRANCH_VERSION
+        run: |
+          TAG="${{ github.event.release.tag_name }}"
+          echo "BRANCH_VERSION=${TAG#v}" >> $GITHUB_ENV
+
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Import GPG key
+        env:
+          GPG_KEY: ${{ secrets.GPG_KEY }}
+        run: |
+          echo -n "$GPG_KEY" | gpg --import
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: sbt
+
+      - name: Setup sbt launcher
+        uses: sbt/setup-sbt@v1
+
+      - name: Build + Sign
+        run: sbt publishSigned
+        env:
+          BRANCH_VERSION: ${{ env.BRANCH_VERSION }}
+
+      - name: ZIP
+        run: |
+          cd bundle
+          zip -r ../branch-${BRANCH_VERSION}.zip .
+        env:
+          BRANCH_VERSION: ${{ env.BRANCH_VERSION }}
+
+      - name: Upload
+        run: |
+          curl \
+            --request POST \
+            --header "Authorization: Bearer ${CENTRAL_TOKEN}" \
+            --form bundle=@branch-${BRANCH_VERSION}.zip \
+            "https://central.sonatype.com/api/v1/publisher/upload?publishingType=USER_MANAGED"
+        env:
+          CENTRAL_TOKEN: ${{ secrets.CENTRAL_TOKEN }}
+          BRANCH_VERSION: ${{ env.BRANCH_VERSION }}

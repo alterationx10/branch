@@ -1,4 +1,3 @@
-//> using target.scope test
 package dev.wishingtree.branch.testkit.fixtures
 
 import com.sun.net.httpserver.HttpServer

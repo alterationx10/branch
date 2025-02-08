@@ -1,3 +1,5 @@
+package dev.wishingtree.branch.lzy
+
 import dev.wishingtree.branch.lzy.{Lazy, LazyRuntime}
 import dev.wishingtree.branch.macaroni.runtimes.BranchExecutors
 import dev.wishingtree.branch.testkit.fixtures.LoggerFixtureSuite
