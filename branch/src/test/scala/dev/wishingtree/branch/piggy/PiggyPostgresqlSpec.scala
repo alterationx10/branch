@@ -4,6 +4,8 @@ import dev.wishingtree.branch.macaroni.runtimes.BranchExecutors
 import dev.wishingtree.branch.piggy.Sql.*
 import dev.wishingtree.branch.testkit.testcontainers.PGContainerSuite
 
+import java.time.Instant
+import java.util.UUID
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.Duration
 import scala.util.Try
@@ -125,4 +127,29 @@ class PiggyPostgresqlSpec extends PGContainerSuite {
     assert(result.isFailure)
     assert(result.toEither.left.exists(_.getMessage == "boom"))
   }
+
+  test("ResultSetParser - UUID") {
+    given pool: PgConnectionPool = pgPool
+    val uuid                     =
+      Sql.statement("SELECT gen_random_uuid()", _.parsed[UUID]).executePool
+    assert(uuid.isSuccess)
+    assert(uuid.get.nonEmpty)
+    assert(
+      Sql.statement("SELECT 'boom'", _.parsed[UUID]).executePool.isFailure
+    )
+  }
+
+  test("ResultSetParser - Instant") {
+    given pool: PgConnectionPool = pgPool
+
+    val now  = Instant.now()
+    val uuid = Sql.statement("SELECT now()", _.parsed[Instant]).executePool
+    assert(uuid.isSuccess)
+    assert(uuid.get.nonEmpty)
+    assert(uuid.get.get.isAfter(now))
+    assert(
+      uuid.get.exists(i => java.time.Duration.between(i, now).toMillis < 1000)
+    )
+  }
+
 }

@@ -166,18 +166,8 @@ object ResultSetParser {
       case ms: Mirror.SumOf[A]     =>
         compiletime.error("Auto derivation of sum types not yet supported")
       case mp: Mirror.ProductOf[A] =>
-        (resultSet: ResultSet) => {
-          val getters = summonGetter[mp.MirroredElemTypes]
-          val values  = getters.zipWithIndex.map((getter, index) => {
-            getter.get(resultSet, index + 1)
-          })
-          val tuple   = values
-            .foldRight(EmptyTuple: Tuple) { (value, acc) =>
-              value *: acc
-            }
-            .asInstanceOf[mp.MirroredElemTypes]
-          mp.fromTuple(tuple)
-        }
+        ofTuple[mp.MirroredElemTypes]
+          .map(mp.fromProduct)
     }
   }
 }
