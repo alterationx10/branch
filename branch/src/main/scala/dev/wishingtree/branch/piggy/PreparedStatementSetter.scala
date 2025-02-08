@@ -14,40 +14,39 @@ trait PreparedStatementSetter[A] {
 object PreparedStatementSetter {
 
   /** A PreparedStatementSetter for Int */
-  given PreparedStatementSetter[Int] = new PreparedStatementSetter[Int] {
+  given PreparedStatementSetter[Int] with {
     def set(ps: PreparedStatement)(index: Int)(value: Int): Unit =
       ps.setInt(index, value)
   }
 
   /** A PreparedStatementSetter for Long */
-  given PreparedStatementSetter[Long] = new PreparedStatementSetter[Long] {
+  given PreparedStatementSetter[Long] with {
     def set(ps: PreparedStatement)(index: Int)(value: Long): Unit =
       ps.setLong(index, value)
   }
 
   /** A PreparedStatementSetter for Float */
-  given PreparedStatementSetter[Float] = new PreparedStatementSetter[Float] {
+  given PreparedStatementSetter[Float] with {
     def set(ps: PreparedStatement)(index: Int)(value: Float): Unit =
       ps.setFloat(index, value)
   }
 
   /** A PreparedStatementSetter for Double */
-  given PreparedStatementSetter[Double] = new PreparedStatementSetter[Double] {
+  given PreparedStatementSetter[Double] with {
     def set(ps: PreparedStatement)(index: Int)(value: Double): Unit =
       ps.setDouble(index, value)
   }
 
   /** A PreparedStatementSetter for String */
-  given PreparedStatementSetter[String] = new PreparedStatementSetter[String] {
+  given PreparedStatementSetter[String] with {
     def set(ps: PreparedStatement)(index: Int)(value: String): Unit =
       ps.setString(index, value)
   }
 
   /** A PreparedStatementSetter for Boolean */
-  given PreparedStatementSetter[Boolean] =
-    new PreparedStatementSetter[Boolean] {
-      def set(ps: PreparedStatement)(index: Int)(value: Boolean): Unit =
-        ps.setBoolean(index, value)
-    }
+  given PreparedStatementSetter[Boolean] with {
+    def set(ps: PreparedStatement)(index: Int)(value: Boolean): Unit =
+      ps.setBoolean(index, value)
+  }
 
 }
