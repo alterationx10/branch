@@ -15,17 +15,14 @@ rm -rf ./build
 mkdir build
 cd build
 WORKDIR=$(pwd)
-git clone --branch v${BRANCH_VERSION} --single-branch git@github.com:wishingtreedev/branch.git
+#git clone --branch v${BRANCH_VERSION} --single-branch git@github.com:wishingtreedev/branch.git
+git clone --branch sbt --single-branch git@github.com:wishingtreedev/branch.git
 
 # Publish the project locally
-sbt publishLocalSigned
+cd branch
+sbt publishSigned
 
-# Create the bundle
-mkdir bundle
-cp ./branch/target/scala-3.5.2/branch_3-* ./bundle/
-
-cd ./bundle
-zip -r branch-${BRANCH_VERSION}.zip .
+zip -r branch-${BRANCH_VERSION}.zip ./bundle
 
 # Publish the bundle
 curl \

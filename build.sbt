@@ -23,6 +23,9 @@ ThisBuild / developers           := List(
 
 version                   := sys.env.getOrElse("BRANCH_VERSION", "0.0.0-SNAPSHOT")
 ThisBuild / versionScheme := Some("early-semver")
+ThisBuild / publishTo     := Some(
+  "Local Bundle" at (baseDirectory.value / "bundle").toURI.toString
+)
 credentials += Credentials(
   "GnuPG Key ID",
   "gpg",
