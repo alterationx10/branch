@@ -93,7 +93,7 @@ object Sql {
       case _: EmptyTuple =>
         EmptyTuple
       case _: (t *: ts)  =>
-        summonInline[ResultSetGetter[t]].get(rs)(index) *: parseRs[ts](rs)(
+        summonInline[ResultSetGetter[t]].get(rs, index) *: parseRs[ts](rs)(
           index + 1
         )
     }
