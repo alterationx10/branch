@@ -15,8 +15,7 @@ rm -rf ./build
 mkdir build
 cd build
 WORKDIR=$(pwd)
-#git clone --branch v${BRANCH_VERSION} --single-branch git@github.com:wishingtreedev/branch.git
-git clone --branch sbt --single-branch git@github.com:wishingtreedev/branch.git
+git clone --branch v${BRANCH_VERSION} --single-branch git@github.com:wishingtreedev/branch.git
 
 # Publish the project locally
 cd branch
