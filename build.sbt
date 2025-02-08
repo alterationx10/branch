@@ -66,3 +66,7 @@ lazy val branch = project
       "org.postgresql"     % "postgresql"     % "42.7.5"
     ).map(_ % Test)
   )
+
+
+addCommandAlias("fmt", "scalafmt")
+addCommandAlias("fix", "scalafix")
