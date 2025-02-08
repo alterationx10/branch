@@ -81,6 +81,21 @@ object ResultSetParser {
       case _: (t *: ts)  => summonInline[ResultSetGetter[t]] :: summonGetter[ts]
     }
 
+  inline def ofTuple[T <: Tuple]: ResultSetParser[T] = {
+    (resultSet: ResultSet) =>
+      {
+        val getters = summonGetter[T]
+        val values  = getters.zipWithIndex.map((getter, index) => {
+          getter.get(resultSet, index + 1)
+        })
+        values
+          .foldRight(EmptyTuple: Tuple) { (value, acc) =>
+            value *: acc
+          }
+          .asInstanceOf[T]
+      }
+  }
+
   inline def derived[A](using m: Mirror.Of[A]): ResultSetParser[A] = {
     inline m match {
       case ms: Mirror.SumOf[A]     =>
@@ -91,12 +106,12 @@ object ResultSetParser {
           val values  = getters.zipWithIndex.map((getter, index) => {
             getter.get(resultSet, index + 1)
           })
-          val tuples  = values
-            .foldLeft(EmptyTuple: Tuple) { (acc, value) =>
+          val tuple   = values
+            .foldRight(EmptyTuple: Tuple) { (value, acc) =>
               value *: acc
             }
             .asInstanceOf[mp.MirroredElemTypes]
-          mp.fromTuple(tuples)
+          mp.fromTuple(tuple)
         }
     }
   }

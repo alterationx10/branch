@@ -23,10 +23,10 @@ class PiggyPostgresqlSpec extends PGContainerSuite {
       )
     """
 
-  case class Person(id: Int, name: String, age: Int)
+  case class Person(id: Int, name: String, age: Int) derives ResultSetParser
 
   val ins: Person => PsArgHolder = (p: Person) =>
-    ps"INSERT INTO person (name, age) values (${p.name}, ${p.age})"
+    ps"INSERT INTO person (name, age) values (${p.name}, ${p.age + 10})"
 
   val find: String => PsArgHolder = (a: String) =>
     ps"SELECT id, name, age from person where name like $a"
@@ -38,16 +38,16 @@ class PiggyPostgresqlSpec extends PGContainerSuite {
       _             <- Sql.statement(ddl)
       nIns          <- Sql.prepareUpdate(ins, tenPeople*)
       fetchedPeople <- Sql
-                         .prepareQuery[String, (Int, String, Int)](
+                         .prepareQuery[String, Person](
                            find,
                            "Mark-%"
                          )
-                         .map(_.map(Person.apply))
     } yield (nIns, fetchedPeople)
     val result = sql.executePool(using pgPool)
     assert(result.isSuccess)
     assertEquals(result.get._1, 10)
     assertEquals(result.get._2.distinct.size, 10)
+    assert(result.get._2.forall(p => p.id + 10 == p.age))
   }
 
   test("PiggyPostgresql Rollback") {
@@ -62,11 +62,10 @@ class PiggyPostgresqlSpec extends PGContainerSuite {
 
     val sql                      = for {
       fetchedPeople <- Sql
-                         .prepareQuery[String, (Int, String, Int)](
+                         .prepareQuery[String, Person](
                            find,
                            "Mark-%"
                          )
-                         .map(_.map(Person.apply))
     } yield {
       fetchedPeople
     }
@@ -79,14 +78,20 @@ class PiggyPostgresqlSpec extends PGContainerSuite {
   test("ResultSet Tupled") {
     given pool: PgConnectionPool = pgPool
 
+    given rsParse: ResultSetParser[(Int, String)] =
+      ResultSetParser.ofTuple[(Int, String)]
+
     val tple =
-      Sql.statement(s"SELECT 1, 'two'", _.tupled[(Int, String)]).executePool
+      Sql.statement(s"SELECT 1, 'two'", _.parsed[(Int, String)]).executePool
 
     assertEquals(tple.get.get, (1, "two"))
   }
 
   test("ResultSet TupledList") {
     given pool: PgConnectionPool = pgPool
+
+    given rsParse: ResultSetParser[(Int, String, Int)] =
+      ResultSetParser.ofTuple[(Int, String, Int)]
 
     val readBack = {
       for {
@@ -95,13 +100,14 @@ class PiggyPostgresqlSpec extends PGContainerSuite {
         _             <- Sql.prepareUpdate(ins, tenPeople*)
         fetchedPeople <- Sql.statement(
                            "select * from person where name like 'Mark%'",
-                           _.tupledList[(Int, String, Int)]
+                           _.parsedList[(Int, String, Int)]
                          )
       } yield fetchedPeople
     }.executePool.get
 
     assert(readBack.size == 10)
     assert(readBack.forall(_._2.startsWith("Mark")))
+    assert(readBack.forall(t => t._1 + 10 == t._3))
   }
 
   test("Sql.fail") {
@@ -110,11 +116,10 @@ class PiggyPostgresqlSpec extends PGContainerSuite {
       nIns          <- Sql.prepareUpdate(ins, tenPeople*)
       _             <- Sql.fail(new Exception("boom"))
       fetchedPeople <- Sql
-                         .prepareQuery[String, (Int, String, Int)](
+                         .prepareQuery[String, Person](
                            find,
                            "Mark-%"
                          )
-                         .map(_.map(Person.apply))
     } yield (nIns, fetchedPeople)
     val result = sql.executePool(using pgPool)
     assert(result.isFailure)

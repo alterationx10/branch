@@ -88,16 +88,6 @@ object Sql {
       SqlRuntime.executePoolAsync(a)
   }
 
-  private inline def parseRs[T <: Tuple](rs: ResultSet)(index: Int): Tuple =
-    inline erasedValue[T] match {
-      case _: EmptyTuple =>
-        EmptyTuple
-      case _: (t *: ts)  =>
-        summonInline[ResultSetGetter[t]].get(rs, index) *: parseRs[ts](rs)(
-          index + 1
-        )
-    }
-
   private inline def setPs[A](ps: PreparedStatement)(index: Int)(
       value: A
   ): Unit =
@@ -107,16 +97,16 @@ object Sql {
 
     /** Parse the ResultSet into a List of Tuples.
       */
-    inline def tupledList[A <: Tuple]: List[A] = {
+    inline def parsedList[A](using parser: ResultSetParser[A]): List[A] = {
       val b = List.newBuilder[A]
-      while rs.next() do b += parseRs[A](rs)(1).asInstanceOf[A]
+      while rs.next() do b += parser.parse(rs)
       b.result()
     }
 
     /** Parse the ResultSet into an Option of a Tuple.
       */
-    inline def tupled[A <: Tuple]: Option[A] = {
-      tupledList[A].headOption
+    inline def parsed[A](using parser: ResultSetParser[A]): Option[A] = {
+      parsedList[A].headOption
     }
 
   }
@@ -186,7 +176,7 @@ object Sql {
       args: Seq[P]
   ) extends Sql[Int]
 
-  private[piggy] final case class PreparedQuery[A, P, R <: Tuple](
+  private[piggy] final case class PreparedQuery[A, P, R](
       sqlFn: P => PsArgHolder,
       rsFn: ResultSet => Seq[R],
       args: Seq[P]
@@ -233,11 +223,11 @@ object Sql {
   /** Create a Sql operation from a prepared statement function and a sequence
     * of arguments, returning a sequence of Tuples.
     */
-  inline def prepareQuery[I, R <: Tuple](
+  inline def prepareQuery[I, R](
       q: I => PsArgHolder,
       args: I*
-  ): Sql[Seq[R]] =
-    Sql.PreparedQuery(q, rs => rs.tupledList[R], args.toSeq)
+  )(using parser: ResultSetParser[R]): Sql[Seq[R]] =
+    Sql.PreparedQuery(q, rs => rs.parsedList[R], args.toSeq)
 
   /** Create a Sql that always fails with the given Throwable.
     */
