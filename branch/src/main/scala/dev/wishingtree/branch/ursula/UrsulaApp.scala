@@ -36,10 +36,6 @@ trait UrsulaApp {
       k -> v.head
     }
 
-  /** A list of all triggers for all commands */
-  private lazy val triggerList: Seq[String] =
-    _allCommands.map(_.trigger)
-
   /** The default command to run if no trigger is found */
   private lazy val findDefaultCommand: Option[Command] = {
     val default = _allCommands.filter(_.isDefaultCommand)
