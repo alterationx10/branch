@@ -14,7 +14,7 @@ trait Subscriber[T] {
 
   /** The thread for the subscriber.
     */
-  private val thread: Thread = Thread
+  Thread
     .ofVirtual()
     .start(() => {
       while (true) {

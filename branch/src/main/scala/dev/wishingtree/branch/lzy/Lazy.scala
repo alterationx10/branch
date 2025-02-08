@@ -1,6 +1,5 @@
 package dev.wishingtree.branch.lzy
 
-import dev.wishingtree.branch.macaroni.runtimes.BranchExecutors
 
 import java.time.{Clock, Instant}
 import java.util

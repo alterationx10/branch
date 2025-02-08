@@ -93,14 +93,14 @@ object SqlRuntime extends SqlRuntime {
       case Sql.StatementRs(sql, fn)             =>
         Using.Manager { use =>
           val statement = use(connection.createStatement())
-          val res       = statement.execute(sql)
+          statement.execute(sql)
           val rs        = use(statement.getResultSet)
           fn(rs)
         }
       case Sql.StatementCount(sql)              =>
         Using.Manager { use =>
           val statement = use(connection.createStatement())
-          val res       = statement.execute(sql)
+          statement.execute(sql)
           statement.getUpdateCount
         }
       case Sql.PreparedExec(sqlFn, args)        =>

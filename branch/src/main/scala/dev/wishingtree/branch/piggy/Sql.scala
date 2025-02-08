@@ -88,10 +88,7 @@ object Sql {
       SqlRuntime.executePoolAsync(a)
   }
 
-  private inline def setPs[A](ps: PreparedStatement)(index: Int)(
-      value: A
-  ): Unit =
-    summonInline[PreparedStatementSetter[A]].set(ps)(index)(value)
+  
 
   extension (rs: ResultSet) {
 
