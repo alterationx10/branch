@@ -2,12 +2,26 @@ package dev.wishingtree.branch.piggy
 
 import java.sql.ResultSet
 
+/** Trait for getting values from a `ResultSet` by column name or index.
+  * @tparam A
+  *   the type of the value to get from the `ResultSet`
+  */
 trait ResultSetGetter[A] {
+
+  /** Gets a value from the `ResultSet` by column name or index.
+    * @param rs
+    *   the `ResultSet` to get the value from
+    * @param col
+    *   the column name or index
+    * @return
+    *   the value of type `A` from the `ResultSet`
+    */
   def get(rs: ResultSet, col: String | Int): A
 }
 
 object ResultSetGetter {
 
+  /** `ResultSetGetter` instance for `String` values. */
   given ResultSetGetter[String] with {
     override def get(rs: ResultSet, col: String | Int): String = {
       col match {
@@ -17,6 +31,7 @@ object ResultSetGetter {
     }
   }
 
+  /** `ResultSetGetter` instance for `Int` values. */
   given ResultSetGetter[Int] with {
     override def get(rs: ResultSet, col: String | Int): Int = {
       col match {
@@ -26,6 +41,7 @@ object ResultSetGetter {
     }
   }
 
+  /** `ResultSetGetter` instance for `Long` values. */
   given ResultSetGetter[Long] with {
     override def get(rs: ResultSet, col: String | Int): Long = {
       col match {
@@ -35,6 +51,7 @@ object ResultSetGetter {
     }
   }
 
+  /** `ResultSetGetter` instance for `Float` values. */
   given ResultSetGetter[Float] with {
     override def get(rs: ResultSet, col: String | Int): Float = {
       col match {
@@ -44,6 +61,7 @@ object ResultSetGetter {
     }
   }
 
+  /** `ResultSetGetter` instance for `Double` values. */
   given ResultSetGetter[Double] with {
     override def get(rs: ResultSet, col: String | Int): Double = {
       col match {
@@ -53,6 +71,7 @@ object ResultSetGetter {
     }
   }
 
+  /** `ResultSetGetter` instance for `Boolean` values. */
   given ResultSetGetter[Boolean] with {
     override def get(rs: ResultSet, col: String | Int): Boolean = {
       col match {
@@ -62,6 +81,7 @@ object ResultSetGetter {
     }
   }
 
+  /** `ResultSetGetter` instance for `BigDecimal` values. */
   given ResultSetGetter[BigDecimal] with {
     override def get(rs: ResultSet, col: String | Int): BigDecimal = {
       col match {
@@ -71,6 +91,7 @@ object ResultSetGetter {
     }
   }
 
+  /** `ResultSetGetter` instance for `java.sql.Date` values. */
   given ResultSetGetter[java.sql.Date] with {
     override def get(rs: ResultSet, col: String | Int): java.sql.Date = {
       col match {
@@ -80,6 +101,7 @@ object ResultSetGetter {
     }
   }
 
+  /** `ResultSetGetter` instance for `java.sql.Timestamp` values. */
   given ResultSetGetter[java.sql.Timestamp] with {
     override def get(rs: ResultSet, col: String | Int): java.sql.Timestamp = {
       col match {
@@ -89,6 +111,7 @@ object ResultSetGetter {
     }
   }
 
+  /** `ResultSetGetter` instance for `java.sql.Time` values. */
   given ResultSetGetter[java.sql.Time] with {
     override def get(rs: ResultSet, col: String | Int): java.sql.Time = {
       col match {
@@ -98,6 +121,7 @@ object ResultSetGetter {
     }
   }
 
+  /** `ResultSetGetter` instance for `Array[Byte]` values. */
   given ResultSetGetter[Array[Byte]] with {
     override def get(rs: ResultSet, col: String | Int): Array[Byte] = {
       col match {
@@ -107,6 +131,7 @@ object ResultSetGetter {
     }
   }
 
+  /** `ResultSetGetter` instance for `Short` values. */
   given ResultSetGetter[Short] with {
     override def get(rs: ResultSet, col: String | Int): Short = {
       col match {
@@ -116,6 +141,7 @@ object ResultSetGetter {
     }
   }
 
+  /** `ResultSetGetter` instance for `Byte` values. */
   given ResultSetGetter[Byte] with {
     override def get(rs: ResultSet, col: String | Int): Byte = {
       col match {
