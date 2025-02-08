@@ -1,7 +1,7 @@
 #!/bin/zsh
 set -e
 
-BRANCH_VERSION=$1
+export BRANCH_VERSION=$1
 
 if [ -z "$BRANCH_VERSION" ]; then
   echo "Please pass in the version to publish"
