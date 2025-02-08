@@ -22,11 +22,13 @@ git clone --branch sbt --single-branch git@github.com:wishingtreedev/branch.git
 cd branch
 sbt publishSigned
 
-zip -r branch-${BRANCH_VERSION}.zip ./bundle
+cd bundle
+zip -r ../branch-${BRANCH_VERSION}.zip .
+cd ../
 
 # Publish the bundle
 curl \
   --request POST \
   --header "Authorization: Bearer ${CENTRAL_TOKEN}" \
-  --form bundle=@branch-${BRANCH_VERSION}-2.zip \
+  --form bundle=@branch-${BRANCH_VERSION}.zip \
   "https://central.sonatype.com/api/v1/publisher/upload?publishingType=USER_MANAGED"

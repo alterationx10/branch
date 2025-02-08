@@ -12,6 +12,13 @@ ThisBuild / description          := "A zero-dependency Scala framework"
 ThisBuild / licenses             := List(
   "Apache 2" -> url("https://www.apache.org/licenses/LICENSE-2.0.txt")
 )
+ThisBuild / scmInfo              := Some(
+  ScmInfo(
+    url("https://github.com/wishingtreedev/branch"),
+    "scm:git:git@githb.com:wishingtreedev/branch.git",
+    Some("scm:git:git@github.com:wishingtreedev/branch.git")
+  )
+)
 ThisBuild / developers           := List(
   Developer(
     id = "alterationx10",
