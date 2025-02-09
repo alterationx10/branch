@@ -115,6 +115,34 @@ The `crypto` package provides common cryptographic operations:
 
 Example usage:
 
+```scala
+import dev.wishingtree.branch.macaroni.crypto.Crypto
+
+// Generate random keys
+val publicKey = Crypto.generatePublicKey(16)  // 16-char key using limited ASCII range
+val privateKey = Crypto.generatePrivateKey(32) // 32-char key using full ASCII range
+
+// Password hashing with PBKDF2
+val hash = Crypto.pbkdf2Hash("mypassword123")
+val isValid = Crypto.validatePbkdf2Hash("mypassword123", hash) // true
+
+// AES encryption/decryption
+val message = "sensitive data"
+val encrypted = Crypto.aesEncrypt(message, privateKey).get
+val decrypted = Crypto.aesDecrypt(encrypted, privateKey).get // "sensitive data"
+
+// HMAC authentication (SHA-256 and SHA-512)
+val hmac256 = Crypto.hmac256("authenticate this", privateKey)
+val isValid256 = Crypto.validateHmac256("authenticate this", privateKey, hmac256) // true
+
+val hmac512 = Crypto.hmac512("authenticate this", privateKey)
+val isValid512 = Crypto.validateHmac512("authenticate this", privateKey, hmac512) // true
+
+// Base64 encoding/decoding
+val encoded = Crypto.base64Encode("hello world")
+val decoded = Crypto.base64Decode(encoded) // "hello world"
+```
+
 ## Runtime Utilities
 
 The `runtimes` package provides execution contexts and executor services that use Java 21's virtual threads:
