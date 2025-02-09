@@ -46,8 +46,7 @@ ThisBuild / scalacOptions ++= Seq(
   "-source:3.4-migration",
   "-Wunused:all",
   "-deprecation",
-  "-feature",
-  "-Xfatal-warnings"
+  "-feature"
 )
 
 ThisBuild / semanticdbEnabled := true

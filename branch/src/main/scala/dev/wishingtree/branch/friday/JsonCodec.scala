@@ -48,7 +48,24 @@ trait JsonCodec[A] { self =>
       .flatMap(decode)
 
   extension (a: A) {
+
+    /** Encodes the value to JSON */
     def toJson: Json = encode(a)
+
+    /** Encodes the value to a JSON string */
+    def toJsonString: String = toJson.toJsonString
+  }
+
+  extension (json: Json) {
+
+    /** Decodes the JSON value using this codec */
+    def decodeAs: Try[A] = decode(json)
+  }
+
+  extension (jsonStr: String) {
+
+    /** Decodes the JSON string using this codec */
+    def decodeAs: Try[A] = decode(jsonStr)
   }
 }
 

@@ -44,6 +44,26 @@ trait JsonDecoder[+A] {
   def map[B](f: A => B): JsonDecoder[B] =
     json => decode(json).map(f)
 
+  /** Extension methods for any type with a JsonDecoder */
+  extension (json: Json) {
+
+    /** Decodes the JSON value using this decoder
+      * @return
+      *   a Try containing the decoded value
+      */
+    def decodeAs[B >: A](using decoder: JsonDecoder[B]): Try[B] =
+      decoder.decode(json)
+  }
+
+  extension (jsonStr: String) {
+
+    /** Decodes the JSON string using this decoder
+      * @return
+      *   a Try containing the decoded value
+      */
+    def decodeAs[B >: A](using decoder: JsonDecoder[B]): Try[B] =
+      decoder.decode(jsonStr)
+  }
 }
 
 /** A collection of default JsonDecoders
