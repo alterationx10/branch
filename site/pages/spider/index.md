@@ -14,130 +14,150 @@ tags:
 
 *Oh, what a tangled web we weave when first we practice http*
 
-*Spider* is built on top of the built-in Java `HttpServer`.
+Spider is a lightweight HTTP framework built on top of Java's built-in `HttpServer`. It provides both server and client functionality with a clean Scala API.
 
-## JVM HttpServer
+## Server Components
 
-In the context of the `HttpServer`, you build `HttpHandler`s that handles an `HttpExchange` (receiving a request and
-returning a response). These handlers are registered with a root URI to the server via an `HttpContext`
+### RequestHandler
 
-When a HTTP request is received, the appropriate `HttpContext` (and handler) is located by finding the context whose
-path is the longest matching prefix of the request URI's path. Paths are matched literally, which means that the strings
-are compared case sensitively, though there is a `ci` string interpolator to help with case-insensitive matching.
+The core building block is the `RequestHandler[I,O]` trait which handles converting HTTP requests into your input model `I` and converting your output model `O` back into HTTP responses:
 
-## Spider
-
-Spider encapsulates this via `RequestHandler`s and `ContextHandlers`.
-
-There is a `RequestHandler[I,O]` to extend for handling a route. You will need to use a `Convserion` from `Array[Byte]`
-to an Input model `I`, and a similar outgoing conversion for you output model `O`. With these conversions, the
-RequestHandler takes care of parsing the input streams from the `HttpExchange` and writing the response to the output
-stream. Some conversions for simple types are provided by `import RequestHandler.given`.
-
-```scala 3
+```scala
 trait RequestHandler[I, O](using
-                           requestDecoder: Conversion[Array[Byte], I],
-                           responseEncoder: Conversion[O, Array[Byte]]
-                          )
+    requestDecoder: Conversion[Array[Byte], I],
+    responseEncoder: Conversion[O, Array[Byte]]
+) {
+  def handle(request: Request[I]): Response[O]
+}
 ```
 
-Implementing this trait, you will then need to write the function that will handle a `Request[I]` and return a
-`Response[O]`.
+Some common conversions are provided via `RequestHandler.given`, including:
+- `Array[Byte] <-> Array[Byte]` 
+- `Array[Byte] <-> Unit`
+- `Array[Byte] <-> String`
 
-Here is an example that returns the string `Aloha`.
+Here's a simple example handler:
 
-```scala 3
-import RequestHandler.given
-
-case class GreeterGetter() extends RequestHandler[Unit, String] {
+```scala
+case class GreeterHandler() extends RequestHandler[Unit, String] {
   override def handle(request: Request[Unit]): Response[String] = {
-    Response(Map.empty, "Aloha")
+    Response(200, "Hello!")
   }
 }
 ```
 
-`Request` is a case class that wraps/holds some values based on the request of the `HttpContext`, and `Response`
-similarly models the output in a more Scala friendly way.
+### ContextHandler 
 
-With all of your request handlers made, we can then use them in a `Contexthandler`.
+Routes are defined using `ContextHandler`s which map HTTP methods and paths to specific `RequestHandler`s:
 
-```scala 3
-trait ContextHandler(val path: String) 
-```
-
-The main thing to implement here is the `contextRouter`. The `contextRouter` is a `PartialFunction` that matches the
-http method/verb and request path and maps to a specific `Requesthandler`.
-
-Here is an example:
-
-```scala 3
-
-case class EchoGetter(msg: String) extends RequestHandler[Unit, String] {
-  override def handle(request: Request[Unit]): Response[String] = {
-    Response(msg)
+```scala
+val handler = new ContextHandler("/api") {
+  override val contextRouter = {
+    case HttpMethod.GET -> >> / "greet" => GreeterHandler()
+    case HttpMethod.GET -> >> / "echo" / msg => EchoHandler(msg)
   }
 }
-
-val myhandler = new ContextHandler("/") {
-
-  override val contextRouter
-  : PartialFunction[(HttpVerb, Path), RequestHandler[?, ?]] = {
-    case HttpVerb.GET -> >> / "some" / "path" => alohaGreeter
-    case HttpVerb.GET -> >> / "some" / "path" / s"$arg" => EchoGetter(arg)
-  }
-
-}
 ```
 
-We can then register out `ContextHandler` to an instance of the http server
+ContextHandlers support:
+- Path-based routing with pattern matching
+- Request filters/middleware
+- Authentication via `Authenticator`
+- Default 404 handling
 
-```scala 3
-ContextHandler.registerHandler(myhandler)(using httpServer: HttpServer)
+### FileContextHandler
+
+For serving static files, Spider provides a `FileContextHandler`:
+
+```scala
+val staticFiles = FileContextHandler(
+  rootFilePath = Path.of("public"),
+  contextPath = "/static"
+)
 ```
 
-`ContextHandler`s support `Filter`s (what might typically be described as middleware, that ge process in the
-request/response chain), as well as the `Authenticator` class. These are specific to the root path the `ContextHandler`
-is bound to, and this could help determine when to group things into multiple `ContextHandler`s.
+This will automatically:
+- Serve files from the specified root directory
+- Handle directory indexes (index.html)
+- Set appropriate content types based on file extensions
+- Support default file extensions (.html, .htm)
 
-There is an `HttpApp` trait that sets up the server for you in an entry point. A quick example:
+### SpiderApp
 
-```scala 3
-object HttpAppExample extends HttpApp {
+The `SpiderApp` trait provides a simple way to bootstrap your server:
 
-  import RequestHandler.given
-
-  case class GreeterGetter() extends RequestHandler[Unit, String] {
-    override def handle(request: Request[Unit]): Response[String] = {
-      Response("Aloha")
+```scala
+object MyServer extends SpiderApp {
+  val port = 8080 // Default is 9000
+  
+  val api = new ContextHandler("/api") {
+    override val contextRouter = {
+      case HttpMethod.GET -> >> / "hello" => GreeterHandler()
     }
   }
 
-  val alohaGreeter = GreeterGetter()
-
-  case class EchoGetter(msg: String) extends RequestHandler[Unit, String] {
-    override def handle(request: Request[Unit]): Response[String] = {
-      Response(msg)
-    }
-  }
-
-  val myhandler = new ContextHandler("/") {
-
-    override val filters: Seq[Filter] = Seq(
-      ContextHandler.timingFilter
-    )
-
-    override val contextRouter
-    : PartialFunction[(HttpVerb, Path), RequestHandler[?, ?]] = {
-      case HttpVerb.GET -> >> / "some" / "path" => alohaGreeter
-      case HttpVerb.GET -> >> / "some" / "path" / s"$arg" => EchoGetter(arg)
-    }
-
-  }
-
-  ContextHandler.registerHandler(myhandler)
+  ContextHandler.registerHandler(api)
 }
 ```
+
+## Client
+
+Spider also includes a client API built on `java.net.http.HttpClient`:
+
+```scala
+val client = Client.build()
+
+val request = ClientRequest.build(
+  uri"http://localhost:8080/api/hello",
+  _.GET()
+)
+
+val response = client.send(request, HttpResponse.BodyHandlers.ofString())
+```
+
+The client supports:
+- URI string interpolation
+- Content type helpers
+- Custom request/response body handlers
+- All standard HTTP methods
+
+## Response Helpers
+
+Spider provides some helpful response builders:
+
+```scala
+// HTML response
+html"""
+<h1>Hello $name!</h1>
+"""
+
+// JSON response  
+json"""
+{
+  "message": "Hello, $name!"
+}
+"""
+
+// With headers
+Response(200, "Hello")
+  .withHeader("X-Custom" -> "value")
+  .withContentType(ContentType.json)
+```
+
+## Content Types
+
+Spider includes a comprehensive `ContentType` enum covering common MIME types. The content type is automatically set based on file extensions when using `FileContextHandler`.
+
+## Examples
+
+See the test files for more examples of:
+- Route handling
+- File serving
+- Client usage
+- JSON responses
+- Authentication
+- Filters
 
 ## Other Libraries
 
-If you like *Spider*, you should check out [Tapir](https://tapir.softwaremill.com/en/latest/)
+If you like Spider, you should check out [Tapir](https://tapir.softwaremill.com/en/latest/)
