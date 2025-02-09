@@ -95,13 +95,33 @@ import dev.wishingtree.branch.macaroni.fs.PathOps.*
 // Get working directory
 val wd: Path = PathOps.wd
 
-// Path operations
-val configPath = wd / "config" / "app.conf"
-val relative = configPath.relativeTo(wd)
+// Path operations using extension methods
+val configPath = wd / "config" / "app.conf"  // Append segments using /
+val otherPath = Path.of("other/path")
+val combined = configPath / otherPath        // Can combine with other Paths
+
+// Path relativization
+val relative = configPath.relativeTo(wd)      // Get path relative to working dir
+val relativeStr = configPath.relativeTo("/home/user") // Or relative to string path
+
+// Convert path to sequence of segments
+val segments: Seq[String] = configPath.toSeq  // Split path into parts
+
+// Pattern matching on paths using / extractor
+configPath match {
+  case parent / "app.conf" => println(s"Found config in $parent")
+  case _ => println("Config not found")
+}
 
 // String interpolation
-val path = p"src/main/resources"
+val srcPath = p"src/main/resources"     // Create Path using p"" interpolator
+val pattern = ci"Config.JSON"           // Case-insensitive pattern matching
+
+// Empty path constant
+val emptyPath = >>                      // Represents Path.of("")
 ```
+
+The PathOps utilities make it easy to work with filesystem paths in a more idiomatic Scala way, with extension methods for common operations and pattern matching support.
 
 ## Cryptography
 
