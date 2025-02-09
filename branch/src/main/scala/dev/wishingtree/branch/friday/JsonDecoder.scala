@@ -1,10 +1,7 @@
 package dev.wishingtree.branch.friday
 
 import dev.wishingtree.branch.friday.Json.JsonObject
-import dev.wishingtree.branch.macaroni.meta.Summons.{
-  summonHigherListOf,
-  summonListOfValuesAs
-}
+import dev.wishingtree.branch.macaroni.meta.Summons.summonHigherListOf
 
 import java.time.Instant
 import scala.collection.*
