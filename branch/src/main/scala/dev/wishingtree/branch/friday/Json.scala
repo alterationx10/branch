@@ -1,6 +1,5 @@
 package dev.wishingtree.branch.friday
 
-import dev.wishingtree.branch.macaroni.parsers.Reference.Parser
 import dev.wishingtree.branch.macaroni.parsers.{ParseError, Parsers, Reference}
 
 import scala.annotation.targetName
@@ -344,7 +343,7 @@ object Json {
     (whitespace *> (obj | array)).root
   }
 
-  private val defaultParser: Parser[Json] =
+  private val defaultParser: dev.wishingtree.branch.macaroni.parsers.Reference.Parser[Json] =
     parser(Reference)
 
   import Reference.*

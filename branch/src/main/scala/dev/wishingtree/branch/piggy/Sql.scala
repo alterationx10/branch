@@ -3,7 +3,6 @@ package dev.wishingtree.branch.piggy
 import dev.wishingtree.branch.macaroni.poolers.ResourcePool
 
 import java.sql.{Connection, PreparedStatement, ResultSet}
-import scala.compiletime.*
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.*
 
