@@ -44,7 +44,10 @@ ThisBuild / scalacOptions ++= Seq(
   "-no-indent",
   "-rewrite",
   "-source:3.4-migration",
-  "-Wunused:all"
+  "-Wunused:all",
+  "-deprecation",
+  "-feature",
+  "-Xfatal-warnings"
 )
 
 ThisBuild / semanticdbEnabled := true

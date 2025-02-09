@@ -109,9 +109,11 @@ object Json {
     Json.obj(
       "message"    -> jsonOrNull(e.getMessage),
       "cause"      -> Json.throwable(e.getCause),
-      "suppressed" -> JsonArray(e.getSuppressed.map(e => Json.throwable(e))),
+      "suppressed" -> JsonArray(
+        e.getSuppressed.toIndexedSeq.map(e => Json.throwable(e))
+      ),
       "stackTrace" -> JsonArray(
-        e.getStackTrace.map(e => Json.stackTraceElement(e))
+        e.getStackTrace.toIndexedSeq.map(e => Json.stackTraceElement(e))
       )
     )
   }.getOrElse(JsonNull)
