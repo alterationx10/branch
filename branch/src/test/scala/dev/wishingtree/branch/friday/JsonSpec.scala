@@ -47,11 +47,12 @@ class JsonSpec extends FunSuite {
         |  }
         |}
         |""".stripMargin
-    assert(Json.parse(json).isRight)
-    // We can parse the json, but there's an issue with the decoder
+    val parsed = Json.parse(json)
+    assert(parsed.isRight)
     val decoder = summon[JsonCodec[JsClass]]
-    assert(decoder.decode(json).isSuccess)
-    println(decoder.decode(json))
+    val decoded = decoder.decode(json)
+    assert(decoded.isSuccess)
+    assertEquals(decoded.toOption.get, JsClass("Alice", Json.obj("age" -> Json.JsonNumber(42))))
   }
 
 }
