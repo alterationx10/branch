@@ -10,81 +10,138 @@ tags:
 ---
 # Keanu
 
-This module currently contains a simple *typed* EventBus, and a (local) ActorSystem.
+This module provides a typed EventBus implementation and a local ActorSystem for message-based concurrency patterns.
 
 ## EventBus
 
-Extend `EventBus[T]` for your type, e.g.
+The EventBus provides a publish-subscribe messaging system with typed messages and optional topic filtering.
 
-```scala 3
+### Basic Usage
+
+Extend `EventBus[T]` for your message type:
+
+```scala
 object IntEventBus extends EventBus[Int]
 ```
 
-Then, you can have some implementation extend `Subsciber[T]` and subscribe, or pass in an anonymous implementation (e.g.
-`IntEventBus.subscribe((msg: Int) => println(s"Got message $msg"))`)
+Create subscribers by implementing the `Subscriber[T]` trait or using an anonymous function:
 
-Under the hood, the subscriber gets a queue of messages, and a thread that processes them, so things will be processed
-in order, but asynchronously.
+```scala
+// Using a class
+class LoggingSubscriber extends Subscriber[Int] {
+  override def onMsg(msg: EventBusMessage[Int]): Unit = 
+    println(s"Got message on topic '${msg.topic}': ${msg.payload}")
+}
+
+// Using an anonymous function
+IntEventBus.subscribe((msg: EventBusMessage[Int]) => 
+  println(s"Got message: ${msg.payload}"))
+```
+
+### Publishing Messages
+
+```scala
+// Publish with a topic
+IntEventBus.publish("calculations", 42)
+
+// Publish without a topic
+IntEventBus.publishNoTopic(42)
+```
+
+### Filtered Subscriptions
+
+Subscribe with a filter to only receive specific messages:
+
+```scala
+// Only receive messages with topic "important"
+IntEventBus.subscribe(
+  new LoggingSubscriber, 
+  msg => msg.topic == "important"
+)
+```
+
+### Implementation Details
+
+- Each subscriber gets its own message queue and virtual thread for processing
+- Messages are processed asynchronously but in order for each subscriber
+- Subscriber message handling is wrapped in Try to prevent exceptions from crashing the processing thread
+- Subscribers can be unsubscribed using their UUID or subscriber instance
 
 ## ActorSystem
 
-The `AcotrSystem` trait is implemented, and you can have an object extend it for easy singleton access. The `apply`
-method also returns a new instance as well.
+The ActorSystem provides local actor-based concurrency with supervision and lifecycle management.
 
-let's say you have two actors:
+### Creating Actors
 
-```scala 3
- case class EchoActor() extends Actor {
+Define actors by extending the `Actor` trait:
+
+```scala
+case class EchoActor() extends Actor {
   override def onMsg: PartialFunction[Any, Any] = {
-    case any =>
-      println(s"Echo: $any")
+    case msg => println(s"Echo: $msg")
   }
 }
 
-case class SampleActor(actorSystem: ActorSystem) extends Actor {
-  println("starting actor")
-  var counter = 0
-
+case class CounterActor(actorSystem: ActorSystem) extends Actor {
+  private var count = 0
+  
   override def onMsg: PartialFunction[Any, Any] = {
     case n: Int =>
-      counter += n
-      actorSystem.tell[EchoActor]("echo", s"Counter is now $counter")
-    case "boom" => 1 / 0
-    case "count" =>
-      counter
-    case "print" => println(s"Counter is $counter")
-    case _ => println("Unhandled")
+      count += n
+      actorSystem.tell[EchoActor]("echo", s"Count is now $count")
+    case "get" => count
+    case "print" => println(s"Count is $count")
   }
 }
 ```
 
-You can register `props` to the actor system which capture arguments used to create actor instances. This is a bit
-unsafe in
-the sense that it takes varargs that should be supplied to create the actor, so no compiler checks at the moment.
+### Setting Up the ActorSystem
 
-```scala 3
-val as = ActorSystem()
-val saProps = ActorContext.props[SampleActor](as)
-as.registerProp(saProps)
-as.registerProp(ActorContext.props[EchoActor]())
+```scala
+// Create a new ActorSystem
+val system = ActorSystem()
+
+// Register actor types with their constructor arguments
+system.registerProp(ActorProps.props[EchoActor]())
+system.registerProp(ActorProps.props[CounterActor](system))
 ```
 
-at this point, you can send messages to the actors with the `tell` method on the `ActorSystem`:
+### Sending Messages
 
-```scala 3
-// Helper lambda to send messages to the SampleActor named counter
-val counterActor = as.tell[SampleActor]("counter", _)
-counterActor(1)
-counterActor(2)
-counterActor(3)
-counterActor(4)
-counterActor("boom")
-counterActor(5)
-counterActor("print")
+```scala
+// Send messages to named actor instances
+system.tell[CounterActor]("counter1", 5)
+system.tell[CounterActor]("counter1", "get")
+system.tell[EchoActor]("echo1", "Hello!")
+
+// Helper for repeated messages to same actor
+val counter = system.tell[CounterActor]("counter1", _)
+counter(1)
+counter(2)
+counter("print")
 ```
 
-Actors are indexed based on name and type, so you can have multiple actors of the same type, but they must have unique
-names (and you can have actors with the same name, as long as they are different types).
+### Key Features
 
-If you want to shut down the ActorSystem, you can use the `shutdownAwait` method, which will send a `PoisonPill` to all
-actors, and attempt to wait for their queues to finish processing.
+- Actors are uniquely identified by name and type
+- Automatic actor restart on failures
+- Message delivery guarantees within a single actor
+- Graceful shutdown with PoisonPill messages
+- Type-safe actor props system for constructor arguments
+
+### Lifecycle Management
+
+The ActorSystem provides several lifecycle events and supervision features:
+
+- Actors automatically restart on unhandled exceptions
+- PoisonPill message for graceful termination
+- Shutdown coordination with `shutdownAwait()`
+- Various termination states tracked (initialization failure, interruption, etc.)
+
+To shut down the ActorSystem:
+
+```scala
+system.shutdownAwait()
+```
+
+This will send PoisonPill to all actors and wait for them to terminate.
