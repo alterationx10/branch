@@ -8,6 +8,7 @@ tags:
   - future
   - effect
   - lazy
+  - async
 ---
 
 # Lzy

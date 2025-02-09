@@ -2,9 +2,12 @@
 title: Branch Framework
 description: A zero-dependency framework for Scala 3 on Java 21+.
 author: Mark Rudolph
-published:
-lastUpdated:
-tags: scala
+published: 2025-01-25T04:36:00Z
+lastUpdated: 2025-01-25T04:36:00Z
+tags:
+  - scala
+  - framework
+  - java21
 ---
 
 # Branch Framework
