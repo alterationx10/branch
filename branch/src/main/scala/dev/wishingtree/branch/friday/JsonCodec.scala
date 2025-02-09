@@ -61,23 +61,17 @@ object JsonCodec {
       def decoder: JsonDecoder[A] = d
     }
 
-  /** Derives a JsonCodec for a given type using the given product type
-    * @param m
-    *   the Mirror for the type
-    * @tparam A
-    *   the type of the value to encode/decode
-    * @return
-    *   a new JsonCodec for the derived type
-    */
+  protected class DerivedCodec[A](
+      val encoder: JsonEncoder[A],
+      val decoder: JsonDecoder[A]
+  ) extends JsonCodec[A]
+
   inline given derived[A](using m: Mirror.Of[A]): JsonCodec[A] = {
     inline m match {
       case _: Mirror.SumOf[A]     =>
         error("Auto deriving sum types is not currently supported")
       case p: Mirror.ProductOf[A] =>
-        new JsonCodec[A] {
-          def encoder: JsonEncoder[A] = JsonEncoder.derived[A]
-          def decoder: JsonDecoder[A] = JsonDecoder.derived[A]
-        }
+        new DerivedCodec[A](JsonEncoder.derived[A], JsonDecoder.derived[A])
     }
   }
 
