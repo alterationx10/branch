@@ -1,6 +1,5 @@
 package dev.wishingtree.branch.friday
 
-import scala.compiletime.*
 import scala.deriving.Mirror
 import scala.util.Try
 
@@ -40,6 +39,14 @@ trait JsonCodec[A] { self =>
     */
   def map[B](f: A => B)(g: B => A): JsonCodec[B] = transform(f)(g)
 
+  def decode(json: String): Try[A] = 
+    Json.parse(json)
+    .left.map(e => new RuntimeException(s"Failed to parse json: $json"))
+    .toTry.flatMap(decode)
+    
+  extension (a: A) {
+    def toJson: Json = encode(a)
+  }
 }
 
 object JsonCodec {
@@ -67,12 +74,9 @@ object JsonCodec {
   ) extends JsonCodec[A]
 
   inline given derived[A](using m: Mirror.Of[A]): JsonCodec[A] = {
-    inline m match {
-      case _: Mirror.SumOf[A]     =>
-        error("Auto deriving sum types is not currently supported")
-      case p: Mirror.ProductOf[A] =>
-        new DerivedCodec[A](JsonEncoder.derived[A], JsonDecoder.derived[A])
-    }
+    val encoder = JsonEncoder.derived[A]
+    val decoder = JsonDecoder.derived[A]
+    new DerivedCodec[A](encoder, decoder)
   }
 
   // Type aliases for cleaner signatures

@@ -8,6 +8,7 @@ import scala.collection.*
 import scala.compiletime.*
 import scala.deriving.Mirror
 import scala.util.*
+import dev.wishingtree.branch.macaroni.meta.Summons.summonListOfValuesAs
 
 /** A type-class for decoding JSON into a given type
   * @tparam A
@@ -190,8 +191,7 @@ object JsonDecoder {
       case p: Mirror.ProductOf[A] =>
         (json: Json) =>
           Try {
-            val productLabels       =
-              constValue[p.MirroredElemLabels].toList.asInstanceOf[List[String]]
+            val productLabels       = summonListOfValuesAs[p.MirroredElemLabels, String]
             val decoders            = summonHigherListOf[p.MirroredElemTypes, JsonDecoder]
             val underlying          = json.asInstanceOf[JsonObject].value
             val consArr: Array[Any] = productLabels
