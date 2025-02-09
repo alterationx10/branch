@@ -191,7 +191,8 @@ object JsonDecoder {
       case p: Mirror.ProductOf[A] =>
         (json: Json) =>
           Try {
-            val productLabels       = summonListOfValuesAs[p.MirroredElemLabels, String]
+            val productLabels       =
+              summonListOfValuesAs[p.MirroredElemLabels, String]
             val decoders            = summonHigherListOf[p.MirroredElemTypes, JsonDecoder]
             val underlying          = json.asInstanceOf[JsonObject].value
             val consArr: Array[Any] = productLabels

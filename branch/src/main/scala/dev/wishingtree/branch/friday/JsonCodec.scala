@@ -39,11 +39,14 @@ trait JsonCodec[A] { self =>
     */
   def map[B](f: A => B)(g: B => A): JsonCodec[B] = transform(f)(g)
 
-  def decode(json: String): Try[A] = 
-    Json.parse(json)
-    .left.map(e => new RuntimeException(s"Failed to parse json: $json"))
-    .toTry.flatMap(decode)
-    
+  def decode(json: String): Try[A] =
+    Json
+      .parse(json)
+      .left
+      .map(e => new RuntimeException(s"Failed to parse json: $json"))
+      .toTry
+      .flatMap(decode)
+
   extension (a: A) {
     def toJson: Json = encode(a)
   }
