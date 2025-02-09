@@ -9,3 +9,10 @@ site/book
 bundle
 .central
 build
+
+# Metals and Bloop files
+.bloop/
+.metals/
+project/.bloop/
+project/metals.sbt
+project/project/
