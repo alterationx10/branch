@@ -1,6 +1,6 @@
 package dev.wishingtree.branch.keanu.eventbus
 
-import java.util.concurrent.{CountDownLatch, TimeUnit}
+import java.util.concurrent.CountDownLatch
 
 class EventBusTest extends munit.FunSuite {
 

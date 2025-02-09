@@ -50,7 +50,6 @@ class CryptoSpec extends FunSuite {
 
   test("Crypto.base64Encode") {
     val bytes     = Array[Byte](1, 2, 3)
-    val str       = new String(bytes)
     val base64    = Crypto.base64Encode(bytes)
     val base64Str = new String(base64)
     assertEquals(base64, "AQID")

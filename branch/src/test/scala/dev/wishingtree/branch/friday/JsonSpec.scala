@@ -1,6 +1,5 @@
 package dev.wishingtree.branch.friday
 
-import dev.wishingtree.branch.friday.{Json, JsonCodec}
 import munit.FunSuite
 
 class JsonSpec extends FunSuite {
