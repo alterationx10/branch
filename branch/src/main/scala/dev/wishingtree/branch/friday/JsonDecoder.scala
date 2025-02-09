@@ -176,36 +176,6 @@ object JsonDecoder {
   implicit def vectorDecoder[A: JsonDecoder]: JsonDecoder[Vector[A]] =
     iterableDecoder[A, Vector](Vector.newBuilder[A])
 
-  /** Builds a product type from a JSON object
-    * @param p
-    *   the Mirror for the product type
-    * @param b
-    *   the JSON object to decode
-    * @tparam A
-    *   the product type
-    * @return
-    *   an instance of the product type
-    */
-  private[friday] inline def buildJsonProduct[A](
-      p: Mirror.ProductOf[A],
-      b: Json
-  ): A = {
-    {
-      val productLabels       = summonListOfValuesAs[p.MirroredElemLabels, String]
-      val decoders            = summonHigherListOf[p.MirroredElemTypes, JsonDecoder]
-      val underlying          = b.asInstanceOf[JsonObject].value
-      val consArr: Array[Any] = productLabels
-        .zip(decoders)
-        .map { case (label, decoder) =>
-          val json = underlying(label)
-          decoder.decode(json).get
-        }
-        .toArray
-
-      p.fromProduct(Tuple.fromArray(consArr))
-    }
-  }
-
   /** Derives a JsonDecoder for a product type
     * @param m
     *   the Mirror for the product type
@@ -223,7 +193,19 @@ object JsonDecoder {
       case p: Mirror.ProductOf[A] =>
         (json: Json) =>
           Try {
-            buildJsonProduct(p, json)
+            val productLabels       =
+              constValue[p.MirroredElemLabels].toList.asInstanceOf[List[String]]
+            val decoders            = summonHigherListOf[p.MirroredElemTypes, JsonDecoder]
+            val underlying          = json.asInstanceOf[JsonObject].value
+            val consArr: Array[Any] = productLabels
+              .zip(decoders)
+              .map { case (label, decoder) =>
+                val json = underlying(label)
+                decoder.decode(json).get
+              }
+              .toArray
+
+            p.fromProduct(Tuple.fromArray(consArr))
           }
     }
   }

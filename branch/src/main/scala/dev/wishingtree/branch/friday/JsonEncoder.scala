@@ -170,37 +170,6 @@ object JsonEncoder {
   implicit def vectorEncoder[A: JsonEncoder]: JsonEncoder[Vector[A]] =
     iterableEncoder[A, Vector]
 
-  /** Builds a product type from a value
-    * @param a
-    *   the value to encode
-    * @param m
-    *   the Mirror for the product type
-    * @tparam A
-    *   the product type
-    * @return
-    *   the encoded JSON object
-    */
-  private[friday] inline def buildJsonProduct[A](
-      a: A
-  )(using m: Mirror.Of[A]): Json = {
-    lazy val encoders = summonHigherListOf[m.MirroredElemTypes, JsonEncoder]
-
-    val jsLabels: Iterator[String] =
-      a.asInstanceOf[Product].productElementNames
-
-    val jsValues: Iterator[?] =
-      a.asInstanceOf[Product].productIterator
-
-    val js: Iterator[(String, Json)] = jsLabels
-      .zip(
-        jsValues.zip(encoders)
-      )
-      .map { case (label, (value, encoder)) =>
-        label -> encoder.asInstanceOf[JsonEncoder[Any]].encode(value)
-      }
-    JsonObject(js.toMap)
-  }
-
   /** Derives a JsonEncoder for a product type
     * @param m
     *   the Mirror for the product type
@@ -213,7 +182,23 @@ object JsonEncoder {
     inline m match {
       case p: Mirror.ProductOf[A] =>
         (a: A) => {
-          buildJsonProduct(a)
+          lazy val encoders =
+            summonHigherListOf[m.MirroredElemTypes, JsonEncoder]
+
+          val jsLabels: Iterator[String] =
+            a.asInstanceOf[Product].productElementNames
+
+          val jsValues: Iterator[?] =
+            a.asInstanceOf[Product].productIterator
+
+          val js: Iterator[(String, Json)] = jsLabels
+            .zip(
+              jsValues.zip(encoders)
+            )
+            .map { case (label, (value, encoder)) =>
+              label -> encoder.asInstanceOf[JsonEncoder[Any]].encode(value)
+            }
+          JsonObject(js.toMap)
         }
       case s: Mirror.SumOf[A]     =>
         error("Auto derivation of Sum types is not currently supported")

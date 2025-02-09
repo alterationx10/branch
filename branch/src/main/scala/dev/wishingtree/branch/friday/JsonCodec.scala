@@ -12,7 +12,7 @@ trait JsonCodec[A] { self =>
   given encoder: JsonEncoder[A]
   given decoder: JsonDecoder[A]
 
-  def encode(a: A): Json = encoder.encode(a)
+  def encode(a: A): Json         = encoder.encode(a)
   def decode(json: Json): Try[A] = decoder.decode(json)
 
   /** Transform the codec from one type to another, by providing the functions
@@ -87,7 +87,7 @@ object JsonCodec {
 
   /** Creates a JsonCodec from explicit encode/decode functions
     */
-  def from[A](decode: Decoder[A], encode: Encoder[A]): JsonCodec[A] = 
+  def from[A](decode: Decoder[A], encode: Encoder[A]): JsonCodec[A] =
     new JsonCodec[A] {
       def encoder: JsonEncoder[A] = JsonEncoder.from(this.encode)
       def decoder: JsonDecoder[A] = JsonDecoder.from(this.decode)
