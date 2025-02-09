@@ -194,14 +194,27 @@ object JsonDecoder {
   implicit def vectorDecoder[A: JsonDecoder]: JsonDecoder[Vector[A]] =
     iterableDecoder[A, Vector](Vector.newBuilder[A])
 
-  /** Derives a JsonDecoder for a product type
-    * @param m
-    *   the Mirror for the product type
-    * @tparam A
-    *   the product type
-    * @return
-    *   a new JsonDecoder for the product type
-    */
+  protected class DerivedJsonDecoder[A](using
+      p: Mirror.ProductOf[A],
+      decoders: List[JsonDecoder[?]],
+      productLabels: List[String]
+  ) extends JsonDecoder[A] {
+    def decode(json: Json): Try[A] = {
+      Try {
+        val underlying          = json.asInstanceOf[JsonObject].value
+        val consArr: Array[Any] = productLabels
+          .zip(decoders)
+          .map { case (label, decoder) =>
+            val json = underlying(label)
+            decoder.decode(json).get
+          }
+          .toArray
+
+        p.fromProduct(Tuple.fromArray(consArr))
+      }
+    }
+  }
+
   inline given derived[A](using m: Mirror.Of[A]): JsonDecoder[A] = {
     inline m match {
       case _: Mirror.SumOf[A]     =>
@@ -209,22 +222,11 @@ object JsonDecoder {
           "Auto derivation is not supported for Sum types. Please create them explicitly as needed."
         )
       case p: Mirror.ProductOf[A] =>
-        (json: Json) =>
-          Try {
-            val productLabels       =
-              summonListOfValuesAs[p.MirroredElemLabels, String]
-            val decoders            = summonHigherListOf[p.MirroredElemTypes, JsonDecoder]
-            val underlying          = json.asInstanceOf[JsonObject].value
-            val consArr: Array[Any] = productLabels
-              .zip(decoders)
-              .map { case (label, decoder) =>
-                val json = underlying(label)
-                decoder.decode(json).get
-              }
-              .toArray
-
-            p.fromProduct(Tuple.fromArray(consArr))
-          }
+        new DerivedJsonDecoder[A](using
+          p,
+          summonHigherListOf[p.MirroredElemTypes, JsonDecoder],
+          summonListOfValuesAs[p.MirroredElemLabels, String]
+        )
     }
   }
 
