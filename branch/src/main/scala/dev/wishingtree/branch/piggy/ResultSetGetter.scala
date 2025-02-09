@@ -1,12 +1,14 @@
 package dev.wishingtree.branch.piggy
 
 import java.sql.ResultSet
+import java.util.UUID
+import scala.compiletime.summonInline
 
 /** Trait for getting values from a `ResultSet` by column name or index.
   * @tparam A
   *   the type of the value to get from the `ResultSet`
   */
-trait ResultSetGetter[A] {
+trait ResultSetGetter[A] { self =>
 
   /** Gets a value from the `ResultSet` by column name or index.
     * @param rs
@@ -17,6 +19,17 @@ trait ResultSetGetter[A] {
     *   the value of type `A` from the `ResultSet`
     */
   def get(rs: ResultSet, col: String | Int): A
+
+  /** Maps a function over the value of type `A` obtained from the `ResultSet`.
+    * @param f
+    *   the function to map over the value of type `A`
+    * @tparam B
+    *   the type of the value to map to
+    * @return
+    *   a new `ResultSetGetter` instance for the value of type `B`
+    */
+  def map[B](f: A => B): ResultSetGetter[B] =
+    (rs: ResultSet, col: String | Int) => f(self.get(rs, col))
 }
 
 object ResultSetGetter {
@@ -30,6 +43,10 @@ object ResultSetGetter {
       }
     }
   }
+
+  /** `ResultSetGetter` instance for `UUID` values. */
+  given ResultSetGetter[UUID] =
+    summonInline[ResultSetGetter[String]].map(UUID.fromString)
 
   /** `ResultSetGetter` instance for `Int` values. */
   given ResultSetGetter[Int] with {
@@ -110,6 +127,10 @@ object ResultSetGetter {
       }
     }
   }
+
+  /** `ResultSetGetter` instance for `java.time.Instant` values. */
+  given ResultSetGetter[java.time.Instant] =
+    summonInline[ResultSetGetter[java.sql.Timestamp]].map(_.toInstant)
 
   /** `ResultSetGetter` instance for `java.sql.Time` values. */
   given ResultSetGetter[java.sql.Time] with {
