@@ -123,14 +123,13 @@ object Sql {
 
     private def set(preparedStatement: PreparedStatement): Unit = {
       psArgs.zipWithIndex.map({ case (a, i) => a -> (i + 1) }).foreach {
-        case (a: Int, i)            => preparedStatement.setInt(i, a)
-        case (a: Long, i)           => preparedStatement.setLong(i, a)
-        case (a: Float, i)          => preparedStatement.setFloat(i, a)
-        case (a: Double, i)         => preparedStatement.setDouble(i, a)
-        case (a: String, i)         => preparedStatement.setString(i, a)
-        case (a: Tuple1[String], i) => preparedStatement.setString(i, a._1)
-        case (a: Boolean, i)        => preparedStatement.setBoolean(i, a)
-        case (u, i)                 =>
+        case (a: Int, i)     => preparedStatement.setInt(i, a)
+        case (a: Long, i)    => preparedStatement.setLong(i, a)
+        case (a: Float, i)   => preparedStatement.setFloat(i, a)
+        case (a: Double, i)  => preparedStatement.setDouble(i, a)
+        case (a: String, i)  => preparedStatement.setString(i, a)
+        case (a: Boolean, i) => preparedStatement.setBoolean(i, a)
+        case (u, i)          =>
           throw new IllegalArgumentException(s"Unsupported type $u")
       }
     }

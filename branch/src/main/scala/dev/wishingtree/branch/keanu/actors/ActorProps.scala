@@ -1,7 +1,7 @@
 package dev.wishingtree.branch.keanu.actors
 
 import scala.deriving.Mirror
-import scala.reflect.{classTag, ClassTag}
+import scala.reflect.ClassTag
 
 /** A type-class for creating actors.
   */
@@ -14,6 +14,14 @@ trait ActorProps[A <: Actor] {
 
 object ActorProps {
 
+  protected class DerivedActorProps[A <: Actor](args: Product)(using
+      m: Mirror.ProductOf[A],
+      ct: ClassTag[A]
+  ) extends ActorProps[A] {
+    override private[actors] val identifier = ct.runtimeClass.getName
+    override def create(): A                = m.fromProduct(args)
+  }
+
   /** Creates an ActorProps from a type argument, and a product of arguments.
     * The arguments must match the constructor of the actor, which is checked at
     * compile time.
@@ -21,16 +29,6 @@ object ActorProps {
   inline def props[A <: Actor: ClassTag](args: Product)(using
       m: Mirror.ProductOf[A],
       ev: args.type <:< m.MirroredElemTypes
-  ): ActorProps[A] =
-    new ActorProps[A] {
-      override private[actors] val identifier =
-        classTag[A].runtimeClass.getName
-
-      val _args: Product =
-        args
-
-      override def create(): A =
-        m.fromProduct(_args)
-    }
+  ): ActorProps[A] = new DerivedActorProps[A](args)
 
 }

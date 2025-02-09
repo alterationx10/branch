@@ -66,36 +66,21 @@ object Config {
     * @return
     *   the derived `Config` instance
     */
+  protected class DerivedConfig[T](using decoder: JsonDecoder[T])
+      extends Config[T] {
+    override def fromFile(path: Path): Try[T] =
+      Try(Files.readString(path))
+        .flatMap(json => decoder.decode(json))
+
+    override def fromResource(path: String): Try[T] =
+      scala.util
+        .Using(Source.fromResource(path)) { iter =>
+          val json = iter.mkString
+          decoder.decode(json)
+        }
+        .flatten
+  }
+
   inline given derived[T](using JsonDecoder[T]): Config[T] =
-    new Config[T] {
-
-      /** Reads configuration from a file.
-        *
-        * @param path
-        *   the path to the configuration file
-        * @return
-        *   a `Try` containing the configuration object or an exception if an
-        *   error occurs
-        */
-      override def fromFile(path: Path): Try[T] =
-        Try(Files.readString(path))
-          .flatMap(json => summon[JsonDecoder[T]].decode(json))
-
-      /** Reads configuration from a resource.
-        *
-        * @param path
-        *   the path to the resource
-        * @return
-        *   a `Try` containing the configuration object or an exception if an
-        *   error occurs
-        */
-      override def fromResource(path: String): Try[T] = {
-        scala.util
-          .Using(Source.fromResource(path)) { iter =>
-            val json = iter.mkString
-            summon[JsonDecoder[T]].decode(json)
-          }
-          .flatten
-      }
-    }
+    new DerivedConfig[T]
 }

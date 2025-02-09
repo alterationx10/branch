@@ -20,19 +20,21 @@ object JsonBodyHandler {
 
   /** Derives a BodyHandler for a given type using the provided JsonDecoder
     */
-  inline given derived[I](using
-      decoder: JsonDecoder[I]
-  ): JsonBodyHandler[Try[I]] = {
-    new JsonBodyHandler[Try[I]] {
-      override def apply(
-          responseInfo: HttpResponse.ResponseInfo
-      ): HttpResponse.BodySubscriber[Try[I]] = {
-        BodySubscribers.mapping(
-          BodySubscribers.ofString(Charset.defaultCharset()),
-          str => decoder.decode(str)
-        )
-      }
+  protected class DerivedJsonBodyHandler[I](using decoder: JsonDecoder[I])
+      extends JsonBodyHandler[Try[I]] {
+    override def apply(
+        responseInfo: HttpResponse.ResponseInfo
+    ): HttpResponse.BodySubscriber[Try[I]] = {
+      BodySubscribers.mapping(
+        BodySubscribers.ofString(Charset.defaultCharset()),
+        str => decoder.decode(str)
+      )
     }
   }
+
+  inline given derived[I](using
+      decoder: JsonDecoder[I]
+  ): JsonBodyHandler[Try[I]] =
+    new DerivedJsonBodyHandler[I]
 
 }

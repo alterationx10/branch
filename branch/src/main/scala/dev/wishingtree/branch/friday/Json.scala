@@ -343,7 +343,8 @@ object Json {
     (whitespace *> (obj | array)).root
   }
 
-  private val defaultParser: dev.wishingtree.branch.macaroni.parsers.Reference.Parser[Json] =
+  private val defaultParser
+      : dev.wishingtree.branch.macaroni.parsers.Reference.Parser[Json] =
     parser(Reference)
 
   import Reference.*
