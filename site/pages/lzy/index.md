@@ -12,65 +12,85 @@ tags:
 
 # Lzy
 
-_Lzy_ is somewhere between lazy Futures, and a tiny Effect System.
+_Lzy_ is somewhere between lazy Futures, and a tiny Effect System. It provides a way to describe computations that can be composed and executed later, with built-in support for error handling, resource management, and logging.
 
-## A Prelude
+## Futures vs Lazy: A Comparison
 
 A (Scala) `Future` is an eager calculation - once referenced, it's going to run! This also means once it's done, we
 can't re-run it - only evaluate the finished state. Sometimes it's beneficial to describe some logic in a lazy fashion,
 where it's more of a blueprint of what to do. Calling the blueprint runs the code, whose output can be assigned to a
 value, but then the blueprint can be run again!
 
-Let's compare the following Future code to Lazy code:
+Let's see a simple comparison between Future and Lazy:
 
 ```scala
+import scala.concurrent.{Future, ExecutionContext}
+import scala.util.Random
+
+// Future Example
 given ExecutionContext = LazyRuntime.executionContext
+
 val f1: Future[Int] = Future(Random.nextInt(10))
-// f1 is already running, kicked off by an implicit ExecutionContext
+// f1 is already running, kicked off by the ExecutionContext
 val f2: Future[Int] = Future(Random.nextInt(10))
-// f2 is now running...
+// f2 is also already running...
+
 def fRandomSum: Future[Int] = for {
-  a <- f1
-  b <- f2
+  a <- f1  // Will always get the same value
+  b <- f2  // Will always get the same value
 } yield (a + b)
-// fRandomSum will be the same every time it's called
-println(Await.result(fRandomSum, Duration.Inf))
+
+// The sum will be the same every time
 println(Await.result(fRandomSum, Duration.Inf))
 println(Await.result(fRandomSum, Duration.Inf))
 ```
 
 ```scala
+// Lazy Example
 val l1: Lazy[Int] = Lazy.fn(Random.nextInt(10))
-// l1 is a description of what you want to do, nothing is running yet
+// l1 is just a description, nothing runs yet
 val l2: Lazy[Int] = Lazy.fn(Random.nextInt(10))
+// l2 is also just a description
 
 def lzyRandomSum: Lazy[Int] = for {
-  a <- l1
-  b <- l2
+  a <- l1  // New random number each time
+  b <- l2  // New random number each time
 } yield (a + b)
-// lzyRandomSum will be different each time, because the whole blueprint is evaluated on each call
-println(lzyRandomSum.runSync)
+
+// The sum will be different each time
 println(lzyRandomSum.runSync)
 println(lzyRandomSum.runSync)
 ```
 
-This description/lazy evaluation approach lets you structure you're programs in descriptive ways, but also has the
-bonus of all the combinator effects you can add on. For example, let's say we want to add some ergonomic error handling
-to one of out lazy function and add a way to `.recover` a failure.
+This lazy evaluation approach lets you:
+
+1. Describe complex operations without executing them immediately
+2. Re-run the same computation multiple times
+3. Add error handling and other effects where needed
+4. Control exactly when and how the computation runs
+
+For example, we can add error handling without modifying the original computation:
 
 ```scala
 def myLazyOp(arg: Int): Lazy[Int] =
   Lazy.fn(42 / arg)
 
+// Without error handling
 myLazyOp(0).runSync()
 // -> Failure(java.lang.ArithmeticException: / by zero)
 
-myLazyOp(0).recover(_ => Lazy.fn(0)).runSync()
+// With error handling added at the call site
+myLazyOp(0)
+  .recover(_ => Lazy.fn(0))
+  .runSync()
 // => Success(0)
-```
 
-The recovery doesn't have to be part of our definition of `myLazyOp`, and can be applied where needed, and different
-recovery strategies used in various places.
+// Or with different error handling elsewhere
+myLazyOp(0)
+  .recoverSome { case _: ArithmeticException => Lazy.fn(-1) }
+  .runSync()
+// => Success(-1)
+```
 
 ## Core Features
 
