@@ -49,4 +49,48 @@ object PreparedStatementSetter {
       ps.setBoolean(index, value)
   }
 
+  /** A PreparedStatementSetter for BigDecimal */
+  given PreparedStatementSetter[BigDecimal] with {
+    def set(ps: PreparedStatement)(index: Int)(value: BigDecimal): Unit =
+      ps.setBigDecimal(index, value.bigDecimal)
+  }
+
+  /** A PreparedStatementSetter for java.sql.Date */
+  given PreparedStatementSetter[java.sql.Date] with {
+    def set(ps: PreparedStatement)(index: Int)(value: java.sql.Date): Unit =
+      ps.setDate(index, value)
+  }
+
+  /** A PreparedStatementSetter for java.sql.Timestamp */
+  given PreparedStatementSetter[java.sql.Timestamp] with {
+    def set(ps: PreparedStatement)(index: Int)(
+        value: java.sql.Timestamp
+    ): Unit =
+      ps.setTimestamp(index, value)
+  }
+
+  /** A PreparedStatementSetter for java.sql.Time */
+  given PreparedStatementSetter[java.sql.Time] with {
+    def set(ps: PreparedStatement)(index: Int)(value: java.sql.Time): Unit =
+      ps.setTime(index, value)
+  }
+
+  /** A PreparedStatementSetter for Array[Byte] */
+  given PreparedStatementSetter[Array[Byte]] with {
+    def set(ps: PreparedStatement)(index: Int)(value: Array[Byte]): Unit =
+      ps.setBytes(index, value)
+  }
+
+  /** A PreparedStatementSetter for Short */
+  given PreparedStatementSetter[Short] with {
+    def set(ps: PreparedStatement)(index: Int)(value: Short): Unit =
+      ps.setShort(index, value)
+  }
+
+  /** A PreparedStatementSetter for Byte */
+  given PreparedStatementSetter[Byte] with {
+    def set(ps: PreparedStatement)(index: Int)(value: Byte): Unit =
+      ps.setByte(index, value)
+  }
+
 }
