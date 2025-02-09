@@ -8,34 +8,123 @@ tags:
   - parser
   - pool
   - metaprogramming
+  - crypto
+  - filesystem
 ---
 
 # Macaroni
 
-This module has a collection of reusable modules that could be helpful in any project.
+Macaroni provides a collection of reusable utilities and helpers that could be useful in any project. It includes modules for meta-programming, parsing, resource pooling, cryptography, and filesystem operations.
 
 ## Meta Programming
 
-There are a couple of reusable inline helpers to summon lists of things by type, as well as some extra type helpers for
-Tuples.
+The `meta` package provides type-level programming utilities:
 
-## Parser
+### Type Helpers
 
-There is a parser, which is the topic of a chapter in
-[Function Programming in Scala (2nd Ed)](https://www.manning.com/books/functional-programming-in-scala-second-edition)
-of parser combinators. It is currently used to power the [Friday](../friday/index.md) JSON library, but is useful for
-any parsing application, I imagine. There is a `Parsers` trait, and a `Reference` implementation which can be used.
+The `Types` object provides type-level helpers for working with tuples and type intersections/unions:
 
-## ResourcePool
+```scala
+// Intersection type with Any default
+type IAnyType[T <: Tuple] = Tuple.Fold[T, Any, [x, y] =>> x & y]
 
-If you need a resource pool of type `R`, then there is a simple `trait ResourcePool[R]` to extend.
+// Intersection type with Nothing default
+type INothingType[T <: Tuple] = Tuple.Fold[T, Nothing, [x, y] =>> x & y]
 
-The borrowing of resources is gated by a `Semaphore` with `val poolSize: Int` (defaults to 5) permits.
+// Union type with Any default
+type UAnyType[T <: Tuple] = Tuple.Fold[T, Any, [x, y] =>> x | y]
+```
 
-The pool is eagerly filled on create.
+These are particularly useful when working with case class fields via mirrors to create intersection or union types of all fields.
 
-Implement `def acquire: R` with how to create a resource, and `def release(resource: R): Unit` with how to cleanly close
-the resource when shutting the pool down.
+## Parser Combinators
 
-You can optionally over `def test(resource: R): Boolean` to provide a test to run after borrowing a resource, to make
-sure it is still healthy.
+The `parsers` package provides a parser combinator library, which powers the [Friday](../friday/index.md) JSON parser. The implementation is based on the approach described in [Functional Programming in Scala (2nd Ed)](https://www.manning.com/books/functional-programming-in-scala-second-edition).
+
+Key components:
+
+- `Parsers` trait - Defines the core parsing primitives and combinators
+- `Reference` implementation - A concrete implementation of the parser combinators
+- `Location` - Tracks position in input for error reporting
+- `ParseError` - Provides detailed error messages with line/column information
+
+Example usage:
+
+```scala
+import dev.wishingtree.branch.macaroni.parsers.{Parsers, Reference}
+
+// Create a simple parser
+val parser = Reference.string("hello")
+
+// Run the parser
+parser.run("hello") // Right("hello")
+parser.run("world") // Left(ParseError)
+```
+
+## Resource Pool
+
+The `ResourcePool[R]` trait provides a simple way to manage pools of reusable resources. Key features:
+
+- Semaphore-based access control (default 5 concurrent resources)
+- Lazy resource initialization (resources created on first use)
+- Optional health checking
+- Automatic resource cleanup
+
+To implement a resource pool:
+
+```scala
+import dev.wishingtree.branch.macaroni.pool.ResourcePool
+
+class DatabasePool extends ResourcePool[Connection] {
+  def acquire: Connection = // Create new connection
+  def release(conn: Connection): Unit = conn.close()
+
+  // Optional: Override to add connection testing
+  override def test(conn: Connection): Boolean =
+    conn.isValid(5000)
+}
+```
+
+## Filesystem Operations
+
+The `fs` package provides convenient filesystem utilities through the `PathOps` object:
+
+```scala
+import dev.wishingtree.branch.macaroni.fs.PathOps.*
+
+// Get working directory
+val wd: Path = PathOps.wd
+
+// Path operations
+val configPath = wd / "config" / "app.conf"
+val relative = configPath.relativeTo(wd)
+
+// String interpolation
+val path = p"src/main/resources"
+```
+
+## Cryptography
+
+The `crypto` package provides common cryptographic operations:
+
+- Secure random key generation 
+- Base64 encoding/decoding
+- PBKDF2 password hashing
+- HMAC message authentication
+- AES encryption/decryption
+
+Example usage:
+
+## Runtime Utilities
+
+The `runtimes` package provides execution contexts and executor services that use Java 21's virtual threads:
+
+```scala
+import dev.wishingtree.branch.macaroni.runtimes.BranchExecutors
+
+// Get the global virtual thread executor
+val executor = BranchExecutors.executorService
+
+// Get the global execution context
+val ec = BranchExecutors.executionContext
+```
