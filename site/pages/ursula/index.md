@@ -14,7 +14,7 @@ A slim framework to make Scala CLI apps.
 
 ## Anatomy of the Framework
 
-Here is a general overview if of the pieces fit together.
+Here is a general overview of how the pieces fit together.
 
 ### How it works: UrsulaApp
 
@@ -42,44 +42,28 @@ functionality you desire, and add them to the `commands: Seq`.
 
 ### Commands
 
-There is a `trait Command` to extend, and the essence of this the
-implementation of
+Commands are the primary building blocks. Each command can have flags and arguments:
 
 ```scala
-def action(args: Seq[String]): Unit
+trait Command {
+  // Required fields
+  val trigger: String        // How to invoke the command
+  val description: String    // Brief description
+  val usage: String         // Usage pattern
+  val examples: Seq[String] // Example usages
+  
+  val flags: Seq[Flag[?]]           // Command flags
+  val arguments: Seq[Argument[?]]   // Positional arguments
+  
+  // Core implementation
+  def action(args: Seq[String]): Unit
+  
+  // Optional settings
+  val strict: Boolean = true    // Enforce flag validation
+  val hidden: Boolean = false   // Hide from help
+  val isDefaultCommand: Boolean = false
+}
 ```
-
-You consolidate all of your logic you want to run in this method.
-`Commands` are meant to be a one-off calls from the main entry point,
-and generally not composed with other `Command`s, so the return type is `Unit`.
-
-There are a few other items to implement, such as
-
-```scala
-val trigger: String
-val description: String
-val usage: String
-val examples: Seq[String]
-```
-
-`trigger` is the String that should be used at the start of your CLI arguments
-to call that particular command. The others are simple informational strings
-about your command - and those are automatically used by the built-in help
-command to print documentation!
-
-Two other important things to declare are
-
-```scala
-val flags: Seq[Flag[?]]
-val arguments: Seq[Argument[?]]
-```
-
-[Flags](#flags) and [Arguments](#arguments) are discussed below, but know that
-they are simple traits to extend that help you parse/provide values for the
-`args` passed in - and they too have some simple Strings to implement that
-provide auto documentation for your app. At the end of the day, you can just
-parse the `args` on your own in your ZIO logic - but usage of the `Flag`s
-and`Arguments` should hopefully simplify things for your and your apps users.
 
 #### Built-In Commands
 
@@ -88,20 +72,103 @@ and`Arguments` should hopefully simplify things for your and your apps users.
 ### Flags
 
 Flags (`trait Flag[R]`) are non-positional arguments passed to the command.
-Flags can be generally used as either an argument flag, which expects the next
-element in the command arguments to be parsed as type `R`, or boolean flags
-which do not (i.e. present/not present).
+They can be used in two ways:
+- Argument flags which expect a value of type `R`
+- Boolean flags which are simply present/not present
 
-Some general highlights are that it has things built in to
+Here's an example of a string flag:
 
-- parse argument(s) that can then be used in you `Command`
-- declare conflicts with other flags
-- declare requirements of other flags
-- provide defaults, of ENV variables to be used
+```scala
+object ConfigFlag extends StringFlag {
+  val name: String = "config"        // Used as --config
+  val shortKey: String = "c"         // Used as -c
+  val description: String = "Config file path"
+  
+  // Optional settings
+  val required: Boolean = false
+  val expectsArgument: Boolean = true
+  val multiple: Boolean = false      // Can be used multiple times
+  val env: Option[String] = Some("CONFIG_PATH")
+  val default: Option[String] = Some("config.yml")
+  val options: Option[Set[String]] = Some(Set("dev", "prod"))
+  
+  // Dependencies and conflicts
+  val dependsOn: Option[Seq[Flag[?]]] = Some(Seq(OtherFlag))
+  val exclusive: Option[Seq[Flag[?]]] = Some(Seq(ConflictingFlag))
+}
+```
+
+Built-in flag types:
+- `BooleanFlag`: Simple presence/absence flags
+- `StringFlag`: String value flags
+- `IntFlag`: Integer value flags
 
 ### Arguments
 
-Arguments (`trait Argument[R]`) are _positional_ arguments passed to the
-command, and are to be parsed to type `R`
+Arguments (`trait Argument[R]`) are positional parameters that are parsed to type `R`:
 
-Some general highlights are that you can encode the parsing logic.
+```scala
+object CountArg extends Argument[Int] {
+  val name: String = "count"
+  val description: String = "Number of items"
+  val required: Boolean = true
+  
+  def parse: PartialFunction[String, Int] = {
+    case s => s.toInt
+  }
+  
+  val options: Option[Set[Int]] = Some(Set(1, 2, 3))
+  val default: Option[Int] = Some(1)
+}
+```
+
+## Value Resolution
+
+For flags that take values, the resolution order is:
+1. Command line argument
+2. Environment variable (if configured)
+3. Default value (if provided)
+
+## Example Usage
+
+Here's a complete example:
+
+```scala
+object GreetApp extends UrsulaApp {
+  val commands = Seq(GreetCommand)
+}
+
+object NameFlag extends StringFlag {
+  val name = "name"
+  val shortKey = "n" 
+  val description = "Name to greet"
+  val required = true
+}
+
+object GreetCommand extends Command {
+  val trigger = "greet"
+  val description = "Greets someone"
+  val usage = "greet --name <name>"
+  val examples = Seq(
+    "greet --name World",
+    "greet -n Alice"
+  )
+  
+  val flags = Seq(NameFlag)
+  val arguments = Seq.empty
+  
+  def action(args: Seq[String]): Unit = {
+    val name = NameFlag.parseFirstArg(args).get
+    println(s"Hello, $name!")
+  }
+}
+```
+
+You can run it like:
+
+```bash
+myapp greet --name World
+myapp greet -n Alice
+myapp help
+myapp greet --help
+```
