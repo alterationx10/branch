@@ -15,7 +15,7 @@ class JsonConversionsSpec extends FunSuite {
 
     assertEquals(
       conv(person).toSeq,
-      person.toJson.toJsonString.getBytes.toSeq
+      person.toJsonString.getBytes.toSeq
     )
 
   }

@@ -42,6 +42,20 @@ enum Json {
     *   the map of string keys to JSON values
     */
   case JsonObject(value: Map[String, Json])
+
+  override def toString(): String = toJsonString
+
+  def toJsonString: String = this match {
+    case JsonNull           => "null"
+    case JsonBool(value)    => value.toString
+    case JsonNumber(value)  => value.toString
+    case JsonString(value)  => s""""$value""""
+    case JsonArray(values)  => values.map(_.toJsonString).mkString("[", ",", "]")
+    case JsonObject(values) =>
+      values
+        .map { case (k, v) => s""""$k":${v.toJsonString}""" }
+        .mkString("{", ",", "}")
+  }
 }
 
 object Json {
@@ -224,23 +238,6 @@ object Json {
       */
     infix def objOpt: Option[Map[String, Json]] =
       Try(objVal).toOption
-
-    /** Convert the JSON value to a string representation
-      * @return
-      *   the string representation of the JSON value
-      */
-    infix def toJsonString: String = j match {
-      case JsonNull          => "null"
-      case JsonBool(value)   => value.toString
-      case JsonNumber(value) => value.toString
-      case JsonString(value) => "\"" + value + "\""
-      case JsonArray(value)  =>
-        "[" + value.map(_.toJsonString).mkString(", ") + "]"
-      case JsonObject(value) =>
-        "{" + value
-          .map { case (k, v) => "\"" + k + "\": " + v.toJsonString }
-          .mkString(", ") + "}"
-    }
 
   }
 

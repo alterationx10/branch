@@ -2,7 +2,6 @@ package dev.wishingtree.branch.veil
 
 import dev.wishingtree.branch.testkit.fixtures.FileFixtureSuite
 
-
 case class AppConfig(host: String, port: Int) derives Config
 case class AppConfig2(host: String, port: Int)
 

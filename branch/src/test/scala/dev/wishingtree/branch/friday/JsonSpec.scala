@@ -47,12 +47,15 @@ class JsonSpec extends FunSuite {
         |  }
         |}
         |""".stripMargin
-    val parsed = Json.parse(json)
+    val parsed  = Json.parse(json)
     assert(parsed.isRight)
     val decoder = summon[JsonCodec[JsClass]]
     val decoded = decoder.decode(json)
     assert(decoded.isSuccess)
-    assertEquals(decoded.toOption.get, JsClass("Alice", Json.obj("age" -> Json.JsonNumber(42))))
+    assertEquals(
+      decoded.toOption.get,
+      JsClass("Alice", Json.obj("age" -> Json.JsonNumber(42)))
+    )
   }
 
 }

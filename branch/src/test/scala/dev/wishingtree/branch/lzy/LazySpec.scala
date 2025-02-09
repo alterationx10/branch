@@ -235,7 +235,7 @@ class LazySpec extends LoggerFixtureSuite {
   }
 
   test("Lazy.tapError") {
-    var counter  = 0
+    var counter = 0
     for {
       _ <- Lazy.fn(42).tapError(e => counter += 1).ignore
       _ <- Lazy.fail(new Exception("error")).tapError(e => counter += 1).ignore

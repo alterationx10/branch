@@ -32,7 +32,6 @@ trait JsonEncoder[-A] {
   def contraMap[B](f: B => A): JsonEncoder[B] =
     a => encode(f(a))
 
-  /** Extension methods for any type with a JsonEncoder */
   extension [B](b: B) {
 
     /** Encodes the value to JSON using the given encoder
