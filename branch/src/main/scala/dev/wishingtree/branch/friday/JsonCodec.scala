@@ -8,7 +8,12 @@ import scala.util.Try
   * @tparam A
   *   the type of the value to encode/decode
   */
-trait JsonCodec[A] extends JsonDecoder[A], JsonEncoder[A] { self =>
+trait JsonCodec[A] { self =>
+  given encoder: JsonEncoder[A]
+  given decoder: JsonDecoder[A]
+
+  def encode(a: A): Json = encoder.encode(a)
+  def decode(json: Json): Try[A] = decoder.decode(json)
 
   /** Transform the codec from one type to another, by providing the functions
     * needed to map/contraMap the underlying decoder/encoders.
@@ -23,9 +28,17 @@ trait JsonCodec[A] extends JsonDecoder[A], JsonEncoder[A] { self =>
     */
   def transform[B](f: A => B)(g: B => A): JsonCodec[B] =
     new JsonCodec[B] {
-      override def decode(json: Json): Try[B] = self.decode(json).map(f)
-      override def encode(b: B): Json         = self.encode(g(b))
+      def encoder: JsonEncoder[B] = self.encoder.contraMap(g)
+      def decoder: JsonDecoder[B] = self.decoder.map(f)
     }
+
+  /** Transform the codec from one type to another, with better type safety
+    */
+  def bimap[B](f: A => B)(g: B => A): JsonCodec[B] = transform(f)(g)
+
+  /** Map the decoded value while preserving the encoder
+    */
+  def map[B](f: A => B)(g: B => A): JsonCodec[B] = transform(f)(g)
 
 }
 
@@ -42,14 +55,10 @@ object JsonCodec {
     * @return
     *   a new JsonCodec for the given type
     */
-  def apply[A](using
-      encoder: JsonEncoder[A],
-      decoder: JsonDecoder[A]
-  ): JsonCodec[A] =
+  def apply[A](using e: JsonEncoder[A], d: JsonDecoder[A]): JsonCodec[A] =
     new JsonCodec[A] {
-      override def decode(json: Json): Try[A] = decoder.decode(json)
-
-      override def encode(a: A): Json = encoder.encode(a)
+      def encoder: JsonEncoder[A] = e
+      def decoder: JsonDecoder[A] = d
     }
 
   /** Derives a JsonCodec for a given type using the given product type
@@ -66,12 +75,22 @@ object JsonCodec {
         error("Auto deriving sum types is not currently supported")
       case p: Mirror.ProductOf[A] =>
         new JsonCodec[A] {
-          override def decode(json: Json): Try[A] =
-            Try(JsonDecoder.buildJsonProduct(p, json))
-          override def encode(a: A): Json         =
-            JsonEncoder.buildJsonProduct(a)(using p)
+          def encoder: JsonEncoder[A] = JsonEncoder.derived[A]
+          def decoder: JsonDecoder[A] = JsonDecoder.derived[A]
         }
     }
   }
+
+  // Type aliases for cleaner signatures
+  type Decoder[A] = Json => Try[A]
+  type Encoder[A] = A => Json
+
+  /** Creates a JsonCodec from explicit encode/decode functions
+    */
+  def from[A](decode: Decoder[A], encode: Encoder[A]): JsonCodec[A] = 
+    new JsonCodec[A] {
+      def encoder: JsonEncoder[A] = JsonEncoder.from(this.encode)
+      def decoder: JsonDecoder[A] = JsonDecoder.from(this.decode)
+    }
 
 }

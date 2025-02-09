@@ -232,4 +232,6 @@ object JsonEncoder {
     */
   inline def encode[T](t: T)(using encoder: JsonEncoder[T]): Json =
     encoder.encode(t)
+
+  def from[A](f: A => Json): JsonEncoder[A] = (a: A) => f(a)
 }

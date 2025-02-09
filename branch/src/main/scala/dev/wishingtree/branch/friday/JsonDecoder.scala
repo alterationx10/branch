@@ -240,4 +240,6 @@ object JsonDecoder {
     */
   inline def decode[T](json: Json)(using decoder: JsonDecoder[T]): Try[T] =
     decoder.decode(json)
+
+  def from[A](f: Json => Try[A]): JsonDecoder[A] = (json: Json) => f(json)
 }
