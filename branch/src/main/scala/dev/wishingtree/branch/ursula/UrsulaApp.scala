@@ -64,7 +64,10 @@ trait UrsulaApp {
                       "Could not find command from argument, and no default command provided"
                     )
                   )
-      result <- cmd.lazyAction(if dropOne then args.drop(1) else args)
+      result <-
+        cmd.lazyAction(
+          if dropOne then args.drop(1).toIndexedSeq else args.toIndexedSeq
+        )
     } yield result
 
     lzyApp.runSync()(using executionContext) match {

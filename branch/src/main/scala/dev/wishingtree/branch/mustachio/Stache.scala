@@ -60,8 +60,8 @@ object Stache {
     case JsonString(value) => Str(value.unescape)
     case JsonBool(value)   => Str(value.toString)
     case JsonNumber(value) =>
-      // A hack for now to format as int
-      if value == value.toInt then Str(value.toInt.toString)
+      // Format as int if it has no decimal part
+      if value % 1 == 0 then Str(value.toInt.toString)
       else Str(value.toString)
     case JsonObject(value) => Obj(value.view.mapValues(fromJson).toMap)
     case JsonArray(value)  => Arr(value.map(fromJson).toList)

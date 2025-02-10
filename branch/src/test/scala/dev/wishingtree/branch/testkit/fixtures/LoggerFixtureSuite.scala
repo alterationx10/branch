@@ -28,7 +28,7 @@ trait LoggerFixtureSuite extends munit.FunSuite {
         logger.addHandler(handler)
         (logger, handler)
       },
-      teardown = { (logger, handler) =>
+      teardown = { (_, _) =>
         ()
       }
     )

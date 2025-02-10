@@ -4,29 +4,26 @@ description: A(nother) Scala JSON library
 author: Mark Rudolph
 published: 2025-01-25T04:36:00Z
 lastUpdated: 2025-01-25T04:36:00Z
-tags: 
+tags:
   - json
+  - parser
 ---
 
 # Friday
 
-*Friday* is built off of a parser that is the topic of a chapter in
+_Friday_ is built off of a parser that is the topic of a chapter in
 [Function Programming in Scala (2nd Ed)](https://www.manning.com/books/functional-programming-in-scala-second-edition)
 of parser combinators.
 
 The library provides an AST to convert JSON to/from, as well as type-classes for Encoders, Decoders, and Codecs.
 
-There is also an emphasis on Json AST helper methods to easily work with JSON, without having to convert to/from an
-explicit schema.
-
-Great uses of this library are for encoding/decoding JSON with the [Spider](../spider/index.md) http server/client
-project, or simple JSON driven configuration files.
+There is also an emphasis on Json AST helper methods to easily work with JSON, without having to convert to/from an explicit schema.
 
 ## Working with the AST
 
 The Json AST is described fully as
 
-```scala 3
+```scala
 enum Json {
   case JsonNull
   case JsonBool(value: Boolean)
@@ -39,41 +36,45 @@ enum Json {
 
 A json string can be parsed to `Json`, using the `parse` method on the `Json` companion object.
 
-```scala 3
-def parse(json: String): Either[ParseError, Json] 
+```scala
+def parse(json: String): Either[ParseError, Json]
 ```
 
-Once you have a reference to a `Json`, you can (**dangerously**) access the underlying value by calling one of
+### Accessing Values
 
-* strVal
-* numVal
-* boolVal
-* arrVal
-* objVal
+There are two ways to access values from a `Json` instance:
 
-These methods will throw an exception if the underlying value is not the approriate type, for example
+1. **Direct Access (Unsafe)** - These methods will throw an exception if the value is not of the expected type:
+   - `strVal` - Get the underlying String
+   - `numVal` - Get the underlying Double
+   - `boolVal` - Get the underlying Boolean
+   - `arrVal` - Get the underlying IndexedSeq[Json]
+   - `objVal` - Get the underlying Map[String, Json]
 
-```scala 3
+For example:
+
+```scala
 JsonString("Some Str").strVal // Works fine
 JsonString("Some Str").numVal // Throws exception
 ```
 
-You can *safely* use one of the following methods to get an Option of the underlying value
+2. **Safe Access** - These methods return an `Option` of the underlying value:
+   - `strOpt` - Try to get String
+   - `numOpt` - Try to get Double
+   - `boolOpt` - Try to get Boolean
+   - `arrOpt` - Try to get IndexedSeq[Json]
+   - `objOpt` - Try to get Map[String, Json]
 
-* strOpt
-* numOpt
-* boolOpt
-* arrOpt
-* objOpt
+### Working with Objects
 
 To quickly parse through possible sub-fields on a JsonObject, there is a `?` extension method on both `Json` and
-`Option[Json]` that takes a field name as an argument
+`Option[Json]` that takes a field name as an argument:
 
-```scala 3
+```scala
 def ?(field: String): Option[Json]
 ```
 
-With this, if we had some JSON
+This allows for safe traversal of nested JSON structures. For example:
 
 ```json
 {
@@ -86,131 +87,161 @@ With this, if we had some JSON
 }
 ```
 
-We can do things like
+We can safely traverse this structure:
 
-```scala 3
+```scala
 val js: Json = ???
 
-val maybeName: Option[Json] = js ? "name" // It's there!
-val deepField: Option[Json] = js ? "some" ? "nested" ? "key" // This too!
+val maybeName: Option[Json] = js ? "name" // Some(JsonString("Branch"))
+val deepField: Option[Json] = js ? "some" ? "nested" ? "key" // Some(JsonString("value"))
 
-// Not present, but doesn't throw an exception attempting to access deeper fields!
-val probablyNot: Option[String] = js ? "totally" ? "not" ? "there"
+// Missing fields return None without throwing exceptions
+val probablyNot: Option[Json] = js ? "totally" ? "not" ? "there" // None
 ```
 
-## Encoder, Decoders, and Codecs
+## Type Classes
 
-*Friday* provides type-classes to convert Json to/from Scala models.
+Friday provides three main type classes for working with JSON:
 
-## Decoders
+1. `JsonEncoder[A]` - For converting Scala types to JSON
+2. `JsonDecoder[A]` - For converting JSON to Scala types
+3. `JsonCodec[A]` - Combines both encoding and decoding capabilities
 
-For some type `A`, we can define a `JsonEncoder[A]` that can convert `Json` to `A` by providing an implementation of
+### Decoders
 
-```scala 3
-  def decode(json: Json): Try[A]
-  ````
+A `JsonDecoder[A]` converts `Json` to type `A` by implementing:
 
-For example, the following decoder can convert `Json` to `String`
+```scala
+def decode(json: Json): Try[A]
+```
 
-```scala 3
+For example:
+
+```scala
 given JsonDecoder[String] with {
   def decode(json: Json): Try[String] =
     Try(json.strVal)
 }
 ```
 
-Some decoders for common types like this are provided and can accessed by importing
+Common decoders are provided and can be imported with:
 
-```scala 3
+```scala
 import dev.wishingtree.branch.friday.JsonDecoder.given
 ```
 
-Auto derivation is also supported for `Product` types (`Sum` types soon™️). We can use `derives` on case classes as
+Auto derivation is supported for `Product` types (case classes):
 
-```scala 3
-case class Person(name: String, age: Int)derives JsonDecoder
+```scala
+case class Person(name: String, age: Int) derives JsonDecoder
+
+// Usage
+val personJson = """{"name": "Mark", "age": 42}"""
+val person: Try[Person] = Json.decode[Person](personJson)
 ```
 
-With the proper decoder in scope, we can decode JSON (or JSON that is still in String form) with
+### Encoders
 
-```scala 3
-val personJson =
-  """
-    |{
-    |  "name": "Mark",
-    |  "age": 42
-    |}
-    |""".stripMargin
+A `JsonEncoder[A]` converts type `A` to `Json` by implementing:
 
-println {
-  Json.decode[Person](personJson) // returns a Try[Person]
-}
+```scala
+def encode(a: A): Json
 ```
 
-## Encoders
+For example:
 
-For some type `A`, we can define an encoder that can convert `A` to `Json` by providing an implementation of
-
-```scala 3
-  def encode(a: A): Json
-```
-
-For example, the following encoder can convert `String` to `Json`
-
-```scala 3
+```scala
 given JsonEncoder[String] with {
   def encode(a: String): Json = Json.JsonString(a)
 }
 ```
 
-Some encoders for common types are provided and can accessed by importing
+Common encoders are provided and can be imported with:
 
-```scala 3
+```scala
 import dev.wishingtree.branch.friday.JsonEncoder.given
 ```
 
-Auto derivation is also supported for `Product` types (`Sum` types soon™️). We can use `derives` on case classes as
+Auto derivation works the same as with decoders:
 
-```scala 3
-case class Person(name: String, age: Int)derives JsonEncoder
+```scala
+case class Person(name: String, age: Int) derives JsonEncoder
+
+// Usage
+val person = Person("Mark", 42)
+val json: Json = person.toJson  // Using extension method
+// or
+val json: Json = Json.encode(person)  // Using companion object
 ```
 
-With the proper encoder in scope, we can use the extension method provided by the type class, or the method on the Json
-companion object to convert to `Json`
+### Codecs
 
-```scala 3
-Person("Mark", 42).toJson
-Json.encode(Person("Mark", 42))
+When you need both encoding and decoding, use `JsonCodec[A]`:
+
+```scala
+trait JsonCodec[A] { self =>
+  given encoder: JsonEncoder[A]
+  given decoder: JsonDecoder[A]
+
+  def encode(a: A): Json = encoder.encode(a)
+  def decode(json: Json): Try[A] = decoder.decode(json)
+}
 ```
 
-## Codecs
+Codecs can be created in several ways:
 
-We often want to be able to go both ways, so this library provides a codec which has the ability to encode and decode.
+1. Auto derivation for case classes:
 
-```scala 3
-trait JsonCodec[A] extends JsonDecoder[A], JsonEncoder[A]
+```scala
+case class Person(name: String, age: Int) derives JsonCodec
 ```
 
-This also supports auto derivation for `Product` types (`Sum` types soon™️). We can use `derives` on case classes as
+2. Combining existing encoder and decoder from the companion object JsonCodec.apply:
 
-```scala 3
-case class Person(name: String, age: Int)derives JsonCodec
+```scala
+val codec: JsonCodec[Person] = JsonCodec[Person]  // If encoder and decoder are in scope
 ```
 
-With both an encoder and decoder, there is also the `JsonCodec.apply` method to easily create an instance
+3. From explicit encode/decode functions:
 
-```scala 3
-def apply[A](using
-             encoder: JsonEncoder[A],
-             decoder: JsonDecoder[A]
-            ): JsonCodec[A] =
-  new JsonCodec[A] {
-    override def decode(json: Json): Try[A] = decoder.decode(json)
+```scala
+val codec = JsonCodec.from[Person](
+  decode = json => Try(/* decode logic */),
+  encode = person => /* encode logic */
+)
+```
 
-    override def encode(a: A): Json = encoder.encode(a)
-  }
+4. Transforming existing codecs:
+
+```scala
+// Transform a String codec into an Instant codec
+val instantCodec: JsonCodec[Instant] = JsonCodec[String].transform(
+  Instant.parse    // String => Instant
+)(_.toString)      // Instant => String
+```
+
+The codec provides extension methods for convenient usage:
+
+```scala
+// Encoding
+person.toJson         // Convert to Json
+person.toJsonString   // Convert directly to JSON string
+
+// Decoding
+json.decodeAs[Person]       // Json => Try[Person]
+jsonString.decodeAs[Person] // String => Try[Person]
+```
+
+You can also transform codecs to work with different types while preserving type safety:
+
+```scala
+// Transform with bimap
+val longCodec: JsonCodec[Long] = JsonCodec[String].bimap(_.toLong)(_.toString)
+
+// Transform with map
+val intCodec: JsonCodec[Int] = JsonCodec[Long].map(_.toInt)(_.toLong)
 ```
 
 ## Other Libraries
 
-If you like *Friday*, you should check out [uPickle](https://com-lihaoyi.github.io/upickle/)
+If you like _Friday_, you should check out [uPickle](https://com-lihaoyi.github.io/upickle/) for a more comprehensive JSON library.

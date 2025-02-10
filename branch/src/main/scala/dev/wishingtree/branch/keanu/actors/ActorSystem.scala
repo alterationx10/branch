@@ -153,7 +153,7 @@ trait ActorSystem {
     mailboxes.values.foreach { mailbox =>
       mailbox.put(PoisonPill)
     }
-    actors.map((id, a) => {
+    actors.map((_, a) => {
       Try(a.join()) // Wait for known actors to terminate
     })
     // Presumably, getting the values means they have unregistered themselves,

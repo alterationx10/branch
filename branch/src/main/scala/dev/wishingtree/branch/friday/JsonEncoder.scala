@@ -42,6 +42,15 @@ trait JsonEncoder[-A] {
       */
     def toJson(using encoder: JsonEncoder[B]): Json =
       encoder.encode(b)
+
+    /** Encodes the value to a JSON string using the given encoder
+      * @param encoder
+      *   the JsonEncoder for the type
+      * @return
+      *   the encoded JSON string
+      */
+    def toJsonString(using encoder: JsonEncoder[B]): String =
+      encoder.encode(b).toString
   }
 
 }
@@ -110,6 +119,12 @@ object JsonEncoder {
     def encode(a: Instant): Json = JsonString(a.toString)
   }
 
+  /** A JsonEncoder for BigDecimals
+    */
+  given JsonEncoder[BigDecimal] with {
+    def encode(a: BigDecimal): Json = Json.JsonNumber(a.doubleValue)
+  }
+
   /** Helper method for collection/iterable JsonEncoders
     * @param jsonEncoder
     *   the JsonEncoder for the element type
@@ -170,53 +185,29 @@ object JsonEncoder {
   implicit def vectorEncoder[A: JsonEncoder]: JsonEncoder[Vector[A]] =
     iterableEncoder[A, Vector]
 
-  /** Builds a product type from a value
-    * @param a
-    *   the value to encode
-    * @param m
-    *   the Mirror for the product type
-    * @tparam A
-    *   the product type
-    * @return
-    *   the encoded JSON object
-    */
-  private[friday] inline def buildJsonProduct[A](
-      a: A
-  )(using m: Mirror.Of[A]): Json = {
-    lazy val encoders = summonHigherListOf[m.MirroredElemTypes, JsonEncoder]
+  protected class DerivedJsonEncoder[A](using encoders: List[JsonEncoder[?]])
+      extends JsonEncoder[A] {
+    def encode(a: A): Json = {
+      val jsLabels = a.asInstanceOf[Product].productElementNames
+      val jsValues = a.asInstanceOf[Product].productIterator
 
-    val jsLabels: Iterator[String] =
-      a.asInstanceOf[Product].productElementNames
-
-    val jsValues: Iterator[?] =
-      a.asInstanceOf[Product].productIterator
-
-    val js: Iterator[(String, Json)] = jsLabels
-      .zip(
-        jsValues.zip(encoders)
-      )
-      .map { case (label, (value, encoder)) =>
-        label -> encoder.asInstanceOf[JsonEncoder[Any]].encode(value)
-      }
-    JsonObject(js.toMap)
+      val js = jsLabels
+        .zip(jsValues.zip(encoders))
+        .map { case (label, (value, encoder)) =>
+          label -> encoder.asInstanceOf[JsonEncoder[Any]].encode(value)
+        }
+      JsonObject(js.toMap)
+    }
   }
 
-  /** Derives a JsonEncoder for a product type
-    * @param m
-    *   the Mirror for the product type
-    * @tparam A
-    *   the product type
-    * @return
-    *   a new JsonEncoder for the product type
-    */
   inline given derived[A](using m: Mirror.Of[A]): JsonEncoder[A] = {
     inline m match {
-      case p: Mirror.ProductOf[A] =>
-        (a: A) => {
-          buildJsonProduct(a)
-        }
       case s: Mirror.SumOf[A]     =>
         error("Auto derivation of Sum types is not currently supported")
+      case p: Mirror.ProductOf[A] =>
+        new DerivedJsonEncoder[A](using
+          summonHigherListOf[p.MirroredElemTypes, JsonEncoder]
+        )
     }
   }
 
@@ -232,4 +223,6 @@ object JsonEncoder {
     */
   inline def encode[T](t: T)(using encoder: JsonEncoder[T]): Json =
     encoder.encode(t)
+
+  def from[A](f: A => Json): JsonEncoder[A] = (a: A) => f(a)
 }

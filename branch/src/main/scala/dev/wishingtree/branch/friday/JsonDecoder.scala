@@ -1,16 +1,14 @@
 package dev.wishingtree.branch.friday
 
 import dev.wishingtree.branch.friday.Json.JsonObject
-import dev.wishingtree.branch.macaroni.meta.Summons.{
-  summonHigherListOf,
-  summonListOfValuesAs
-}
+import dev.wishingtree.branch.macaroni.meta.Summons.summonHigherListOf
 
 import java.time.Instant
 import scala.collection.*
 import scala.compiletime.*
 import scala.deriving.Mirror
 import scala.util.*
+import dev.wishingtree.branch.macaroni.meta.Summons.summonListOfValuesAs
 
 /** A type-class for decoding JSON into a given type
   * @tparam A
@@ -46,6 +44,26 @@ trait JsonDecoder[+A] {
   def map[B](f: A => B): JsonDecoder[B] =
     json => decode(json).map(f)
 
+  /** Extension methods for any type with a JsonDecoder */
+  extension (json: Json) {
+
+    /** Decodes the JSON value using this decoder
+      * @return
+      *   a Try containing the decoded value
+      */
+    def decodeAs[B >: A](using decoder: JsonDecoder[B]): Try[B] =
+      decoder.decode(json)
+  }
+
+  extension (jsonStr: String) {
+
+    /** Decodes the JSON string using this decoder
+      * @return
+      *   a Try containing the decoded value
+      */
+    def decodeAs[B >: A](using decoder: JsonDecoder[B]): Try[B] =
+      decoder.decode(jsonStr)
+  }
 }
 
 /** A collection of default JsonDecoders
@@ -176,44 +194,27 @@ object JsonDecoder {
   implicit def vectorDecoder[A: JsonDecoder]: JsonDecoder[Vector[A]] =
     iterableDecoder[A, Vector](Vector.newBuilder[A])
 
-  /** Builds a product type from a JSON object
-    * @param p
-    *   the Mirror for the product type
-    * @param b
-    *   the JSON object to decode
-    * @tparam A
-    *   the product type
-    * @return
-    *   an instance of the product type
-    */
-  private[friday] inline def buildJsonProduct[A](
+  protected class DerivedJsonDecoder[A](using
       p: Mirror.ProductOf[A],
-      b: Json
-  ): A = {
-    {
-      val productLabels       = summonListOfValuesAs[p.MirroredElemLabels, String]
-      val decoders            = summonHigherListOf[p.MirroredElemTypes, JsonDecoder]
-      val underlying          = b.asInstanceOf[JsonObject].value
-      val consArr: Array[Any] = productLabels
-        .zip(decoders)
-        .map { case (label, decoder) =>
-          val json = underlying(label)
-          decoder.decode(json).get
-        }
-        .toArray
+      decoders: List[JsonDecoder[?]],
+      productLabels: List[String]
+  ) extends JsonDecoder[A] {
+    def decode(json: Json): Try[A] = {
+      Try {
+        val underlying          = json.asInstanceOf[JsonObject].value
+        val consArr: Array[Any] = productLabels
+          .zip(decoders)
+          .map { case (label, decoder) =>
+            val json = underlying(label)
+            decoder.decode(json).get
+          }
+          .toArray
 
-      p.fromProduct(Tuple.fromArray(consArr))
+        p.fromProduct(Tuple.fromArray(consArr))
+      }
     }
   }
 
-  /** Derives a JsonDecoder for a product type
-    * @param m
-    *   the Mirror for the product type
-    * @tparam A
-    *   the product type
-    * @return
-    *   a new JsonDecoder for the product type
-    */
   inline given derived[A](using m: Mirror.Of[A]): JsonDecoder[A] = {
     inline m match {
       case _: Mirror.SumOf[A]     =>
@@ -221,10 +222,11 @@ object JsonDecoder {
           "Auto derivation is not supported for Sum types. Please create them explicitly as needed."
         )
       case p: Mirror.ProductOf[A] =>
-        (json: Json) =>
-          Try {
-            buildJsonProduct(p, json)
-          }
+        new DerivedJsonDecoder[A](using
+          p,
+          summonHigherListOf[p.MirroredElemTypes, JsonDecoder],
+          summonListOfValuesAs[p.MirroredElemLabels, String]
+        )
     }
   }
 
@@ -240,4 +242,6 @@ object JsonDecoder {
     */
   inline def decode[T](json: Json)(using decoder: JsonDecoder[T]): Try[T] =
     decoder.decode(json)
+
+  def from[A](f: Json => Try[A]): JsonDecoder[A] = (json: Json) => f(json)
 }

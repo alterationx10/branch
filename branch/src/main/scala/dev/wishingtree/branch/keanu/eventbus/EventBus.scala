@@ -22,8 +22,14 @@ trait EventBus[T] {
   /** Publishes a message to all subscribers.
     */
   final def publish(msg: EventBusMessage[T]): Unit =
-    subscribers.foreach { (id, sub) =>
-      if sub.filter(msg) then sub.subscriber.mailbox.put(msg)
+    subscribers.foreach { (_, sub) =>
+      try {
+        if sub.filter(msg) then sub.subscriber.mailbox.put(msg)
+      } catch {
+        case e: Exception =>
+          // Could add logging here
+          ()
+      }
     }
 
   /** Publishes a message to all subscribers.

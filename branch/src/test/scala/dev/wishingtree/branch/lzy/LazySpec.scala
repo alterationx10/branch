@@ -1,6 +1,5 @@
 package dev.wishingtree.branch.lzy
 
-import dev.wishingtree.branch.lzy.{Lazy, LazyRuntime}
 import dev.wishingtree.branch.macaroni.runtimes.BranchExecutors
 import dev.wishingtree.branch.testkit.fixtures.LoggerFixtureSuite
 import munit.FunSuite
@@ -57,7 +56,7 @@ class LazySpec extends LoggerFixtureSuite {
 
   test("Lazy.recoverSome") {
     val a = for {
-      l <- Lazy.fail(new ArithmeticException("error")).recoverSome {
+      _ <- Lazy.fail(new ArithmeticException("error")).recoverSome {
              case _: IllegalArgumentException =>
                Lazy.fn("abc")
            }
@@ -235,9 +234,8 @@ class LazySpec extends LoggerFixtureSuite {
     }
   }
 
-  loggerFixture.test("Lazy.tapError") { (logger, handler) =>
-    given Logger = logger
-    var counter  = 0
+  test("Lazy.tapError") {
+    var counter = 0
     for {
       _ <- Lazy.fn(42).tapError(e => counter += 1).ignore
       _ <- Lazy.fail(new Exception("error")).tapError(e => counter += 1).ignore

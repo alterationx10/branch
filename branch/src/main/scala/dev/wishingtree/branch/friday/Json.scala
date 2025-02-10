@@ -1,6 +1,5 @@
 package dev.wishingtree.branch.friday
 
-import dev.wishingtree.branch.macaroni.parsers.Reference.Parser
 import dev.wishingtree.branch.macaroni.parsers.{ParseError, Parsers, Reference}
 
 import scala.annotation.targetName
@@ -43,6 +42,21 @@ enum Json {
     *   the map of string keys to JSON values
     */
   case JsonObject(value: Map[String, Json])
+
+  override def toString: String = toJsonString
+
+  def toJsonString: String = this match {
+    case JsonNull           => "null"
+    case JsonBool(value)    => value.toString
+    case JsonNumber(value)  =>
+      if (value % 1 == 0) value.toInt.toString else value.toString
+    case JsonString(value)  => s""""$value""""
+    case JsonArray(values)  => values.map(_.toJsonString).mkString("[", ",", "]")
+    case JsonObject(values) =>
+      values
+        .map { case (k, v) => s""""$k":${v.toJsonString}""" }
+        .mkString("{", ",", "}")
+  }
 }
 
 object Json {
@@ -110,9 +124,11 @@ object Json {
     Json.obj(
       "message"    -> jsonOrNull(e.getMessage),
       "cause"      -> Json.throwable(e.getCause),
-      "suppressed" -> JsonArray(e.getSuppressed.map(e => Json.throwable(e))),
+      "suppressed" -> JsonArray(
+        e.getSuppressed.toIndexedSeq.map(e => Json.throwable(e))
+      ),
       "stackTrace" -> JsonArray(
-        e.getStackTrace.map(e => Json.stackTraceElement(e))
+        e.getStackTrace.toIndexedSeq.map(e => Json.stackTraceElement(e))
       )
     )
   }.getOrElse(JsonNull)
@@ -224,23 +240,6 @@ object Json {
     infix def objOpt: Option[Map[String, Json]] =
       Try(objVal).toOption
 
-    /** Convert the JSON value to a string representation
-      * @return
-      *   the string representation of the JSON value
-      */
-    infix def toJsonString: String = j match {
-      case JsonNull          => "null"
-      case JsonBool(value)   => value.toString
-      case JsonNumber(value) => value.toString
-      case JsonString(value) => "\"" + value + "\""
-      case JsonArray(value)  =>
-        "[" + value.map(_.toJsonString).mkString(", ") + "]"
-      case JsonObject(value) =>
-        "{" + value
-          .map { case (k, v) => "\"" + k + "\": " + v.toJsonString }
-          .mkString(", ") + "}"
-    }
-
   }
 
   extension (jo: Option[Json]) {
@@ -344,7 +343,8 @@ object Json {
     (whitespace *> (obj | array)).root
   }
 
-  private val defaultParser: Parser[Json] =
+  private val defaultParser
+      : dev.wishingtree.branch.macaroni.parsers.Reference.Parser[Json] =
     parser(Reference)
 
   import Reference.*

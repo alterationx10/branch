@@ -50,7 +50,6 @@ class CryptoSpec extends FunSuite {
 
   test("Crypto.base64Encode") {
     val bytes     = Array[Byte](1, 2, 3)
-    val str       = new String(bytes)
     val base64    = Crypto.base64Encode(bytes)
     val base64Str = new String(base64)
     assertEquals(base64, "AQID")
@@ -96,13 +95,47 @@ class CryptoSpec extends FunSuite {
   test("Crypto.generatePublicKey") {
     val key = Crypto.generatePublicKey()
     assertEquals(key.length, 16)
-//    assertEquals(Crypto.generatePublicKey(32).length, 32)
+    assertEquals(Crypto.generatePublicKey(32).length, 32)
   }
 
   test("Crypto.generatePrivateKey") {
     val key = Crypto.generatePrivateKey()
     assert(key.length == 32)
     assert(Crypto.generatePrivateKey(16).length == 16)
+  }
+
+  test("Crypto.base64Encode string") {
+    val str     = "Hello World"
+    val encoded = Crypto.base64Encode(str)
+    assertEquals(encoded, "SGVsbG8gV29ybGQ")
+  }
+
+  test("Crypto.aesEncrypt fails with invalid key length") {
+    val msg        = "test message"
+    val invalidKey = "too-short" // 9 chars
+    assert(Crypto.aesEncrypt(msg, invalidKey).isFailure)
+  }
+
+  test("Crypto.aesDecrypt fails with invalid key length") {
+    val encrypted  = "some-encrypted-data"
+    val invalidKey = "too-short"
+    assert(Crypto.aesDecrypt(encrypted, invalidKey).isFailure)
+  }
+
+  test("Crypto.generatePrivateKey handles backslash replacement") {
+    val key = Crypto.generatePrivateKey()
+    assert(!key.contains("\\"))
+  }
+
+  test("Crypto.generatePublicKey excludes invalid ranges") {
+    val key = Crypto.generatePublicKey(1000) // Large sample size
+    assert(!key.exists(c => (c >= 58 && c <= 64) || (c >= 91 && c <= 96)))
+  }
+
+  test("Crypto.validatePbkdf2Hash fails with wrong password") {
+    val password = "correct-password"
+    val hash     = Crypto.pbkdf2Hash(password)
+    assert(!Crypto.validatePbkdf2Hash("wrong-password", hash))
   }
 
 }

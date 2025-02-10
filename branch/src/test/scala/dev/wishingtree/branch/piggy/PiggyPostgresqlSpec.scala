@@ -152,4 +152,93 @@ class PiggyPostgresqlSpec extends PGContainerSuite {
     )
   }
 
+  test("Batch operations with different SQL types") {
+    given pool: PgConnectionPool = pgPool
+
+    val complexDDL = """
+      CREATE TABLE IF NOT EXISTS complex_types (
+        id SERIAL PRIMARY KEY,
+        int_val INT,
+        long_val BIGINT,
+        float_val REAL,
+        double_val DOUBLE PRECISION,
+        bool_val BOOLEAN,
+        string_val TEXT
+      )
+    """
+
+    case class ComplexRow(
+        id: Int,
+        intVal: Int,
+        longVal: Long,
+        floatVal: Float,
+        doubleVal: Double,
+        boolVal: Boolean,
+        stringVal: String
+    ) derives ResultSetParser
+
+    val insert = (r: ComplexRow) => ps"""
+      INSERT INTO complex_types 
+      (int_val, long_val, float_val, double_val, bool_val, string_val)
+      VALUES 
+      (${r.intVal}, ${r.longVal}, ${r.floatVal}, ${r.doubleVal}, 
+       ${r.boolVal}, ${r.stringVal})
+    """
+
+    val testRows = Seq(
+      ComplexRow(0, 42, 123L, 3.14f, 2.718, true, "hello"),
+      ComplexRow(
+        0,
+        -1,
+        Long.MaxValue,
+        Float.MinValue,
+        Double.MaxValue,
+        false,
+        "world"
+      )
+    )
+
+    val result = {
+      for {
+        _    <- Sql.statement(complexDDL)
+        n    <- Sql.prepareUpdate(insert, testRows*)
+        rows <- Sql.statement(
+                  "SELECT * FROM complex_types ORDER BY id",
+                  _.parsedList[ComplexRow]
+                )
+      } yield (n, rows)
+    }.executePool
+
+    assert(result.isSuccess)
+    assertEquals(result.get._1, 2)
+    assertEquals(result.get._2.size, 2)
+  }
+
+  test("Large result set handling") {
+    given pool: PgConnectionPool = pgPool
+
+    // Create test table with many rows
+    val setup = for {
+      _ <- Sql.statement(ddl)
+      _ <- Sql.statement("truncate table person")
+      n <- Sql.prepareUpdate(
+             ins,
+             (1 to 10000).map(i => Person(0, s"Person-$i", i))*
+           )
+    } yield n
+
+    assert(setup.executePool.isSuccess)
+
+    // Test retrieving large result set
+    val query = Sql.statement(
+      "SELECT * FROM person ORDER BY id",
+      _.parsedList[Person]
+    )
+
+    val result = query.executePool
+    assert(result.isSuccess)
+    assertEquals(result.get.size, 10000)
+    assert(result.get.map(_.name).distinct.size == 10000)
+  }
+
 }
