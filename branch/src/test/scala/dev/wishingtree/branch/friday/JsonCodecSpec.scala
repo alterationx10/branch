@@ -27,7 +27,6 @@ class JsonCodecSpec extends FunSuite {
 
   }
 
-
   test("JsonCodec.from constructor") {
     case class UserId(value: String)
     val codec = JsonCodec.from[UserId](

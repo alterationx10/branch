@@ -143,5 +143,4 @@ class JsonEncoderSpec extends FunSuite {
     )
   }
 
-
 }
