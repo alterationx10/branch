@@ -100,6 +100,7 @@ class PathOpsSpec extends FunSuite {
 
     intercept[MatchError] {
       // These should match but don't because of the empty string handling
+      // This is because the unapply calls toSeq which excludes empty strings
       pf(p"a/")
       pf(p"/b")
     }
