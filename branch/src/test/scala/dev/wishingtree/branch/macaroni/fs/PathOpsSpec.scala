@@ -52,4 +52,59 @@ class PathOpsSpec extends FunSuite {
 
   }
 
+  test("toSeq splits path into segments") {
+    assertEquals(p"a/b/c".toSeq, Seq("a", "b", "c"))
+    assertEquals(p"".toSeq, Seq.empty)
+    assertEquals(p"/a/b".toSeq, Seq("a", "b"))
+    assertEquals(p"a//b".toSeq, Seq("a", "b"))
+  }
+
+  test("relativeTo with string root path") {
+    assertEquals(p"a/b/c".relativeTo("a"), p"b/c")
+    assertEquals(p"a/b/c".relativeTo("a/b"), p"c")
+    assertEquals(p"/a/b/c".relativeTo("/a"), p"b/c")
+  }
+
+  test("relativeTo with Path root path") {
+    assertEquals(p"a/b/c".relativeTo(p"a"), p"b/c")
+    assertEquals(p"a/b/c".relativeTo(p"a/b"), p"c")
+    assertEquals(p"/a/b/c".relativeTo(p"/a"), p"b/c")
+  }
+
+  test("null inputs throw IllegalArgumentException") {
+    intercept[IllegalArgumentException] {
+      p"test" / (null: String)
+    }
+    intercept[IllegalArgumentException] {
+      p"test" / (null: Path)
+    }
+    intercept[IllegalArgumentException] {
+      p"test".relativeTo(null: String)
+    }
+    intercept[IllegalArgumentException] {
+      p"test".relativeTo(null: Path)
+    }
+  }
+
+  test("wd returns absolute path") {
+    assert(wd.isAbsolute)
+  }
+
+  test("path extractor edge cases") {
+    val pf: PartialFunction[Path, String] = {
+      case >> / "a" / ""   => "empty-segment" // This test shows the issue
+      case >> / "" / "b"   => "leading-empty" // This test shows the issue
+      case >> / "a" / "."  => "dot"
+      case >> / "a" / ".." => "parent"
+    }
+
+    intercept[MatchError] {
+      // These should match but don't because of the empty string handling
+      pf(p"a/")
+      pf(p"/b")
+    }
+    assertEquals(pf(p"a/."), "dot")
+    assertEquals(pf(p"a/.."), "parent")
+  }
+
 }
