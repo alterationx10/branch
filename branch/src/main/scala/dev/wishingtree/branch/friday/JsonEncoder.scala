@@ -119,6 +119,12 @@ object JsonEncoder {
     def encode(a: Instant): Json = JsonString(a.toString)
   }
 
+  /** A JsonEncoder for BigDecimals
+    */
+  given JsonEncoder[BigDecimal] with {
+    def encode(a: BigDecimal): Json = Json.JsonNumber(a.doubleValue)
+  }
+
   /** Helper method for collection/iterable JsonEncoders
     * @param jsonEncoder
     *   the JsonEncoder for the element type

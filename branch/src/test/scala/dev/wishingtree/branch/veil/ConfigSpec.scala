@@ -29,4 +29,30 @@ class ConfigSpec extends FileFixtureSuite {
     } yield assertEquals(config, AppConfig2("localhost", 9000))
   }
 
+  test("Config.fromFile fails with non-existent file") {
+    val result = Config.of[AppConfig].fromFile("non-existent-file.json")
+    assert(result.isFailure)
+  }
+
+  val malformedJson = """{"host":"localhost","port":}"""
+  fileWithContent(malformedJson).test(
+    "Config.fromFile fails with malformed JSON"
+  ) { file =>
+    val result = Config.of[AppConfig].fromFile(file)
+    assert(result.isFailure)
+  }
+
+  test("Config.fromResource fails with non-existent resource") {
+    val result = Config.of[AppConfig].fromResource("non-existent-config.json")
+    assert(result.isFailure)
+  }
+
+  val jsonForStringPath = """{"host":"localhost","port":9000}"""
+  fileWithContent(jsonForStringPath).test("Config.fromFile with string path") {
+    file =>
+      for {
+        config <- Config.of[AppConfig].fromFile(file.toString)
+      } yield assertEquals(config, AppConfig("localhost", 9000))
+  }
+
 }

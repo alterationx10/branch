@@ -48,12 +48,13 @@ enum Json {
   def toJsonString: String = this match {
     case JsonNull           => "null"
     case JsonBool(value)    => value.toString
-    case JsonNumber(value)  => value.toString
+    case JsonNumber(value)  =>
+      if (value % 1 == 0) value.toInt.toString else value.toString
     case JsonString(value)  => s""""$value""""
     case JsonArray(values)  => values.map(_.toJsonString).mkString("[", ",", "]")
     case JsonObject(values) =>
       values
-        .map { case (k, v) => s""""$k": ${v.toJsonString}""" }
+        .map { case (k, v) => s""""$k":${v.toJsonString}""" }
         .mkString("{", ",", "}")
   }
 }

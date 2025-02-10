@@ -99,16 +99,12 @@ object JsonCodec {
     new DerivedCodec[A](encoder, decoder)
   }
 
-  // Type aliases for cleaner signatures
-  type Decoder[A] = Json => Try[A]
-  type Encoder[A] = A => Json
-
   /** Creates a JsonCodec from explicit encode/decode functions
     */
-  def from[A](decode: Decoder[A], encode: Encoder[A]): JsonCodec[A] =
-    new JsonCodec[A] {
-      def encoder: JsonEncoder[A] = JsonEncoder.from(this.encode)
-      def decoder: JsonDecoder[A] = JsonDecoder.from(this.decode)
-    }
+  def from[A](decode: Json => Try[A], encode: A => Json): JsonCodec[A] =
+    new DerivedCodec[A](
+      JsonEncoder.from(encode),
+      JsonDecoder.from(decode)
+    )
 
 }
