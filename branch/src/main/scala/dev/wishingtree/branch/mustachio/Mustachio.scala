@@ -396,18 +396,22 @@ object Mustachio {
                   partials ? partial match {
                     case Some(Stache.Str(str)) =>
                       if isStandalone then {
-                        // Indent each line of the content, including the last line if it doesn't end with a newline
-                        val lines         = str.split("\n", -1)
-                        val indentedLines = lines.zipWithIndex.map {
-                          case (line, idx) =>
-                            if idx == 0 || line.isEmpty then line
-                            else s"$preceding$line"
-                        }
-                        val indented      = indentedLines.mkString("\n")
+                        val indented = str
+                          .replaceAll("\n", s"\n$preceding")
+                        if indented.endsWith(s"\n$preceding") then {
+                          if !delimiter.isDefault
+                          then
+                            Delimiter.replaceDefaultWith(
+                              indented.dropRight(preceding.length),
+                              delimiter
+                            )
+                          else indented.dropRight(preceding.length)
 
-                        if !delimiter.isDefault then
-                          Delimiter.replaceDefaultWith(indented, delimiter)
-                        else indented
+                        } else {
+                          if !delimiter.isDefault then
+                            Delimiter.replaceDefaultWith(indented, delimiter)
+                          else indented
+                        }
                       } else {
                         if !delimiter.isDefault then
                           Delimiter.replaceDefaultWith(str, delimiter)
