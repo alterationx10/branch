@@ -43,7 +43,7 @@ enum Json {
     */
   case JsonObject(value: Map[String, Json])
 
-  override def toString(): String = toJsonString
+  override def toString: String = toJsonString
 
   def toJsonString: String = this match {
     case JsonNull           => "null"
@@ -53,7 +53,7 @@ enum Json {
     case JsonArray(values)  => values.map(_.toJsonString).mkString("[", ",", "]")
     case JsonObject(values) =>
       values
-        .map { case (k, v) => s""""$k":${v.toJsonString}""" }
+        .map { case (k, v) => s""""$k": ${v.toJsonString}""" }
         .mkString("{", ",", "}")
   }
 }
