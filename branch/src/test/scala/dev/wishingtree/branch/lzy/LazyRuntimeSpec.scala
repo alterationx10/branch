@@ -33,7 +33,7 @@ class LazyRuntimeSpec extends FunSuite {
   ) {
     assert(
       LazyRuntime.runSync(
-        Lazy.sleep(10 milliseconds),
+        Lazy.sleep(100 milliseconds),
         1 milliseconds
       ) match {
         case Failure(e: TimeoutException) => true
@@ -43,7 +43,7 @@ class LazyRuntimeSpec extends FunSuite {
   }
 
   test(
-    "LazyRuntime.runSync() doesn't times out when appropriate"
+    "LazyRuntime.runSync() doesn't time out when appropriate"
   ) {
     assert(
       LazyRuntime
