@@ -20,10 +20,11 @@ enum SlidingDirection {
 class SlidingPanel(
     val direction: SlidingDirection,
     val panelSize: Int,
-    initiallyVisible: Boolean = false
+    initiallyExtended: Boolean = false
 ) extends JPanel {
 
-  private var isPanelVisible        = initiallyVisible
+  private var isPanelVisible        = initiallyExtended
+  def isExtended: Boolean           = isPanelVisible
   private var animationTimer: Timer = scala.compiletime.uninitialized
   private def isAnimating: Boolean  =
     animationTimer != null && animationTimer.isRunning
@@ -75,7 +76,6 @@ class SlidingPanel(
       case Some(parent) =>
         direction match {
           case Horizontal => {
-            // Allow any width to be set during animation
             val width =
               if (isAnimating || isPanelVisible) {
                 preferredSize.width
@@ -85,7 +85,6 @@ class SlidingPanel(
             super.setPreferredSize(new Dimension(width, parent.getHeight))
           }
           case Vertical   => {
-            // Allow any height to be set during animation
             val height =
               if (isAnimating || isPanelVisible) {
                 preferredSize.height
@@ -187,13 +186,6 @@ class SlidingPanel(
     val parent = getParent
     if (parent == null) return
 
-    val targetSize = direction match {
-      case Horizontal =>
-        new Dimension(0, parent.getHeight)
-      case Vertical   =>
-        new Dimension(parent.getWidth, 0)
-    }
-
     val currentSize = getPreferredSize
     val stepSize    = direction match {
       case Horizontal =>
@@ -251,24 +243,4 @@ class SlidingPanel(
     if (isPanelVisible) slideOut() else slideIn()
   }
 
-  /** Returns whether the panel is currently visible.
-    */
-  def isSlideVisible: Boolean = isPanelVisible
-
-  /** Sets the panel visible or hidden immediately without animation
-    */
-  def setSlideVisible(visible: Boolean): Unit = {
-    if (animationTimer != null) {
-      animationTimer.stop()
-    }
-
-    isPanelVisible = visible
-    setPreferredSize(Dimension(panelSize, panelSize)) // One will be ignored
-
-    val parent = getParent
-    if (parent != null) {
-      parent.revalidate()
-      parent.repaint()
-    }
-  }
 }
