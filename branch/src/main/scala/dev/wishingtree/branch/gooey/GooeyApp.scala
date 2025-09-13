@@ -1,5 +1,7 @@
 package dev.wishingtree.branch.gooey
 
+import dev.wishingtree.branch.gooey.SlidingDirection.{Horizontal, Vertical}
+
 import javax.swing.*
 import java.awt.*
 import scala.util.Try
@@ -63,26 +65,26 @@ trait GooeyApp {
     panel.add(southPanel, BorderLayout.SOUTH)
     panel
   }
-  
+
   def westContent: Component = new JPanel()
   val westPanelSize: Int     = 150
   final lazy val westPanel   =
-    new SlidingPanel(BorderLayout.WEST, westPanelSize)
+    new SlidingPanel(Horizontal, westPanelSize)
 
   def eastContent: Component = new JPanel()
   val eastPanelSize: Int     = 150
   final lazy val eastPanel   =
-    new SlidingPanel(BorderLayout.EAST, eastPanelSize)
+    new SlidingPanel(Horizontal, eastPanelSize)
 
   def northContent: Component = new JPanel()
   val northPanelSize: Int     = 50
   final lazy val northPanel   =
-    new SlidingPanel(BorderLayout.NORTH, northPanelSize)
+    new SlidingPanel(Vertical, northPanelSize, true)
 
   def southContent: Component = new JPanel()
   val southPanelSize: Int     = 50
   final lazy val southPanel   =
-    new SlidingPanel(BorderLayout.SOUTH, southPanelSize)
+    new SlidingPanel(Vertical, southPanelSize)
 
   lazy val rootFrame: JFrame = configureRootFrame {
     val frame = new JFrame(appTitle)
@@ -194,8 +196,8 @@ object GooeyDemo extends GooeyApp {
     // Button panel at the bottom
     val buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER))
     buttonPanel.add(westToggleButton)
-    buttonPanel.add(eastToggleButton)
-//    buttonPanel.add(northToggleButton)
+//    buttonPanel.add(eastToggleButton)
+    buttonPanel.add(northToggleButton)
 //    buttonPanel.add(southToggleButton)
 
     // Add button panel to the bottom of the center content
