@@ -9,14 +9,12 @@ import javax.swing.*
  * 
  * @param direction The direction from which the panel slides in
  * @param content The content to display in the panel
- * @param panelWidth The width of the panel (for EAST/WEST)
- * @param panelHeight The height of the panel (for NORTH/SOUTH)
+ * @param panelSize The size of the panel (width for EAST/WEST, height for NORTH/SOUTH)
  */
 class SlidingPanel(
     val direction: String,
     content: Component,
-    val panelWidth: Int = 250,
-    val panelHeight: Int = 150
+    val panelSize: Int
 ) extends JPanel {
 
   private val contentPanel = new JPanel(new BorderLayout())
@@ -84,13 +82,13 @@ class SlidingPanel(
       direction match {
         case BorderLayout.WEST | BorderLayout.EAST =>
           if (isPanelVisible) {
-            setPreferredSize(new Dimension(panelWidth, parent.getHeight))
+            setPreferredSize(new Dimension(panelSize, parent.getHeight))
           } else {
             setPreferredSize(new Dimension(0, parent.getHeight))
           }
         case BorderLayout.NORTH | BorderLayout.SOUTH =>
           if (isPanelVisible) {
-            setPreferredSize(new Dimension(parent.getWidth, panelHeight))
+            setPreferredSize(new Dimension(parent.getWidth, panelSize))
           } else {
             setPreferredSize(new Dimension(parent.getWidth, 0))
           }
@@ -116,8 +114,8 @@ class SlidingPanel(
     if (parent == null) return
 
     val targetSize = direction match {
-      case BorderLayout.WEST | BorderLayout.EAST => new Dimension(panelWidth, parent.getHeight)
-      case BorderLayout.NORTH | BorderLayout.SOUTH => new Dimension(parent.getWidth, panelHeight)
+      case BorderLayout.WEST | BorderLayout.EAST => new Dimension(panelSize, parent.getHeight)
+      case BorderLayout.NORTH | BorderLayout.SOUTH => new Dimension(parent.getWidth, panelSize)
     }
 
     val currentSize = getPreferredSize()
@@ -183,7 +181,7 @@ class SlidingPanel(
       case BorderLayout.NORTH | BorderLayout.SOUTH => new Dimension(parent.getWidth, 0)
     }
 
-    val currentSize = getPreferredSize()
+    val currentSize = getPreferredSize
     val stepSize = direction match {
       case BorderLayout.WEST | BorderLayout.EAST => 
         currentSize.width / animationSteps.toDouble
