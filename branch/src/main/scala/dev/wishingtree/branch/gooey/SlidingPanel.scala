@@ -1,26 +1,32 @@
 package dev.wishingtree.branch.gooey
 
+import dev.wishingtree.branch.gooey.SlidingDirection.{Horizontal, Vertical}
+
 import java.awt.*
 import java.awt.event.*
 import javax.swing.*
+
+enum SlidingDirection {
+  case Horizontal, Vertical
+}
 
 /** A panel that can slide in and out of view with animation.
   *
   * @param direction
   *   The direction from which the panel slides in
-  * @param content
-  *   The content to display in the panel
   * @param panelSize
   *   The size of the panel (width for EAST/WEST, height for NORTH/SOUTH)
   */
 class SlidingPanel(
-    val direction: String,
+    val direction: SlidingDirection,
     val panelSize: Int,
     initiallyVisible: Boolean = false
 ) extends JPanel {
 
   private var isPanelVisible        = initiallyVisible
   private var animationTimer: Timer = scala.compiletime.uninitialized
+  private def isAnimating: Boolean  =
+    animationTimer != null && animationTimer.isRunning
   private val animationDuration     = 250 // milliseconds
   private val animationSteps        = 60
   private val stepDelay             = animationDuration / animationSteps
@@ -36,14 +42,7 @@ class SlidingPanel(
   setMinimumSize(new Dimension(0, 0))
 
   // Set initial size and visibility
-  direction match {
-    case BorderLayout.WEST | BorderLayout.EAST   =>
-      setPreferredSize(new Dimension(0, 0))
-    case BorderLayout.NORTH | BorderLayout.SOUTH =>
-      setPreferredSize(new Dimension(0, 0))
-    case _                                       =>
-      throw new IllegalArgumentException(s"Unsupported direction: $direction")
-  }
+  setPreferredSize(Dimension(panelSize, panelSize))
 
   // Set up container hierarchy listener to attach resize handler
   private val hListener = new HierarchyListener {
@@ -75,29 +74,29 @@ class SlidingPanel(
     Option(getParent) match {
       case Some(parent) =>
         direction match {
-          case BorderLayout.WEST | BorderLayout.EAST   => {
-            if (isPanelVisible) {
-              super.setPreferredSize(
-                new Dimension(preferredSize.width, parent.getHeight)
-              )
-            } else {
-              super.setPreferredSize(new Dimension(0, parent.getHeight))
-            }
+          case Horizontal => {
+            // Allow any width to be set during animation
+            val width =
+              if (isAnimating || isPanelVisible) {
+                preferredSize.width
+              } else {
+                0
+              }
+            super.setPreferredSize(new Dimension(width, parent.getHeight))
           }
-          case BorderLayout.NORTH | BorderLayout.SOUTH => {
-            if (isPanelVisible) {
-              super.setPreferredSize(
-                new Dimension(parent.getWidth, preferredSize.height)
-              )
-            } else {
-              super.setPreferredSize(new Dimension(parent.getWidth, 0))
-            }
+          case Vertical   => {
+            // Allow any height to be set during animation
+            val height =
+              if (isAnimating || isPanelVisible) {
+                preferredSize.height
+              } else {
+                0
+              }
+            super.setPreferredSize(new Dimension(parent.getWidth, height))
           }
-          case _                                       => super.setPreferredSize(Dimension(0, 0))
         }
-      case None         => super.setPreferredSize(Dimension(0, 0))
+      case None         => super.setPreferredSize(preferredSize)
     }
-
   }
 
   /** Slides the panel into view with animation.
@@ -114,17 +113,17 @@ class SlidingPanel(
     if (parent == null) return
 
     val targetSize = direction match {
-      case BorderLayout.WEST | BorderLayout.EAST   =>
+      case Horizontal =>
         new Dimension(panelSize, parent.getHeight)
-      case BorderLayout.NORTH | BorderLayout.SOUTH =>
+      case Vertical   =>
         new Dimension(parent.getWidth, panelSize)
     }
 
-    val currentSize = getPreferredSize()
+    val currentSize = getPreferredSize
     val stepSize    = direction match {
-      case BorderLayout.WEST | BorderLayout.EAST   =>
+      case Horizontal =>
         (targetSize.width - currentSize.width) / animationSteps.toDouble
-      case BorderLayout.NORTH | BorderLayout.SOUTH =>
+      case Vertical   =>
         (targetSize.height - currentSize.height) / animationSteps.toDouble
     }
 
@@ -144,13 +143,13 @@ class SlidingPanel(
           }
 
           direction match {
-            case BorderLayout.WEST | BorderLayout.EAST   =>
+            case Horizontal =>
               val newWidth = Math.min(
                 targetSize.width,
                 currentSize.width + (step * stepSize).toInt
               )
               setPreferredSize(new Dimension(newWidth, parent.getHeight))
-            case BorderLayout.NORTH | BorderLayout.SOUTH =>
+            case Vertical   =>
               val newHeight = Math.min(
                 targetSize.height,
                 currentSize.height + (step * stepSize).toInt
@@ -189,17 +188,17 @@ class SlidingPanel(
     if (parent == null) return
 
     val targetSize = direction match {
-      case BorderLayout.WEST | BorderLayout.EAST   =>
+      case Horizontal =>
         new Dimension(0, parent.getHeight)
-      case BorderLayout.NORTH | BorderLayout.SOUTH =>
+      case Vertical   =>
         new Dimension(parent.getWidth, 0)
     }
 
     val currentSize = getPreferredSize
     val stepSize    = direction match {
-      case BorderLayout.WEST | BorderLayout.EAST   =>
+      case Horizontal =>
         currentSize.width / animationSteps.toDouble
-      case BorderLayout.NORTH | BorderLayout.SOUTH =>
+      case Vertical   =>
         currentSize.height / animationSteps.toDouble
     }
 
@@ -219,11 +218,11 @@ class SlidingPanel(
           }
 
           direction match {
-            case BorderLayout.WEST | BorderLayout.EAST   =>
+            case Horizontal =>
               val newWidth =
                 Math.max(0, currentSize.width - (step * stepSize).toInt)
               setPreferredSize(new Dimension(newWidth, parent.getHeight))
-            case BorderLayout.NORTH | BorderLayout.SOUTH =>
+            case Vertical   =>
               val newHeight =
                 Math.max(0, currentSize.height - (step * stepSize).toInt)
               setPreferredSize(new Dimension(parent.getWidth, newHeight))
