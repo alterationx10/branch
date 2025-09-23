@@ -35,6 +35,7 @@ jobs:
         run: sbt publishSigned
         env:
           BRANCH_VERSION: ${{ env.BRANCH_VERSION }}
+          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
 
       - name: ZIP
         run: |
