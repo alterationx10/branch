@@ -1,5 +1,6 @@
 package dev.wishingtree.branch.lzy
 
+import java.io.{PipedInputStream, PipedOutputStream}
 import java.time.{Clock, Instant}
 import java.util
 import java.util.logging.{Level, Logger}
@@ -8,7 +9,7 @@ import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
-import scala.util.Try
+import scala.util.{Try, Using}
 import scala.util.Using.Releasable
 
 sealed trait Lazy[+A] {
@@ -353,6 +354,14 @@ object Lazy {
         f(r)
       }
     }
+
+  def usingManager[A](f: Using.Manager => A): Lazy[A] = {
+    Lazy.fromTry {
+      Using.Manager { manager =>
+        f(manager)
+      }
+    }
+  }
 
   /** Evaluates the lzy function when the condition is true, mapping the result
     * to Some, or None if the condition is false

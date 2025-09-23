@@ -4,6 +4,7 @@ import dev.wishingtree.branch.macaroni.runtimes.BranchExecutors
 import dev.wishingtree.branch.testkit.fixtures.LoggerFixtureSuite
 import munit.FunSuite
 
+import java.io.{PipedInputStream, PipedOutputStream}
 import java.time.*
 import java.util.logging.Logger
 import scala.concurrent.ExecutionContext
@@ -370,4 +371,16 @@ class LazySpec extends LoggerFixtureSuite {
 
   }
 
+  test("Lazy.usingManager") {
+    val expected = "testing 123"
+    for {
+      managed <- Lazy
+                   .usingManager { manager =>
+                     val in  = manager(new PipedInputStream())
+                     val out = manager(new PipedOutputStream(in))
+                     out.write(expected.getBytes)
+                     new String(in.readNBytes(expected.length))
+                   }
+    } yield assert(managed.equals(expected))
+  }
 }
