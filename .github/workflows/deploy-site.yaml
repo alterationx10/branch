@@ -28,7 +28,7 @@ jobs:
 
       - name: Install blarg
         run: |
-          curl -fLO https://github.com/wishingtreedev/blarg/releases/download/v${BLARG_VERSION}/blarg-linux-x64-v${BLARG_VERSION}.zip 
+          curl -fLO https://github.com/alterationx0/blarg/releases/download/v${BLARG_VERSION}/blarg-linux-x64-v${BLARG_VERSION}.zip 
           unzip -o blarg-linux-x64-v${BLARG_VERSION}.zip
           chmod +x blarg
 

@@ -1,12 +1,12 @@
 ThisBuild / scalaVersion := "3.5.2"
 
-ThisBuild / organization         := "dev.wishingtree"
+ThisBuild / organization         := "dev.alteration"
 ThisBuild / organizationName     := "Wishing Tree"
 ThisBuild / organizationHomepage := Some(
-  url("https://github.com/wishingtreedev")
+  url("https://github.com/alterationx10")
 )
 ThisBuild / homepage             := Some(
-  url("https://github.com/wishingtreedev/branch")
+  url("https://github.com/alterationx10/branch")
 )
 ThisBuild / description          := "A zero-dependency Scala framework"
 ThisBuild / licenses             := List(
@@ -14,9 +14,9 @@ ThisBuild / licenses             := List(
 )
 ThisBuild / scmInfo              := Some(
   ScmInfo(
-    url("https://github.com/wishingtreedev/branch"),
-    "scm:git:git@githb.com:wishingtreedev/branch.git",
-    Some("scm:git:git@github.com:wishingtreedev/branch.git")
+    url("https://github.com/alterationx10/branch"),
+    "scm:git:git@githb.com:alterationx10/branch.git",
+    Some("scm:git:git@github.com:alterationx10/branch.git")
   )
 )
 ThisBuild / developers           := List(
@@ -73,5 +73,5 @@ lazy val branch = project
     ).map(_ % Test)
   )
 
-addCommandAlias("fmt", "scalafmt")
-addCommandAlias("fix", "scalafix")
+addCommandAlias("fmt", "scalafmtAll")
+addCommandAlias("fix", "scalafixAll")
