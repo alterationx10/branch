@@ -20,8 +20,7 @@ jobs:
         env:
           GPG_KEY: ${{ secrets.GPG_KEY }}
         run: |
-          export GPG_TTY=$(tty)
-          echo -n "$GPG_KEY" | gpg --import
+          echo -n "$GPG_KEY" | gpg --batch --yes --import
 
       - uses: actions/setup-java@v4
         with:
