@@ -23,7 +23,7 @@ ThisBuild / developers           := List(
   Developer(
     id = "alterationx10",
     name = "Mark Rudolph",
-    email = "mark@k8ty.app",
+    email = "mark@alteration.dev",
     url = url("https://alterationx10.com/")
   )
 )
@@ -36,7 +36,7 @@ ThisBuild / publishTo     := Some(
 credentials += Credentials(
   "GnuPG Key ID",
   "gpg",
-  "401126ef4e40ebab",
+  "0AD2D8FBE323DED1",
   ""
 )
 
