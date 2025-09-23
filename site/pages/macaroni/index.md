@@ -51,7 +51,7 @@ Key components:
 Example usage:
 
 ```scala
-import dev.wishingtree.branch.macaroni.parsers.{Parsers, Reference}
+import dev.alteration.branch.macaroni.parsers.{Parsers, Reference}
 
 // Create a simple parser
 val parser = Reference.string("hello")
@@ -73,7 +73,7 @@ The `ResourcePool[R]` trait provides a simple way to manage pools of reusable re
 To implement a resource pool:
 
 ```scala
-import dev.wishingtree.branch.macaroni.pool.ResourcePool
+import dev.alteration.branch.macaroni.pool.ResourcePool
 
 class DatabasePool extends ResourcePool[Connection] {
   def acquire: Connection = // Create new connection
@@ -90,7 +90,7 @@ class DatabasePool extends ResourcePool[Connection] {
 The `fs` package provides convenient filesystem utilities through the `PathOps` object:
 
 ```scala
-import dev.wishingtree.branch.macaroni.fs.PathOps.*
+import dev.alteration.branch.macaroni.fs.PathOps.*
 
 // Get working directory
 val wd: Path = PathOps.wd
@@ -136,7 +136,7 @@ The `crypto` package provides common cryptographic operations:
 Example usage:
 
 ```scala
-import dev.wishingtree.branch.macaroni.crypto.Crypto
+import dev.alteration.branch.macaroni.crypto.Crypto
 
 // Generate random keys
 val publicKey = Crypto.generatePublicKey(16)  // 16-char key using limited ASCII range
@@ -168,7 +168,7 @@ val decoded = Crypto.base64Decode(encoded) // "hello world"
 The `runtimes` package provides execution contexts and executor services that use Java 21's virtual threads:
 
 ```scala
-import dev.wishingtree.branch.macaroni.runtimes.BranchExecutors
+import dev.alteration.branch.macaroni.runtimes.BranchExecutors
 
 // Get the global virtual thread executor
 val executor = BranchExecutors.executorService

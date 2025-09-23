@@ -33,7 +33,7 @@ The library fully supports the core Mustache specification features:
 Basic usage example:
 
 ```scala
-import dev.wishingtree.branch.mustachio.{Mustachio, Stache}
+import dev.alteration.branch.mustachio.{Mustachio, Stache}
 
 // Create context
 val context = Stache.obj(
@@ -73,7 +73,7 @@ Mustachio.render(template, context, Some(partials))
 The library provides convenient JSON integration through the `Stache.fromJson` method using the [Friday JSON library](../friday/index.md):
 
 ```scala
-import dev.wishingtree.branch.friday.Json
+import dev.alteration.branch.friday.Json
 
 val jsonContext = Json.obj(
   "name" -> Json.str("John"),
