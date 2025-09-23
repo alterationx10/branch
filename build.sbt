@@ -67,9 +67,9 @@ lazy val branch = project
   .settings(
     name := "branch",
     libraryDependencies ++= Seq(
-      "org.scalameta"     %% "munit"          % "1.1.0",
-      "org.testcontainers" % "testcontainers" % "1.20.4",
-      "org.postgresql"     % "postgresql"     % "42.7.5"
+      "org.scalameta"     %% "munit"          % "1.2.0",
+      "org.testcontainers" % "testcontainers" % "1.21.3",
+      "org.postgresql"     % "postgresql"     % "42.7.8"
     ).map(_ % Test)
   )
 
