@@ -3,7 +3,6 @@ package dev.alteration.branch.lzy
 import scala.annotation.tailrec
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
-import scala.jdk.FutureConverters.*
 import scala.util.Try
 
 private[lzy] trait LazyRuntime {

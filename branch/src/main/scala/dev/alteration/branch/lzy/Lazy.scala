@@ -1,7 +1,6 @@
 package dev.alteration.branch.lzy
 
 import java.time.{Clock, Instant}
-import java.util
 import java.util.logging.{Level, Logger}
 import scala.annotation.targetName
 import scala.collection.mutable

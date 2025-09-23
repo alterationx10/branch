@@ -2,7 +2,6 @@ package dev.alteration.branch.piggy
 
 import java.sql.ResultSet
 import java.util.UUID
-import scala.compiletime.summonInline
 
 /** Trait for getting values from a `ResultSet` by column name or index.
   * @tparam A
