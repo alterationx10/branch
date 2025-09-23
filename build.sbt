@@ -1,7 +1,7 @@
 ThisBuild / scalaVersion := "3.7.3"
 
 ThisBuild / organization         := "dev.alteration"
-ThisBuild / organizationName     := "Wishing Tree"
+ThisBuild / organizationName     := "alterationx10"
 ThisBuild / organizationHomepage := Some(
   url("https://github.com/alterationx10")
 )
