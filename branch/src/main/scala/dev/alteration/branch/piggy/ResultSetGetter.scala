@@ -2,6 +2,7 @@ package dev.alteration.branch.piggy
 
 import java.sql.ResultSet
 import java.util.UUID
+import scala.compiletime.summonInline
 
 /** Trait for getting values from a `ResultSet` by column name or index.
   * @tparam A
@@ -44,7 +45,7 @@ object ResultSetGetter {
   }
 
   /** `ResultSetGetter` instance for `UUID` values. */
-  given ResultSetGetter[UUID] =
+  inline given ResultSetGetter[UUID] =
     summonInline[ResultSetGetter[String]].map(UUID.fromString)
 
   /** `ResultSetGetter` instance for `Int` values. */
@@ -128,7 +129,7 @@ object ResultSetGetter {
   }
 
   /** `ResultSetGetter` instance for `java.time.Instant` values. */
-  given ResultSetGetter[java.time.Instant] =
+  inline given ResultSetGetter[java.time.Instant] =
     summonInline[ResultSetGetter[java.sql.Timestamp]].map(_.toInstant)
 
   /** `ResultSetGetter` instance for `java.sql.Time` values. */
