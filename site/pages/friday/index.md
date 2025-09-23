@@ -127,7 +127,7 @@ given JsonDecoder[String] with {
 Common decoders are provided and can be imported with:
 
 ```scala
-import dev.wishingtree.branch.friday.JsonDecoder.given
+import dev.alteration.branch.friday.JsonDecoder.given
 ```
 
 Auto derivation is supported for `Product` types (case classes):
@@ -159,7 +159,7 @@ given JsonEncoder[String] with {
 Common encoders are provided and can be imported with:
 
 ```scala
-import dev.wishingtree.branch.friday.JsonEncoder.given
+import dev.alteration.branch.friday.JsonEncoder.given
 ```
 
 Auto derivation works the same as with decoders:

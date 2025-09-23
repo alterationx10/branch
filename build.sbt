@@ -1,12 +1,12 @@
-ThisBuild / scalaVersion := "3.5.2"
+ThisBuild / scalaVersion := "3.7.3"
 
-ThisBuild / organization         := "dev.wishingtree"
-ThisBuild / organizationName     := "Wishing Tree"
+ThisBuild / organization         := "dev.alteration"
+ThisBuild / organizationName     := "alterationx10"
 ThisBuild / organizationHomepage := Some(
-  url("https://github.com/wishingtreedev")
+  url("https://github.com/alterationx10")
 )
 ThisBuild / homepage             := Some(
-  url("https://github.com/wishingtreedev/branch")
+  url("https://github.com/alterationx10/branch")
 )
 ThisBuild / description          := "A zero-dependency Scala framework"
 ThisBuild / licenses             := List(
@@ -14,16 +14,16 @@ ThisBuild / licenses             := List(
 )
 ThisBuild / scmInfo              := Some(
   ScmInfo(
-    url("https://github.com/wishingtreedev/branch"),
-    "scm:git:git@githb.com:wishingtreedev/branch.git",
-    Some("scm:git:git@github.com:wishingtreedev/branch.git")
+    url("https://github.com/alterationx10/branch"),
+    "scm:git:git@githb.com:alterationx10/branch.git",
+    Some("scm:git:git@github.com:alterationx10/branch.git")
   )
 )
 ThisBuild / developers           := List(
   Developer(
     id = "alterationx10",
     name = "Mark Rudolph",
-    email = "mark@k8ty.app",
+    email = "mark@alteration.dev",
     url = url("https://alterationx10.com/")
   )
 )
@@ -36,7 +36,7 @@ ThisBuild / publishTo     := Some(
 credentials += Credentials(
   "GnuPG Key ID",
   "gpg",
-  "401126ef4e40ebab",
+  "0AD2D8FBE323DED1",
   ""
 )
 
@@ -67,11 +67,11 @@ lazy val branch = project
   .settings(
     name := "branch",
     libraryDependencies ++= Seq(
-      "org.scalameta"     %% "munit"          % "1.1.0",
-      "org.testcontainers" % "testcontainers" % "1.20.4",
-      "org.postgresql"     % "postgresql"     % "42.7.5"
+      "org.scalameta"     %% "munit"          % "1.2.0",
+      "org.testcontainers" % "testcontainers" % "1.21.3",
+      "org.postgresql"     % "postgresql"     % "42.7.8"
     ).map(_ % Test)
   )
 
-addCommandAlias("fmt", "scalafmt")
-addCommandAlias("fix", "scalafix")
+addCommandAlias("fmt", "scalafmtAll")
+addCommandAlias("fix", "scalafixAll")

@@ -61,7 +61,7 @@ class MyService extends JsonConsoleLogger {
 
 ```scala
 import java.util.logging.{Logger, ConsoleHandler}
-import dev.wishingtree.branch.blammo.JsonFormatter
+import dev.alteration.branch.blammo.JsonFormatter
 
 val logger = Logger.getLogger("MyApp")
 val handler = new ConsoleHandler()
@@ -72,7 +72,7 @@ logger.addHandler(handler)
 ### Using the JsonConsoleLogger Trait
 
 ```scala
-import dev.wishingtree.branch.blammo.JsonConsoleLogger
+import dev.alteration.branch.blammo.JsonConsoleLogger
 
 class MyApp extends JsonConsoleLogger {
   def start(): Unit = {
@@ -101,8 +101,8 @@ Blammo works seamlessly with other Branch libraries:
 You can customize the JSON output format by extending the `Formatter` class and overriding the `format` method similar to how the `JsonFormatter` works:
 
 ```scala
-import dev.wishingtree.branch.friday.Json
-import dev.wishingtree.branch.friday.Json.*
+import dev.alteration.branch.friday.Json
+import dev.alteration.branch.friday.Json.*
 import java.util.logging.{Formatter, LogRecord}
 
 class CustomJsonFormatter extends Formatter {
