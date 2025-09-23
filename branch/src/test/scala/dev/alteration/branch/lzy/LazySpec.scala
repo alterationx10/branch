@@ -383,4 +383,57 @@ class LazySpec extends LoggerFixtureSuite {
                    }
     } yield assert(managed.equals(expected))
   }
+
+  test("Lazy.managed") {
+    val expected = "testing 123"
+    val managed  = Lazy.usingManager { implicit manager =>
+      {
+        for {
+          in   <- Lazy.managed(new PipedInputStream())
+          out  <- Lazy.managed(new PipedOutputStream(in))
+          _    <- Lazy.fn(out.write(expected.getBytes))
+          read <- Lazy.fn(in.readNBytes(expected.length))
+        } yield new String(read)
+      }.runSync()
+      // If we don't runSync() here,
+      // the manager will close the resources before they can be used.
+      // This is true for anything "async" with Lazy.usingManager
+    }
+    managed.map { t =>
+      assert(t.get.equals(expected))
+    }
+  }
+
+  test("Lazy.until result conditional") {
+
+    def rnd = Lazy
+      .fn(Math.random() * 10)
+      .map(_.toInt)
+
+    for {
+      one   <- rnd.until(_ == 1)
+      three <- rnd.until(_ == 3)
+    } yield {
+      assert(one == 1)
+      assert(three == 3)
+    }
+  }
+
+  test("Lazy.until any conditional") {
+
+    @volatile
+    var counter = 10
+
+    for {
+      result <- Lazy
+                  .fn {
+                    counter -= 1
+                    counter + 1
+                  }
+                  .until(counter == 0)
+    } yield {
+      assert(result == 1)
+    }
+  }
+
 }

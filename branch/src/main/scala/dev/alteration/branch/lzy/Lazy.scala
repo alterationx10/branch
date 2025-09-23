@@ -53,6 +53,27 @@ sealed trait Lazy[+A] {
     loop
   }
 
+  /** Run the Lazy value until the result matches the provided condition is
+    * true.
+    */
+  final def until(cond: A => Boolean): Lazy[A] = {
+    lazy val loop: Lazy[A] = this.flatMap { a =>
+      if (cond(a)) Lazy.fn(a)
+      else loop
+    }
+    loop
+  }
+
+  /** Run the Lazy value until the provided condition is true
+    */
+  final def until(cond: => Boolean): Lazy[A] = {
+    lazy val loop: Lazy[A] = this.flatMap { a =>
+      if (cond) Lazy.fn(a)
+      else loop
+    }
+    loop
+  }
+
   /** Map the result of a Lazy to Unit */
   final def unit: Lazy[Unit] =
     this.map(_ => ())
@@ -62,7 +83,7 @@ sealed trait Lazy[+A] {
   final def *>[B](that: => Lazy[B]): Lazy[B] =
     this.flatMap(_ => that)
 
-  /** Ignore the result on Lazy evaluation, and map it to the provided value */
+  /** Ignore the result on Lazy evaluation and map it to the provided value */
   final def as[B](b: => B): Lazy[B] =
     this.map(_ => b)
 
@@ -343,9 +364,11 @@ object Lazy {
   ): Lazy[Unit] =
     log(a, Level.FINE)
 
+  /** Lazily evaluates the Try, folding the failure into a Lazy.fail */
   def fromTry[A](t: => Try[A]): Lazy[A] =
     Lazy.fn(t.fold(Lazy.fail, Lazy.fn)).flatten
 
+  /** Wraps resource acquisition/usage of scala.util.Using into a Lazy. */
   def using[R: Releasable, A](resource: => R)(f: R => A): Lazy[A] =
     Lazy.fromTry {
       scala.util.Using(resource) { r =>
@@ -353,6 +376,10 @@ object Lazy {
       }
     }
 
+  /** Wraps resource acquisition/usage of scala.util.Using.Manager into a Lazy.
+    * The inner code should not be lazy, or async, as the manager will be closed
+    * before resources can be used.
+    */
   def usingManager[A](f: Using.Manager => A): Lazy[A] = {
     Lazy.fromTry {
       Using.Manager { manager =>
@@ -360,6 +387,17 @@ object Lazy {
       }
     }
   }
+
+  /** Lazily creates a resource, using the provided manager. This method is
+    * useful when used inside Lazy.usingManager { implicit manager => ... }. All
+    * code inside Lazy.usingManager should be synchronous, so if building a
+    * Lazy, it should be evaluated inside before the manager closes the
+    * resources.
+    */
+  def managed[R: Releasable](resource: => R)(using
+      manager: Using.Manager
+  ): Lazy[R] =
+    Lazy.fn(manager(resource))
 
   /** Evaluates the lzy function when the condition is true, mapping the result
     * to Some, or None if the condition is false
