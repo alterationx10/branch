@@ -3,7 +3,7 @@ package dev.alteration.branch.testkit.testcontainers
 import dev.alteration.branch.macaroni.poolers.ResourcePool
 import org.postgresql.ds.PGSimpleDataSource
 import org.testcontainers.containers.GenericContainer
-import org.testcontainers.containers.startupcheck.MinimumDurationRunningStartupCheckStrategy
+import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy
 
 import java.sql.Connection
 import java.time.Duration
@@ -40,10 +40,13 @@ class PGContainerSuite extends munit.FunSuite {
   override def beforeEach(context: BeforeEach): Unit = {
     if (containerPerTest) {
       container = PGTestContainer()
-      // TODO Find a better way to wait for the pg to be ready
       // https://java.testcontainers.org/features/startup_and_waits/#wait-strategies
-      container.withStartupCheckStrategy(
-        new MinimumDurationRunningStartupCheckStrategy(Duration.ofSeconds(2))
+      // https://github.com/testcontainers/testcontainers-java/blob/main/modules/postgresql/src/main/java/org/testcontainers/containers/PostgreSQLContainer.java
+      container.setWaitStrategy(
+        new LogMessageWaitStrategy()
+          .withRegEx(".*database system is ready to accept connections.*\\s")
+          .withTimes(2)
+          .withStartupTimeout(Duration.ofSeconds(5))
       )
       container.start()
     }
