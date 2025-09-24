@@ -18,16 +18,16 @@ class FileContextHandlerSpec extends FileFixtureSuite {
 
     val files = FileContextHandler(tmpDir)
 
-    assert(files.contextRouter.isDefinedAt((HttpMethod.GET, >> / "index.html")))
-    assert(files.contextRouter.isDefinedAt((HttpMethod.GET, >>)))
+    assert(files.contextRouter.isDefinedAt((HttpMethod.GET, "index.html" :: Nil)))
+    assert(files.contextRouter.isDefinedAt((HttpMethod.GET, Nil)))
     assert(
       files.contextRouter.isDefinedAt(
-        (HttpMethod.GET, >> / "css" / "general.css")
+        (HttpMethod.GET, "css" :: "general.css" :: Nil)
       )
     )
     assert(
       files.contextRouter.isDefinedAt(
-        (HttpMethod.GET, >> / "blog" / "post1")
+        (HttpMethod.GET, "blog" :: "post1" :: Nil)
       )
     )
   }

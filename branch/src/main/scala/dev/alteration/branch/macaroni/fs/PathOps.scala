@@ -18,6 +18,14 @@ object PathOps {
       .map(h => segments.tail.foldLeft(h)(_ / _))
   }
 
+  def fromList(segments: List[String]): Path = {
+    segments match {
+      case head :: Nil  => Path.of(head)
+      case head :: tail => tail.foldLeft(Path.of(head))(_ / _)
+      case Nil          => Path.of("")
+    }
+  }
+
   extension (path: Path) {
 
     /** Append a String segment to the path

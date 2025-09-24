@@ -1,16 +1,14 @@
 package dev.alteration.branch.spider.server
 
-import dev.alteration.branch.testkit.fixtures.HttpFixtureSuite
-import RequestHandler.given
-import Response.*
 import dev.alteration.branch.friday.http.JsonBodyHandler
-import dev.alteration.branch.macaroni.fs.PathOps.*
 import dev.alteration.branch.spider.HttpMethod
+import dev.alteration.branch.spider.server.RequestHandler.given
+import dev.alteration.branch.spider.server.Response.*
+import dev.alteration.branch.testkit.fixtures.HttpFixtureSuite
 
 import java.net.URI
 import java.net.http.HttpClient.Version
 import java.net.http.{HttpClient, HttpRequest, HttpResponse}
-import java.nio.file.Path
 
 class RequestHandlerSpec extends HttpFixtureSuite {
 
@@ -38,14 +36,15 @@ class RequestHandlerSpec extends HttpFixtureSuite {
     }
   }
 
-  val alohaHandler: PartialFunction[(HttpMethod, Path), RequestHandler[
+  val alohaHandler: PartialFunction[(HttpMethod, List[String]), RequestHandler[
     Unit,
     String
   ]] = {
-    case HttpMethod.GET -> >> / "aloha"  => AlohaGreeter()
-    case HttpMethod.GET -> >> / "jaloha" => jsonHandler
-    case HttpMethod.GET -> >> / "txt"    => textHandler
+    case HttpMethod.GET -> ("aloha" :: Nil)  => AlohaGreeter()
+    case HttpMethod.GET -> ("jaloha" :: Nil) => jsonHandler
+    case HttpMethod.GET -> ("txt" :: Nil)    => textHandler
   }
+
   httpFixture(alohaHandler).test("RequestHandler") { server =>
 
     val client = HttpClient.newBuilder

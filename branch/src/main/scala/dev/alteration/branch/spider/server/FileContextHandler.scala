@@ -1,6 +1,7 @@
 package dev.alteration.branch.spider.server
 
 import com.sun.net.httpserver.{Authenticator, Filter}
+import dev.alteration.branch.macaroni.fs.PathOps
 import dev.alteration.branch.spider.*
 import dev.alteration.branch.macaroni.fs.PathOps.*
 import dev.alteration.branch.spider.HttpMethod
@@ -75,9 +76,11 @@ case class FileContextHandler(
     FileHandler(rootFilePath)
 
   override val contextRouter
-      : PartialFunction[(HttpMethod, Path), RequestHandler[?, ?]] = {
-    case HttpMethod.GET -> anyPath if fileExists(anyPath)    => fileHandler
-    case HttpMethod.GET -> anyPath if defaultExists(anyPath) =>
-      DefaultFileHandler(defaultFile(anyPath))
+      : PartialFunction[(HttpMethod, List[String]), RequestHandler[?, ?]] = {
+    case HttpMethod.GET -> anyPath if fileExists(PathOps.fromList(anyPath)) =>
+      fileHandler
+    case HttpMethod.GET -> anyPath
+        if defaultExists(PathOps.fromList(anyPath)) =>
+      DefaultFileHandler(defaultFile(PathOps.fromList(anyPath)))
   }
 }

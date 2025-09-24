@@ -10,8 +10,6 @@ import dev.alteration.branch.spider.HttpMethod
 import dev.alteration.branch.spider.server.{Request, RequestHandler, Response}
 import munit.FunSuite
 
-import java.nio.file.Path
-
 class ClientSpec extends HttpFixtureSuite {
 
   case class Person(name: String)
@@ -25,10 +23,10 @@ class ClientSpec extends HttpFixtureSuite {
       Response(200, Person(name))
   }
 
-  val personHandler: PartialFunction[(HttpMethod, Path), RequestHandler[
+  val personHandler: PartialFunction[(HttpMethod, List[String]), RequestHandler[
     Unit,
     Person
-  ]] = { case HttpMethod.GET -> >> / ci"person" / s"$name" =>
+  ]] = { case HttpMethod.GET -> (ci"person" :: s"$name" :: Nil) =>
     PersonHandler(name)
   }
 
