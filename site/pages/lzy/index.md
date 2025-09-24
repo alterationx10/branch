@@ -13,7 +13,8 @@ tags:
 
 # Lzy
 
-_Lzy_ is somewhere between lazy Futures, and a tiny Effect System. It provides a way to describe computations that can be composed and executed later, with built-in support for error handling, resource management, and logging.
+_Lzy_ is somewhere between lazy Futures, and a tiny Effect System. It provides a way to describe computations that can
+be composed and executed later, with built-in support for error handling, resource management, and logging.
 
 ## Futures vs Lazy: A Comparison
 
@@ -37,8 +38,8 @@ val f2: Future[Int] = Future(Random.nextInt(10))
 // f2 is also already running...
 
 def fRandomSum: Future[Int] = for {
-  a <- f1  // Will always get the same value
-  b <- f2  // Will always get the same value
+  a <- f1 // Will always get the same value
+  b <- f2 // Will always get the same value
 } yield (a + b)
 
 // The sum will be the same every time
@@ -54,8 +55,8 @@ val l2: Lazy[Int] = Lazy.fn(Random.nextInt(10))
 // l2 is also just a description
 
 def lzyRandomSum: Lazy[Int] = for {
-  a <- l1  // New random number each time
-  b <- l2  // New random number each time
+  a <- l1 // New random number each time
+  b <- l2 // New random number each time
 } yield (a + b)
 
 // The sum will be different each time
@@ -95,7 +96,8 @@ myLazyOp(0)
 
 ## Core Features
 
-Lzy provides a rich set of features to help you build and compose lazy computations. At its core, Lzy is built around the concept of describing computations rather than executing them immediately. This allows you to:
+Lzy provides a rich set of features to help you build and compose lazy computations. At its core, Lzy is built around
+the concept of describing computations rather than executing them immediately. This allows you to:
 
 - Build complex workflows by composing smaller operations
 - Handle errors gracefully with various recovery strategies
@@ -104,7 +106,8 @@ Lzy provides a rich set of features to help you build and compose lazy computati
 - Integrate logging seamlessly
 - Process collections efficiently
 
-All operations in Lzy are lazy by default - they're just descriptions until you explicitly run them using `runSync` or `runAsync`.
+All operations in Lzy are lazy by default - they're just descriptions until you explicitly run them using `runSync` or
+`runAsync`.
 
 ### Creating Lazy Values
 
@@ -169,8 +172,8 @@ You can add delays and pauses to your Lazy computations:
 import scala.concurrent.duration._
 
 Lazy.fn("hello")
-  .delay(1.second)    // Delay before execution
-  .pause(500.millis)  // Pause after execution
+  .delay(1.second) // Delay before execution
+  .pause(500.millis) // Pause after execution
 ```
 
 ### Optional Values
@@ -190,13 +193,13 @@ val matched: Lazy[Option[Int]] = Lazy.whenCase(value) {
 }
 
 // Handle Options
-Lazy.fromOption(Some(42))  // Convert Option to Lazy
-  .getOrElse(0)           // Default if None
+Lazy.fromOption(Some(42)) // Convert Option to Lazy
+  .getOrElse(0) // Default if None
 ```
 
 ### Resource Management
 
-Safely work with resources that need to be released:
+Safely work with resources that need to be released with wrappers around scala.util.Using and Using.Manager
 
 ```scala
 import scala.util.Using
@@ -207,12 +210,42 @@ Lazy.using(scala.io.Source.fromFile("data.txt")) { source =>
 }
 ```
 
+```scala
+Lazy
+  .usingManager { manager =>
+    val in = manager(new PipedInputStream())
+    val out = manager(new PipedOutputStream(in))
+    out.write("some txt".getBytes)
+    new String(in.readNBytes("some txt".length))
+  } // in, out will be closed automatically here
+```
+
+Reminder that the inner code should not be lazy/async, as the manager will be closed before resources can be used!
+
+If you want to write inner code in a more "for-comprehension" way, you can use `Lazy.managed`, but remember the code has
+to be executed inside the `usingManager{}` block, or else the resources will be closed before they can be used.
+
+```scala
+Lazy.usingManager { implicit manager => {
+  {
+    for {
+      in <- Lazy.managed(new PipedInputStream())
+      out <- Lazy.managed(new PipedOutputStream(in))
+      _ <- Lazy.fn(out.write("stuff".getBytes))
+      read <- Lazy.fn(in.readNBytes("stuff".length))
+    } yield new String(read)
+  }.runSync() // call runSync here so the inner block is executed while manager is in scope
+}
+}
+```
+
 ### Logging Integration
 
 Built-in logging support with different log levels:
 
 ```scala
 import java.util.logging.Logger
+
 given logger: Logger = Logger.getLogger("MyApp")
 
 for {
@@ -229,10 +262,10 @@ Work with collections efficiently:
 
 ```scala
 // Iterate over collections
-Lazy.iterate(Iterator(1,2,3))(List.newBuilder[Int])(_ => Lazy.fn(1))
+Lazy.iterate(Iterator(1, 2, 3))(List.newBuilder[Int])(_ => Lazy.fn(1))
 
 // Process each element
-Lazy.forEach(List(1,2,3))(n => Lazy.fn(n * 2))
+Lazy.forEach(List(1, 2, 3))(n => Lazy.fn(n * 2))
 ```
 
 ### Composing Operations
