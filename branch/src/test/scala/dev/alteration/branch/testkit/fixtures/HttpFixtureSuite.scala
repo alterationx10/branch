@@ -7,11 +7,10 @@ import dev.alteration.branch.spider.server.{ContextHandler, RequestHandler}
 import munit.FunSuite
 
 import java.net.InetSocketAddress
-import java.nio.file.Path
 
 trait HttpFixtureSuite extends FunSuite {
 
-  type PF = PartialFunction[(HttpMethod, Path), RequestHandler[?, ?]]
+  type PF = PartialFunction[(HttpMethod, List[String]), RequestHandler[?, ?]]
 
   def httpFixture(routes: PF): FunFixture[HttpServer] =
     FunFixture[HttpServer](

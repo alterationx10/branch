@@ -1,12 +1,13 @@
 package dev.alteration.branch.spider.server
 
 import dev.alteration.branch.testkit.fixtures.FileFixtureSuite
-import dev.alteration.branch.macaroni.fs.PathOps.*
 import dev.alteration.branch.spider.HttpMethod
 
 import java.nio.file.Files
 
 class FileContextHandlerSpec extends FileFixtureSuite {
+
+  import FileContextHandler.*
 
   tmpDir.test("FileContextHandler") { tmpDir =>
 
@@ -18,16 +19,18 @@ class FileContextHandlerSpec extends FileFixtureSuite {
 
     val files = FileContextHandler(tmpDir)
 
-    assert(files.contextRouter.isDefinedAt((HttpMethod.GET, >> / "index.html")))
-    assert(files.contextRouter.isDefinedAt((HttpMethod.GET, >>)))
+    assert(
+      files.contextRouter.isDefinedAt((HttpMethod.GET, "index.html" :: Nil))
+    )
+    assert(files.contextRouter.isDefinedAt((HttpMethod.GET, Nil)))
     assert(
       files.contextRouter.isDefinedAt(
-        (HttpMethod.GET, >> / "css" / "general.css")
+        (HttpMethod.GET, "css" :: "general.css" :: Nil)
       )
     )
     assert(
       files.contextRouter.isDefinedAt(
-        (HttpMethod.GET, >> / "blog" / "post1")
+        (HttpMethod.GET, "blog" :: "post1" :: Nil)
       )
     )
   }

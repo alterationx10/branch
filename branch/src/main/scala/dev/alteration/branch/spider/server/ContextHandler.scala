@@ -2,11 +2,9 @@ package dev.alteration.branch.spider.server
 
 import com.sun.net.httpserver.*
 import dev.alteration.branch.lzy.abstractions.Semigroup
-import dev.alteration.branch.macaroni.fs.PathOps.*
 import dev.alteration.branch.spider.HttpMethod
 
 import java.time.{Duration, Instant}
-import java.nio.file.Path
 import scala.jdk.CollectionConverters.*
 import scala.util.*
 
@@ -27,7 +25,7 @@ trait ContextHandler(val path: String) {
   /** A partial function to route requests to specific handlers.
     */
   val contextRouter: PartialFunction[
-    (HttpMethod, Path),
+    (HttpMethod, List[String]),
     RequestHandler[?, ?]
   ]
 
@@ -44,7 +42,10 @@ trait ContextHandler(val path: String) {
         val requestHandler: RequestHandler[?, ?] =
           HttpMethod.fromString(exchange.getRequestMethod.toUpperCase) match {
             case Some(method) =>
-              val path = Path.of(exchange.getRequestURI.getPath).relativeTo("/")
+              val path = exchange.getRequestURI.getPath
+                .split("/")
+                .toList
+                .filter(_.nonEmpty)
               contextRouter
                 .lift(method -> path)
                 .getOrElse(notFoundRequestHandler)
@@ -71,6 +72,16 @@ trait ContextHandler(val path: String) {
 
 object ContextHandler {
 
+  extension (sc: StringContext) {
+
+    /** Case-insensitive regex string interpolation
+      *
+      * @return
+      *   A Regex that matches the interpolated string case-insensitively
+      */
+    def ci = ("(?i)" + sc.parts.mkString).r
+  }
+
   /** Combine two ContextHandlers into one. The combined ContextHandler will
     * have the path of the first handler, the filters of both handlers, the
     * authenticator of the first handler with the second handler as a fallback,
@@ -82,7 +93,7 @@ object ContextHandler {
       override val authenticator: Option[Authenticator] =
         a.authenticator.orElse(b.authenticator)
       override val contextRouter
-          : PartialFunction[(HttpMethod, Path), RequestHandler[?, ?]] =
+          : PartialFunction[(HttpMethod, List[String]), RequestHandler[?, ?]] =
         a.contextRouter orElse b.contextRouter
     }
   }

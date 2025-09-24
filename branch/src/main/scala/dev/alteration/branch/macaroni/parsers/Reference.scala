@@ -63,7 +63,7 @@ object Reference extends Parsers[Reference.Parser] {
 
     override infix def or(p2: => Parser[A]): Parser[A] = { l =>
       p(l) match {
-        case Failure(e, false) => p2(l)
+        case Failure(_, false) => p2(l)
         case r                 => r
       }
     }
