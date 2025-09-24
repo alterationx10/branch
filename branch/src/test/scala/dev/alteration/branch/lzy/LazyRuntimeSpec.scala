@@ -15,14 +15,14 @@ class LazyRuntimeSpec extends FunSuite {
     val lazyFail = Lazy.fail(new ArithmeticException("bad math"))
     assert(
       LazyRuntime.runSync(lazyFail) match {
-        case Failure(e: ArithmeticException) => true
+        case Failure(_: ArithmeticException) => true
         case _                               => false
       }
     )
     val lazyBoom = Lazy.fn(throw new ArithmeticException("bad math"))
     assert(
       LazyRuntime.runSync(lazyBoom) match {
-        case Failure(e: ArithmeticException) => true
+        case Failure(_: ArithmeticException) => true
         case _                               => false
       }
     )
@@ -36,7 +36,7 @@ class LazyRuntimeSpec extends FunSuite {
         Lazy.sleep(100 milliseconds),
         1 milliseconds
       ) match {
-        case Failure(e: TimeoutException) => true
+        case Failure(_: TimeoutException) => true
         case _                            => false
       }
     )

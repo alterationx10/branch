@@ -128,7 +128,7 @@ object Sql {
         case (a: Double, i)  => preparedStatement.setDouble(i, a)
         case (a: String, i)  => preparedStatement.setString(i, a)
         case (a: Boolean, i) => preparedStatement.setBoolean(i, a)
-        case (u, i)          =>
+        case (u, _)          =>
           throw new IllegalArgumentException(s"Unsupported type $u")
       }
     }

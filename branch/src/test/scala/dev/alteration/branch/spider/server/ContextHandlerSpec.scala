@@ -9,18 +9,22 @@ class ContextHandlerSpec extends munit.FunSuite {
     val ctxA = new ContextHandler("/") {
       override val filters: Seq[Filter]                 = Seq.empty
       override val authenticator: Option[Authenticator] = Option.empty
-      override val contextRouter
-          : PartialFunction[(HttpMethod, List[String]), RequestHandler[?, ?]] = {
-        case HttpMethod.GET -> ("a" :: Nil) => RequestHandler.unimplementedHandler
+      override val contextRouter: PartialFunction[
+        (HttpMethod, List[String]),
+        RequestHandler[?, ?]
+      ] = { case HttpMethod.GET -> ("a" :: Nil) =>
+        RequestHandler.unimplementedHandler
       }
     }
 
     val ctxB = new ContextHandler("/b") {
       override val filters: Seq[Filter]                 = Seq(ContextHandler.timingFilter)
       override val authenticator: Option[Authenticator] = Option.empty
-      override val contextRouter
-          : PartialFunction[(HttpMethod, List[String]), RequestHandler[?, ?]] = {
-        case HttpMethod.GET -> ("b" :: Nil) => RequestHandler.unimplementedHandler
+      override val contextRouter: PartialFunction[
+        (HttpMethod, List[String]),
+        RequestHandler[?, ?]
+      ] = { case HttpMethod.GET -> ("b" :: Nil) =>
+        RequestHandler.unimplementedHandler
       }
     }
 

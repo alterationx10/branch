@@ -26,7 +26,7 @@ trait EventBus[T] {
       try {
         if sub.filter(msg) then sub.subscriber.mailbox.put(msg)
       } catch {
-        case e: Exception =>
+        case _: Exception =>
           // Could add logging here
           ()
       }

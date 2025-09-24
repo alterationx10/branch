@@ -42,7 +42,10 @@ trait ContextHandler(val path: String) {
         val requestHandler: RequestHandler[?, ?] =
           HttpMethod.fromString(exchange.getRequestMethod.toUpperCase) match {
             case Some(method) =>
-              val path = exchange.getRequestURI.getPath.split("/").toList.filter(_.nonEmpty)
+              val path = exchange.getRequestURI.getPath
+                .split("/")
+                .toList
+                .filter(_.nonEmpty)
               contextRouter
                 .lift(method -> path)
                 .getOrElse(notFoundRequestHandler)

@@ -105,13 +105,13 @@ trait ActorSystem {
             case PoisonPillException       =>
               unregisterMailboxAndActor(refId)
               PoisonPillTermination
-            case e: InterruptedException   =>
+            case _: InterruptedException   =>
               unregisterMailboxAndActor(refId)
               InterruptedTermination
             case InstantiationException(e) =>
               unregisterMailboxAndActor(refId)
               InitializationTermination
-            case e: CancellationException  =>
+            case _: CancellationException  =>
               unregisterMailboxAndActor(refId)
               CancellationTermination
             case e                         =>

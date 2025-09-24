@@ -163,7 +163,7 @@ object ResultSetParser {
     */
   inline given derived[A](using m: Mirror.Of[A]): ResultSetParser[A] = {
     inline m match {
-      case ms: Mirror.SumOf[A]     =>
+      case _: Mirror.SumOf[A]      =>
         compiletime.error("Auto derivation of sum types not yet supported")
       case mp: Mirror.ProductOf[A] =>
         ofTuple[mp.MirroredElemTypes]

@@ -202,7 +202,7 @@ object JsonEncoder {
 
   inline given derived[A](using m: Mirror.Of[A]): JsonEncoder[A] = {
     inline m match {
-      case s: Mirror.SumOf[A]     =>
+      case _: Mirror.SumOf[A]     =>
         error("Auto derivation of Sum types is not currently supported")
       case p: Mirror.ProductOf[A] =>
         new DerivedJsonEncoder[A](using
