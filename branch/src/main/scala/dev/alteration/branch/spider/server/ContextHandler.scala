@@ -72,6 +72,16 @@ trait ContextHandler(val path: String) {
 
 object ContextHandler {
 
+  extension (sc: StringContext) {
+
+    /** Case-insensitive regex string interpolation
+      *
+      * @return
+      *   A Regex that matches the interpolated string case-insensitively
+      */
+    def ci = ("(?i)" + sc.parts.mkString).r
+  }
+
   /** Combine two ContextHandlers into one. The combined ContextHandler will
     * have the path of the first handler, the filters of both handlers, the
     * authenticator of the first handler with the second handler as a fallback,
