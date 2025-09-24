@@ -22,7 +22,7 @@ object FileContextHandler {
       if (segment == null)
         throw new IllegalArgumentException("Path segment cannot be null")
       segment match {
-        case path: Path  => path.resolve(path)
+        case p: Path     => path.resolve(p)
         case str: String => path.resolve(str)
       }
     }
@@ -65,11 +65,13 @@ case class FileContextHandler(
 
   private def fileExists(path: Path): Boolean = {
     val filePath = (rootFilePath / path).toString
+    println(s"Checking for file at $filePath")
     val file     = new File(filePath)
     file.exists() && file.isFile
   }
 
   private[spider] def defaultExists(path: Path): Boolean = {
+    println(s"Checking for default file at $path")
     if Files.isDirectory(rootFilePath / path) then {
       // If the path is a folder, see if a default file exists...
       FileContextHandler.defaultFiles.foldLeft(false) { (b, d) =>
@@ -86,7 +88,8 @@ case class FileContextHandler(
 
   }
 
-  private[spider] def defaultFile(path: Path): File =
+  private[spider] def defaultFile(path: Path): File = {
+    println(s"Getting default file at $path")
     FileContextHandler.defaultFiles.iterator
       .map(fn => new File((rootFilePath / path / fn).toString))
       .find(_.exists())
@@ -96,6 +99,7 @@ case class FileContextHandler(
           .find(_.exists())
       )
       .getOrElse(throw new IllegalArgumentException("Not found"))
+  }
 
   private val fileHandler: FileHandler =
     FileHandler(rootFilePath)
@@ -104,9 +108,11 @@ case class FileContextHandler(
       : PartialFunction[(HttpMethod, List[String]), RequestHandler[?, ?]] = {
     case HttpMethod.GET -> anyPath
         if fileExists(FileContextHandler.pathFromStrList(anyPath)) =>
+      println("using filehanlder")
       fileHandler
     case HttpMethod.GET -> anyPath
         if defaultExists(FileContextHandler.pathFromStrList(anyPath)) =>
+      println("using defaultfilehandler")
       DefaultFileHandler(
         defaultFile(FileContextHandler.pathFromStrList(anyPath))
       )
