@@ -52,8 +52,7 @@ object Sql {
       * [[SqlRuntime.execute]].
       */
     def execute(using
-        connection: Connection,
-        executionContext: ExecutionContext
+        connection: Connection
     ): Try[A] = {
       SqlRuntime.execute(a)
 
@@ -71,8 +70,7 @@ object Sql {
       * [[SqlRuntime.executePool]].
       */
     def executePool(using
-        pool: ResourcePool[Connection],
-        executionContext: ExecutionContext
+        pool: ResourcePool[Connection]
     ): Try[A] =
       SqlRuntime.executePool(a)
 

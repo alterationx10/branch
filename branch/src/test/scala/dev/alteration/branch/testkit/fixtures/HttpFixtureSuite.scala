@@ -14,7 +14,7 @@ trait HttpFixtureSuite extends FunSuite {
 
   def httpFixture(routes: PF): FunFixture[HttpServer] =
     FunFixture[HttpServer](
-      setup = { test =>
+      setup = { _ =>
         val port: Int = scala.util.Random.between(10000, 11000)
         val server    = HttpServer.create(new InetSocketAddress(port), 0)
         server.setExecutor(BranchExecutors.executorService)

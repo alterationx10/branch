@@ -16,14 +16,15 @@ class LazySpec extends LoggerFixtureSuite {
 
   given ExecutionContext = BranchExecutors.executionContext
 
-  override def munitValueTransforms = super.munitValueTransforms ++ List(
-    new ValueTransform(
-      "Lazy",
-      { case lzy: Lazy[?] =>
-        LazyRuntime.runAsync(lzy)
-      }
+  override def munitValueTransforms: List[ValueTransform] =
+    super.munitValueTransforms ++ List(
+      new ValueTransform(
+        "Lazy",
+        { case lzy: Lazy[?] =>
+          LazyRuntime.runAsync(lzy)
+        }
+      )
     )
-  )
 
   test("Lazy.fn") {
     for {
@@ -238,8 +239,8 @@ class LazySpec extends LoggerFixtureSuite {
   test("Lazy.tapError") {
     var counter = 0
     for {
-      _ <- Lazy.fn(42).tapError(e => counter += 1).ignore
-      _ <- Lazy.fail(new Exception("error")).tapError(e => counter += 1).ignore
+      _ <- Lazy.fn(42).tapError(_ => counter += 1).ignore
+      _ <- Lazy.fail(new Exception("error")).tapError(_ => counter += 1).ignore
     } yield {
       assertEquals(counter, 1)
     }
@@ -248,7 +249,7 @@ class LazySpec extends LoggerFixtureSuite {
   test("Lazy.mapError") {
     val result = Lazy
       .fail(new Exception("error"))
-      .mapError(e => new Exception("mapped error"))
+      .mapError(_ => new Exception("mapped error"))
       .runSync()
 
     assert(result.isFailure)

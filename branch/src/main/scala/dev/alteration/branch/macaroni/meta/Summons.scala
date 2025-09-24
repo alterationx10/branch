@@ -40,7 +40,7 @@ object Summons {
     inline erasedValue[A] match {
       case _: EmptyTuple => Nil
       case _: (t *: ts)  =>
-        summonInline[A].asInstanceOf[U] :: _summonListOf[ts, U]
+        summonInline[t].asInstanceOf[U] :: _summonListOf[ts, U]
     }
 
   /** Summon a higher-kinded list whose type is a union type of the Tuple type

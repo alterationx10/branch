@@ -96,7 +96,7 @@ sealed trait Lazy[+A] {
     * with the original value. The result of the function is ignored.
     */
   final def tap(f: A => Unit): Lazy[A] = {
-    this.flatMap(a => Lazy.fn(a).ignore.as(a))
+    this.flatMap(a => Lazy.fn(f(a)).ignore.as(a))
   }
 
   /** Debug the Lazy value, printing it to the console on evaluation.

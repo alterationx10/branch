@@ -43,7 +43,7 @@ trait JsonCodec[A] { self =>
     Json
       .parse(json)
       .left
-      .map(e => new RuntimeException(s"Failed to parse json: $json"))
+      .map(_ => new RuntimeException(s"Failed to parse json: $json"))
       .toTry
       .flatMap(decode)
 
@@ -73,9 +73,9 @@ object JsonCodec {
 
   /** Creates a JsonCodec for a given type using the provided JsonEncoder and
     * JsonDecoder.
-    * @param encoder
+    * @param e
     *   the JsonEncoder for the type
-    * @param decoder
+    * @param d
     *   the JsonDecoder for the type
     * @tparam A
     *   the type of the value to encode/decode

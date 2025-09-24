@@ -17,7 +17,7 @@ class FileFixtureSuite extends FunSuite {
   )
 
   val tmpDir = FunFixture[Path](
-    setup = { test =>
+    setup = { _ =>
       Files.createTempDirectory("tmp")
     },
     teardown = { dir =>
