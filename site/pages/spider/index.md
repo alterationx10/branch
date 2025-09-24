@@ -53,14 +53,14 @@ Routes are defined using `ContextHandler`s which map HTTP methods and paths to s
 ```scala
 val handler = new ContextHandler("/api") {
   override val contextRouter = {
-    case HttpMethod.GET -> >> / "greet" => GreeterHandler()
-    case HttpMethod.GET -> >> / "echo" / msg => EchoHandler(msg)
+    case HttpMethod.GET -> ("greet" :: Nil) => GreeterHandler()
+    case HttpMethod.GET -> ("echo" :: msg :: Nil) => EchoHandler(msg)
   }
 }
 ```
 
 ContextHandlers support:
-- Path-based routing with pattern matching
+- Path-based routing with pattern matching via String Lists
 - Request filters/middleware
 - Authentication via `Authenticator`
 - Default 404 handling
@@ -92,7 +92,7 @@ object MyServer extends SpiderApp {
   
   val api = new ContextHandler("/api") {
     override val contextRouter = {
-      case HttpMethod.GET -> >> / "hello" => GreeterHandler()
+      case HttpMethod.GET -> ("hello" :: Nil) => GreeterHandler()
     }
   }
 
