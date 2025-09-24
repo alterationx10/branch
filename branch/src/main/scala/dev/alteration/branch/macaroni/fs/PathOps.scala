@@ -1,6 +1,7 @@
 package dev.alteration.branch.macaroni.fs
 
 import java.nio.file.*
+import scala.jdk.CollectionConverters.*
 
 /** Provides extension methods and utilities for working with java.nio.file.Path
   */
@@ -11,6 +12,11 @@ object PathOps {
     *   Path representing the current working directory
     */
   def wd: Path = Path.of("").toAbsolutePath
+
+  def fromSeq(segments: Seq[Path]): Option[Path] = {
+    segments.headOption
+      .map(h => segments.tail.foldLeft(h)(_ / _))
+  }
 
   extension (path: Path) {
 
@@ -46,7 +52,8 @@ object PathOps {
       * @return
       *   Sequence of path segment strings, excluding empty segments
       */
-    def toSeq: Seq[String] = path.toString.split("/").filter(_.nonEmpty).toSeq
+    def toSeq: Seq[String] =
+      path.asScala.map(_.toString).filter(_.nonEmpty).toSeq
 
     /** Relativize the path against a root path string
       * @param rootPath
