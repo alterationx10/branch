@@ -11,6 +11,7 @@ import scala.util.*
 /** A base trait for handling requests, rooted at a specific path.
   */
 trait ContextHandler(val path: String) {
+  export dev.alteration.branch.macaroni.extensions.StringContextExtensions.ci
 
   /** A list of filters to apply to request/responses.
     */
@@ -71,16 +72,6 @@ trait ContextHandler(val path: String) {
 }
 
 object ContextHandler {
-
-  extension (sc: StringContext) {
-
-    /** Case-insensitive regex string interpolation
-      *
-      * @return
-      *   A Regex that matches the interpolated string case-insensitively
-      */
-    def ci = ("(?i)" + sc.parts.mkString).r
-  }
 
   /** Combine two ContextHandlers into one. The combined ContextHandler will
     * have the path of the first handler, the filters of both handlers, the

@@ -7,7 +7,7 @@ import java.nio.file.Files
 
 class FileContextHandlerSpec extends FileFixtureSuite {
 
-  import FileContextHandler.*
+  import dev.alteration.branch.macaroni.extensions.PathExtensions.*
 
   tmpDir.test("FileContextHandler") { tmpDir =>
 

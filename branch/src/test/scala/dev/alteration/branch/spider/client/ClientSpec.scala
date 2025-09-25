@@ -6,7 +6,7 @@ import dev.alteration.branch.friday.JsonEncoder
 import dev.alteration.branch.friday.http.JsonBodyHandler
 import dev.alteration.branch.spider.server.RequestHandler.given
 import dev.alteration.branch.spider.HttpMethod
-import dev.alteration.branch.spider.server.ContextHandler.ci
+import dev.alteration.branch.macaroni.extensions.StringContextExtensions.*
 import dev.alteration.branch.spider.server.{Request, RequestHandler, Response}
 import munit.FunSuite
 
