@@ -16,6 +16,8 @@ jobs:
         with:
           fetch-depth: 0
 
+      - uses: docker/setup-buildx-action@v3
+
       - name: Import GPG key
         env:
           GPG_KEY: ${{ secrets.GPG_KEY }}
@@ -30,6 +32,9 @@ jobs:
 
       - name: Setup sbt launcher
         uses: sbt/setup-sbt@v1
+
+      - name: Run tests
+        run: sbt test
 
       - name: Build + Sign
         run: sbt publishSigned
