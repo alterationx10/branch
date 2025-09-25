@@ -2,7 +2,7 @@ package dev.alteration.branch.spider.server
 
 import com.sun.net.httpserver.{Authenticator, Filter}
 import dev.alteration.branch.spider.*
-
+import dev.alteration.branch.macaroni.extensions.PathExtensions.*
 import java.io.File
 import java.nio.file.{Files, Path}
 
@@ -14,25 +14,6 @@ object FileContextHandler {
       case head :: Nil  => Path.of(head)
       case head :: tail => tail.foldLeft(Path.of(head))(_ / _)
     }
-  }
-
-  extension (path: Path) {
-
-    def /(segment: String | Path): Path = {
-      if (segment == null)
-        throw new IllegalArgumentException("Path segment cannot be null")
-      segment match {
-        case p: Path     => path.resolve(p)
-        case str: String => path.resolve(str)
-      }
-    }
-
-    def relativeTo(rootPath: Path): Path = {
-      if (rootPath == null)
-        throw new IllegalArgumentException("Root path cannot be null")
-      rootPath.relativize(path)
-    }
-
   }
 
   /** A list of default files to look for when a directory is requested. E.g.
@@ -61,7 +42,6 @@ case class FileContextHandler(
     override val filters: Seq[Filter] = Seq.empty,
     override val authenticator: Option[Authenticator] = Option.empty
 ) extends ContextHandler(contextPath) {
-  import FileContextHandler.*
 
   private def fileExists(path: Path): Boolean = {
     val filePath = (rootFilePath / path).toString
