@@ -1,5 +1,7 @@
 package dev.alteration.branch.macaroni.extensions
 
+import scala.util.matching.Regex
+
 object StringContextExtensions {
 
   extension (sc: StringContext) {
@@ -9,7 +11,8 @@ object StringContextExtensions {
       * @return
       *   A Regex that matches the interpolated string case-insensitively
       */
-    def ci = ("(?i)" + sc.parts.mkString).r
+    def ci: Regex = ("(?i)" + sc.parts.mkString).r
+  
   }
 
 }
