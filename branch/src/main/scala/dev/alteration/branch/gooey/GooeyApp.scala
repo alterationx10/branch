@@ -1,6 +1,7 @@
-package dev.wishingtree.branch.gooey
+package dev.alteration.branch.gooey
 
-import dev.wishingtree.branch.gooey.SlidingDirection.{Horizontal, Vertical}
+import dev.alteration.branch.gooey.components.panels.SlidingDirection.Horizontal
+import dev.alteration.branch.gooey.components.panels.SlidingPanel
 
 import javax.swing.*
 import java.awt.*

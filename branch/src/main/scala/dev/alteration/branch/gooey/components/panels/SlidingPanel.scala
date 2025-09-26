@@ -1,14 +1,10 @@
-package dev.wishingtree.branch.gooey
+package dev.alteration.branch.gooey.components.panels
 
-import dev.wishingtree.branch.gooey.SlidingDirection.{Horizontal, Vertical}
+import SlidingDirection.*
 
 import java.awt.*
 import java.awt.event.*
 import javax.swing.*
-
-enum SlidingDirection {
-  case Horizontal, Vertical
-}
 
 /** A panel that can slide in and out of view with animation.
   *
@@ -20,7 +16,9 @@ enum SlidingDirection {
 class SlidingPanel(
     val direction: SlidingDirection,
     val panelSize: Int,
-    initiallyExtended: Boolean = false
+    initiallyExtended: Boolean = false,
+    val animationDurationMs: Int = 250,
+    val animationSteps: Int = 60
 ) extends JPanel {
 
   private var isPanelVisible        = initiallyExtended
@@ -28,9 +26,7 @@ class SlidingPanel(
   private var animationTimer: Timer = scala.compiletime.uninitialized
   private def isAnimating: Boolean  =
     animationTimer != null && animationTimer.isRunning
-  private val animationDuration     = 250 // milliseconds
-  private val animationSteps        = 60
-  private val stepDelay             = animationDuration / animationSteps
+  private val stepDelay             = animationDurationMs / animationSteps
 
   // Parent container resize listener
   private val parentResizeListener = new ComponentAdapter {
