@@ -1,4 +1,4 @@
-package dev.alteration.branch.hollywood.tools
+package dev.alteration.branch.hollywood.tools.schema
 
 case class PropertySchema(
     `type`: String,

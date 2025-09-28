@@ -1,4 +1,5 @@
-import dev.alteration.branch.hollywood.tools.{OllamaResponse, Param, Tool, ToolExecutor, ToolSchema}
+import dev.alteration.branch.hollywood.tools.schema.{Param, Tool, ToolSchema}
+import dev.alteration.branch.hollywood.tools.OllamaResponse
 
 import java.net.URI
 import java.net.http.{HttpClient, HttpRequest, HttpResponse}
@@ -79,7 +80,7 @@ object SimpleToolExample extends App {
 
       // 6. Execute the tool
 //      given Conversion[String, scala.Predef.String] = (s: String) => s
-      val executor = ToolExecutor.derived[WeatherService]
+//      val executor = ToolExecutor.derived[WeatherService]
 //      val result = weatherService.getTemp(location, unit)
       val fuck = responseJson.get.message.tool_calls.head.function
       val result = ???//ToolExecutor.execute(weatherService, fuck)

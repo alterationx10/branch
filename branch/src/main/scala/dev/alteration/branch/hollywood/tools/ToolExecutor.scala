@@ -1,128 +1,63 @@
 package dev.alteration.branch.hollywood.tools
 
-import scala.quoted.*
+import scala.deriving.Mirror
+import scala.reflect.ClassTag
+import scala.compiletime.*
 
-trait ToolExecutor[T] {
+trait ToolExecutor[T <: Tool[?]] {
   def execute(
-      functionName: String,
       args: Map[String, String]
   ): String
 }
 
 object ToolExecutor {
-  // Derive a ToolExecutor for any type at compile time
-  inline def derived[T]: ToolExecutor[T] = ${ derivedImpl[T] }
 
-  private def derivedImpl[T: Type](using Quotes): Expr[ToolExecutor[T]] = {
-    import quotes.reflect.*
-
-    val tpe = TypeRepr.of[T]
-
-    // Find all @Tool methods
-    val toolMethods = tpe.typeSymbol.methodMembers.filter { method =>
-      method.annotations.exists(_.tpe =:= TypeRepr.of[Tool])
+  private inline def summonConverters[A <: Tuple]: List[Conversion[String, ?]] =
+    inline erasedValue[A] match {
+      case _: EmptyTuple => Nil
+      case _: (t *: ts)  =>
+        summonInline[Conversion[String, t]]
+          .asInstanceOf[Conversion[String, ?]] :: summonConverters[ts]
     }
 
-    if (toolMethods.isEmpty) {
-      report.errorAndAbort(s"No @Tool methods found in ${tpe.show}")
-    }
+  inline def derived[T <: Tool[?]: ClassTag](using
+      m: Mirror.ProductOf[T]
+  ): ToolExecutor[T] = {
+    type Parameters = m.MirroredElemLabels
+    type Elements   = m.MirroredElemTypes
 
-    // Generate match cases for each tool
-    val cases = toolMethods.map { method =>
-      val methodName = method.name
-      val methodType = tpe.memberType(method).widen
+    val paramNames: List[String] =
+      constValueTuple[Parameters].toList.asInstanceOf[List[String]]
 
-      methodType match {
-        case MethodType(paramNames, paramTypes, _) =>
-          // Generate code to extract and convert each parameter
-          val paramExprs = (paramNames zip paramTypes).map { case (name, tpe) =>
-            convertParameter(name, tpe)
-          }
+    val elementConverters =
+      summonConverters[Elements]
 
-          // Generate the method call on a summoned instance
-          val methodCallExpr = '{
-            val instance = ${ 
-              Expr.summon[T] match {
-                case Some(inst) => inst
-                case None => report.errorAndAbort(s"No given instance of ${tpe.show} found. Please provide: given ${tpe.show} = ...")
-              }
-            }
-            ${
-              Select
-                .unique('{ instance }.asTerm, methodName)
-                .appliedToArgs(paramExprs.map(_.asTerm))
-                .asExprOf[Any]
-            }.toString
-          }
+    val namedConverters =
+      paramNames.zip(elementConverters).toArray
 
-          (methodName, methodCallExpr)
-
-        case _ =>
-          report.errorAndAbort(s"Unsupported method type: ${methodType.show}")
-      }
-    }
-
-    // Build the executor
-    '{
-      new ToolExecutor[T] {
-        def execute(
-            functionName: String,
-            args: Map[String, String]
-        ): String = {
-          given Map[String, String] = args
-          ${
-            val matchExpr = Match(
-              '{ functionName }.asTerm,
-              cases.map { case (name, expr) =>
-                CaseDef(Literal(StringConstant(name)), None, expr.asTerm)
-              }.toList :+
-                CaseDef(
-                  Wildcard(),
-                  None,
-                  '{
-                    throw new IllegalArgumentException(
-                      s"Unknown function: $functionName"
-                    )
-                  }.asTerm
-                )
-            )
-            matchExpr.asExprOf[String]
-          }
+    new ToolExecutor[T] {
+      override def execute(args: Map[String, String]): String = {
+        val convertedArgs = namedConverters.map { case (name, converter) =>
+          println("converting " + name + " with " + args(name))
+          converter.convert(args(name))
         }
+        m.fromProduct(Tuple.fromArray(convertedArgs)).execute().toString
       }
     }
   }
+}
 
-  private def convertParameter(using
-      Quotes
-  )(paramName: String, tpe: quotes.reflect.TypeRepr): Expr[Any] = {
-    import quotes.reflect.*
+import scala.language.implicitConversions
 
-    // Special case for String parameters - no conversion needed
-    if (tpe =:= TypeRepr.of[String]) {
-      '{
-        val args = ${ Expr.summon[Map[String, String]].get }
-        args(${ Expr(paramName) })
-      }
-    } else {
-      // Try to summon a Conversion[String, T] for other parameter types
-      tpe.asType match {
-        case '[t] =>
-          Expr.summon[Conversion[String, t]] match {
-            case Some(conversion) =>
-              '{
-                val args  = ${ Expr.summon[Map[String, String]].get }
-                val value = args(${ Expr(paramName) })
-                $conversion.apply(value)
-              }
-            case None =>
-              report.errorAndAbort(
-                s"No given Conversion[String, ${tpe.show}] found for parameter '$paramName'. " +
-                  s"Please define: given Conversion[String, ${tpe.show}] = ..."
-              )
-          }
-      }
-    }
+object Fart extends App {
+
+
+  case class Turd(a: Int, b: String) extends Tool[Int] {
+    override def execute(): Int = a + b.toInt
   }
 
+  given Conversion[String, Int]    = (s: String) => s.toInt
+  given Conversion[String, String] = (s: String) => s
+  val thingy                       = ToolExecutor.derived[Turd]
+  println(thingy.execute(Map("a" -> "1", "b" -> "2")))
 }

@@ -1,4 +1,6 @@
-package dev.alteration.branch.hollywood.tools
+package dev.alteration.branch.hollywood.tools.schema
+
+import dev.alteration.branch.hollywood.tools.*
 
 import scala.quoted.*
 
@@ -178,4 +180,3 @@ object ToolSchema {
        |}""".stripMargin
   }
 }
-
