@@ -1,10 +1,13 @@
+package dev.alteration.branch.hollywood.tools
+
 import dev.alteration.branch.hollywood.tools.schema.{Param, ToolRegistry, ToolSchema, Tool as ToolS}
-import dev.alteration.branch.hollywood.tools.{CallableTool, OllamaRequest, OllamaResponse, RequestFunction, RequestMessage, RequestToolCall}
+import dev.alteration.branch.hollywood.tools.{CallableTool, OllamaRequest, OllamaResponse, RequestFunction, RequestMessage, RequestToolCall, Tool}
 import dev.alteration.branch.friday.Json
 import dev.alteration.branch.friday.Json.JsonString
 
 import java.net.URI
 import java.net.http.{HttpClient, HttpRequest, HttpResponse}
+
 
 // Tool service
 sealed trait TemperatureUnit
@@ -21,18 +24,20 @@ case class WeatherService(
 
 object SimpleToolExample extends App {
 
-  val client         = HttpClient.newHttpClient()
+  val client = HttpClient.newHttpClient()
 
-  given Conversion[String,TemperatureUnit] = {
-    case "Celsius" => Celsius
+  given Conversion[String, TemperatureUnit] = {
+    case "Celsius"    => Celsius
     case "Fahrenheit" => Fahrenheit
   }
 
   // Register tools
   ToolRegistry.register[WeatherService]
 
-  // 1. Get tool schemas from registry
-  val toolJson = ToolRegistry.getSchemasJson
+
+  // 1. Get tool definitions from registry
+  val toolDefinitions = ToolRegistry.getFunctionDefinitions
+  val tools           = toolDefinitions.map(fd => Tool("function", fd))
 
   // 2. Build initial request
   val initialRequest = OllamaRequest(
@@ -40,14 +45,19 @@ object SimpleToolExample extends App {
     messages = List(
       RequestMessage(
         role = "user",
-        content = Some(JsonString("What's the temperature in Paris in Fahrenheit according to the WeatherService?"))
+        content = Some(
+          JsonString(
+            "What's the temperature in Paris in Fahrenheit according to the WeatherService?"
+          )
+        )
       )
     ),
-    tools = Json.parse(toolJson).toOption.get, // booooo me
+    tools = Some(tools),
     stream = false
   )
 
-  val requestBody = OllamaRequest.derived$JsonCodec.encode(initialRequest).toString
+  val requestBody =
+    OllamaRequest.derived$JsonCodec.encode(initialRequest).toString
 
   println("Request:")
   println(requestBody)
@@ -63,6 +73,11 @@ object SimpleToolExample extends App {
 
   val response = client.send(request, HttpResponse.BodyHandlers.ofString())
 
+
+  println("Response:")
+  println(response.body())
+  println("\n---\n")
+
   val responseJson = OllamaResponse.derived$JsonCodec.decode(response.body())
   println("First Response:")
   println(responseJson)
@@ -71,24 +86,34 @@ object SimpleToolExample extends App {
   val ollamaResponse = responseJson.get
 
   // 4. Check if there's a tool call
-  ollamaResponse.message.tool_calls.headOption match {
+  ollamaResponse.message.tool_calls.flatMap(_.headOption) match {
     case Some(toolCall) =>
       val functionName = toolCall.function.name
-      val args = toolCall.function.arguments
+      val arguments    = toolCall.function.arguments
 
       println(s"Tool call detected: $functionName")
-      println(s"Arguments: $args")
+      println(s"Arguments: $arguments")
 
-      val location = args.getOrElse("location", "")
-      val unitStr = args.getOrElse("unit", "Fahrenheit")
+      // Arguments are now a JSON object, not a string
+      val argsMap = arguments.objVal.map { case (k, v) => 
+        k -> (v match {
+          case Json.JsonString(s) => s
+          case other => other.toString.stripPrefix("\"").stripSuffix("\"")
+        })
+      }
+      
+      val location = argsMap.getOrElse("location", "")
+      val unitStr  = argsMap.getOrElse("unit", "Fahrenheit")
 
       // 6. Execute the tool using registry
-      val result = ToolRegistry.execute(functionName, args)
+      val result = ToolRegistry
+        .execute(functionName, argsMap)
         .getOrElse("Tool execution failed")
       println(s"\nTool result: $result")
 
       // Create contextual result message
-      val contextualResult = s"The current temperature in $location is $result degrees ${unitStr.toLowerCase}."
+      val contextualResult =
+        s"The current temperature in $location is $result degrees ${unitStr.toLowerCase}."
 
       // 7. Send result back to model
       val followUpRequest = OllamaRequest(
@@ -96,18 +121,20 @@ object SimpleToolExample extends App {
         messages = List(
           RequestMessage(
             role = "user",
-            content = "What's the temperature in Paris in Celsius?"
+            content =
+              Some(JsonString("What's the temperature in Paris in Celsius?"))
           ),
           RequestMessage(
             role = "assistant",
-            content = "",
-            tool_calls = List(
-              RequestToolCall(
-                function = RequestFunction(
-                  name = functionName,
-                  arguments = Map(
-                    "location" -> location,
-                    "unit" -> unitStr
+            content = Some(JsonString("")),
+            tool_calls = Some(
+              List(
+                RequestToolCall(
+                  id = "call_generated_id",
+                  `type` = "function",
+                  function = RequestFunction(
+                    name = functionName,
+                    arguments = arguments.toJsonString
                   )
                 )
               )
@@ -115,7 +142,8 @@ object SimpleToolExample extends App {
           ),
           RequestMessage(
             role = "tool",
-            content = contextualResult
+            content = Some(JsonString(contextualResult)),
+            tool_call_id = Some("call_generated_id")
           )
         ),
         stream = false

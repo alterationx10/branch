@@ -1,42 +1,36 @@
 package dev.alteration.branch.hollywood.tools
 
-import dev.alteration.branch.friday.Json.{JsonObject, JsonString}
 import dev.alteration.branch.friday.{Json, JsonCodec, JsonDecoder, JsonEncoder}
 
-import scala.util.Try
-
 case class OllamaResponse(
-    id: String,
-    `object`: String = "chat.completion",
-    created: Long,
     model: String,
-    choices: List[OllamaChoice],
-    usage: Option[OllamaUsage] = None,
-    system_fingerprint: Option[String] = None
+    created_at: String,
+    message: OllamaMessage,
+    done_reason: String,
+    done: Boolean,
+    total_duration: Option[Long] = None,
+    load_duration: Option[Long] = None,
+    prompt_eval_count: Option[Int] = None,
+    prompt_eval_duration: Option[Long] = None,
+    eval_count: Option[Int] = None,
+    eval_duration: Option[Long] = None
 ) derives JsonCodec
 
-case class OllamaChoice(
-    index: Int,
-    message: OllamaMessage,
-    logprobs: Option[OllamaLogprobs] = None,
-    finish_reason: Option[String] = None
-) derives JsonCodec
 
 case class OllamaMessage(
     role: String,
-    content: Option[String] = None,
+    content: String = "",
+    thinking: Option[String] = None,
     tool_calls: Option[List[OllamaToolCall]] = None
 ) derives JsonCodec
 
 case class OllamaToolCall(
-    id: String,
-    `type`: String = "function",
     function: OllamaFunction
 ) derives JsonCodec
 
 case class OllamaFunction(
     name: String,
-    arguments: String
+    arguments: Json
 ) derives JsonCodec
 
 case class OllamaUsage(

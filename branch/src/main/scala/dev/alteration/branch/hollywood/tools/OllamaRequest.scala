@@ -13,7 +13,7 @@ given JsonDecoder[Map[String, Double]] = (json: Json) =>
 case class OllamaRequest(
     model: String,
     messages: List[RequestMessage],
-    tools: Option[List[CallableTool[?]]] = None,
+    tools: Option[List[Tool]] = None,
     tool_choice: Option[Json] = None,
     stream: Boolean = false,
     temperature: Option[Double] = None,
