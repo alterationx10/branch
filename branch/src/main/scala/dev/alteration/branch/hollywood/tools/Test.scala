@@ -34,6 +34,18 @@ case class WeatherService(
   override def execute(): Double = 72.0
 }
 
+@ToolS("Convert temperature from the TemperatureUnit to Kelvin")
+case class KelvinService(
+    @Param("The temperature value") temperature: Double,
+    @Param("The TemperatureUnit") unit: TemperatureUnit
+) extends CallableTool[Double] {
+
+  override def execute(): Double = unit match {
+    case Celsius    => temperature - 273.15
+    case Fahrenheit => (temperature - 273.15) * 1.8 + 32
+  }
+}
+
 object SimpleToolExample extends App {
 
   val client = HttpClient.newHttpClient()
@@ -45,6 +57,7 @@ object SimpleToolExample extends App {
 
   // Register tools
   ToolRegistry.register[WeatherService]
+  ToolRegistry.register[KelvinService]
 
   // 1. Get tool definitions from registry
   val toolDefinitions = ToolRegistry.getFunctionDefinitions
@@ -135,7 +148,6 @@ object SimpleToolExample extends App {
           ),
           RequestMessage(
             role = "assistant",
-            content = Some(""),
             tool_calls = Some(
               List(
                 RequestToolCall(
