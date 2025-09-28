@@ -1,6 +1,7 @@
 package dev.alteration.branch.hollywood.tools.schema
 
-import dev.alteration.branch.hollywood.tools.{CallableTool, ToolExecutor}
+import dev.alteration.branch.hollywood.tools.{CallableTool, FunctionDefinition, ToolExecutor}
+import dev.alteration.branch.friday.Json
 
 import scala.collection.mutable
 import scala.deriving.Mirror
@@ -17,9 +18,43 @@ object ToolRegistry {
 
   def getSchemas: List[ToolSchema] = tools.values.map(_._1).toList
 
+  def getFunctionDefinitions: List[FunctionDefinition] = {
+    getSchemas.map(schemaToFunctionDefinition)
+  }
+
   def getSchemasJson: String = {
     val schemas = getSchemas.map(ToolSchema.toJson)
     s"[${schemas.mkString(", ")}]"
+  }
+
+  private def schemaToFunctionDefinition(schema: ToolSchema): FunctionDefinition = {
+    val parametersJson = parametersToJson(schema.parameters)
+    FunctionDefinition(
+      name = schema.name,
+      description = Some(schema.description),
+      parameters = Some(parametersJson),
+      strict = None
+    )
+  }
+
+  private def parametersToJson(params: ParameterSchema): Json = {
+    val properties = Json.JsonObject(
+      params.properties.map { case (name, prop) =>
+        val propJson = Json.JsonObject(Map(
+          "type" -> Json.JsonString(prop.`type`),
+          "description" -> Json.JsonString(prop.description)
+        ) ++ prop.enumValues.map(values => 
+          "enum" -> Json.JsonArray(values.map(Json.JsonString.apply).toIndexedSeq)
+        ).toMap)
+        name -> propJson
+      }
+    )
+
+    Json.JsonObject(Map(
+      "type" -> Json.JsonString(params.`type`),
+      "properties" -> properties,
+      "required" -> Json.JsonArray(params.required.map(Json.JsonString.apply).toIndexedSeq)
+    ))
   }
 
   def execute(toolName: String, args: Map[String, String]): Option[String] = {
