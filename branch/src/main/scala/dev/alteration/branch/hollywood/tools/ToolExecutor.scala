@@ -98,22 +98,30 @@ object ToolExecutor {
   )(paramName: String, tpe: quotes.reflect.TypeRepr): Expr[Any] = {
     import quotes.reflect.*
 
-    // Try to summon a Conversion[String, T] for the parameter type
-    tpe.asType match {
-      case '[t] =>
-        Expr.summon[Conversion[String, t]] match {
-          case Some(conversion) =>
-            '{
-              val args  = ${ Expr.summon[Map[String, String]].get }
-              val value = args(${ Expr(paramName) })
-              $conversion.apply(value)
-            }
-          case None             =>
-            report.errorAndAbort(
-              s"No given Conversion[String, ${tpe.show}] found for parameter '$paramName'. " +
-                s"Please define: given Conversion[String, ${tpe.show}] = ..."
-            )
-        }
+    // Special case for String parameters - no conversion needed
+    if (tpe =:= TypeRepr.of[String]) {
+      '{
+        val args = ${ Expr.summon[Map[String, String]].get }
+        args(${ Expr(paramName) })
+      }
+    } else {
+      // Try to summon a Conversion[String, T] for other parameter types
+      tpe.asType match {
+        case '[t] =>
+          Expr.summon[Conversion[String, t]] match {
+            case Some(conversion) =>
+              '{
+                val args  = ${ Expr.summon[Map[String, String]].get }
+                val value = args(${ Expr(paramName) })
+                $conversion.apply(value)
+              }
+            case None =>
+              report.errorAndAbort(
+                s"No given Conversion[String, ${tpe.show}] found for parameter '$paramName'. " +
+                  s"Please define: given Conversion[String, ${tpe.show}] = ..."
+              )
+          }
+      }
     }
   }
 
