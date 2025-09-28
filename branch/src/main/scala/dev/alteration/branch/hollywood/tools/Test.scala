@@ -1,8 +1,4 @@
-import dev.alteration.branch.hollywood.tools.schema.{
-  Param,
-  Tool as ToolS,
-  ToolSchema
-}
+import dev.alteration.branch.hollywood.tools.schema.{Param, ToolRegistry, ToolSchema, Tool as ToolS}
 import dev.alteration.branch.hollywood.tools.{OllamaResponse, Tool}
 
 import java.net.URI
@@ -24,6 +20,11 @@ case class WeatherService(
 object SimpleToolExample extends App {
 
   val client         = HttpClient.newHttpClient()
+
+  given Conversion[String,TemperatureUnit] = {
+    case "Celsius" => Celsius
+    case "Fahrenheit" => Fahrenheit
+  }
 
   // 1. Generate tool schema
   val schema   = ToolSchema.derive[WeatherService]

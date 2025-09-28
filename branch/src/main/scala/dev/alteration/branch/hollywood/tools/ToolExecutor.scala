@@ -40,7 +40,7 @@ object ToolExecutor {
           .asInstanceOf[Conversion[String, ?]] :: summonConverters[ts]
     }
 
-  inline def derived[T <: Tool[?]: ClassTag](using
+  inline def derived[T <: Tool[?]](using
       m: Mirror.ProductOf[T]
   ): ToolExecutor[T] = {
     import ToolExecutor.given

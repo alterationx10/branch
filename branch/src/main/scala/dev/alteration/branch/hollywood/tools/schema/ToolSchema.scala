@@ -90,7 +90,7 @@ object ToolSchema {
 
     '{
       ToolSchema(
-        ${ Expr(classSymbol.name) },
+        ${ Expr(classSymbol.fullName) },
         ${ Expr(description) },
         ParameterSchema(
           "object",
