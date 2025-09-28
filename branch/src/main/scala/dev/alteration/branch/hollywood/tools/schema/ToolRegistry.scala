@@ -5,6 +5,7 @@ import dev.alteration.branch.hollywood.tools.{Tool, ToolExecutor}
 import scala.collection.mutable
 import scala.deriving.Mirror
 
+// Don't know how I feel about this being a singleton with a global state...
 object ToolRegistry {
   private val tools = mutable.Map[String, (ToolSchema, ToolExecutor[? <: Tool[?]])]()
 

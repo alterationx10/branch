@@ -26,9 +26,11 @@ object SimpleToolExample extends App {
     case "Fahrenheit" => Fahrenheit
   }
 
-  // 1. Generate tool schema
-  val schema   = ToolSchema.derive[WeatherService]
-  val toolJson = ToolSchema.toJson(schema)
+  // Register tools
+  ToolRegistry.register[WeatherService]
+
+  // 1. Get tool schemas from registry
+  val toolJson = ToolRegistry.getSchemasJson
 
   // 2. Build initial request
   val requestBody = s"""{
@@ -39,7 +41,7 @@ object SimpleToolExample extends App {
         "content": "What's the temperature in Paris in Celsius?"
       }
     ],
-    "tools": [$toolJson],
+    "tools": $toolJson,
     "stream": false
   }"""
 
@@ -66,7 +68,7 @@ object SimpleToolExample extends App {
 
   // 4. Check if there's a tool call
   val toolCallPattern =
-    """"function":\s*\{\s*"name":\s*"(\w+)",\s*"arguments":\s*\{([^}]+)\}""".r
+    """"function":\s*\{\s*"name":\s*"([^"]+)",\s*"arguments":\s*\{([^}]+)\}""".r
 
   toolCallPattern.findFirstMatchIn(response.body()) match {
     case Some(m) =>
@@ -88,14 +90,15 @@ object SimpleToolExample extends App {
         .findFirstMatchIn(arguments)
         .map(_.group(1))
         .getOrElse("Fahrenheit")
-      val unit     = if (unitStr == "Celsius") Celsius else Fahrenheit
 
-      // 6. Execute the tool
-//      given Conversion[String, scala.Predef.String] = (s: String) => s
-//      val executor = ToolExecutor.derived[WeatherService]
-//      val result = weatherService.getTemp(location, unit)
-      val fuck   = responseJson.get.message.tool_calls.head.function
-      val result = ??? // ToolExecutor.execute(weatherService, fuck)
+      val args = Map(
+        "location" -> location,
+        "unit" -> unitStr
+      )
+
+      // 6. Execute the tool using registry
+      val result = ToolRegistry.execute(functionName, args)
+        .getOrElse("Tool execution failed")
       println(s"\nTool result: $result")
 
       // 7. Send result back to model
