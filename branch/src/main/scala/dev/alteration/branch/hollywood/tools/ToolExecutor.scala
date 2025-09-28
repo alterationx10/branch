@@ -5,7 +5,7 @@ import scala.reflect.ClassTag
 import scala.compiletime.*
 import scala.language.implicitConversions
 
-trait ToolExecutor[T <: Tool[?]] {
+trait ToolExecutor[T <: CallableTool[?]] {
   def execute(
       args: Map[String, String]
   ): String
@@ -40,8 +40,8 @@ object ToolExecutor {
           .asInstanceOf[Conversion[String, ?]] :: summonConverters[ts]
     }
 
-  inline def derived[T <: Tool[?]](using
-      m: Mirror.ProductOf[T]
+  inline def derived[T <: CallableTool[?]](using
+                                           m: Mirror.ProductOf[T]
   ): ToolExecutor[T] = {
     import ToolExecutor.given
     type Parameters = m.MirroredElemLabels

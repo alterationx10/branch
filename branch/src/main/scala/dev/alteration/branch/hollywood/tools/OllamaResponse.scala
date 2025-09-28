@@ -6,35 +6,58 @@ import dev.alteration.branch.friday.{Json, JsonCodec, JsonDecoder, JsonEncoder}
 import scala.util.Try
 
 case class OllamaResponse(
+    id: String,
+    `object`: String = "chat.completion",
+    created: Long,
     model: String,
-    created_at: String,
+    choices: List[OllamaChoice],
+    usage: Option[OllamaUsage] = None,
+    system_fingerprint: Option[String] = None
+) derives JsonCodec
+
+case class OllamaChoice(
+    index: Int,
     message: OllamaMessage,
-    done_reason: String,
-    done: Boolean,
-    total_duration: Long,
-    load_duration: Long,
-    prompt_eval_count: Int,
-    prompt_eval_duration: Long,
-    eval_count: Int,
-    eval_duration: Long
+    logprobs: Option[OllamaLogprobs] = None,
+    finish_reason: Option[String] = None
 ) derives JsonCodec
 
 case class OllamaMessage(
     role: String,
-    content: String,
-    tool_calls: List[OllamaToolCall] = List.empty
+    content: Option[String] = None,
+    tool_calls: Option[List[OllamaToolCall]] = None
 ) derives JsonCodec
 
 case class OllamaToolCall(
+    id: String,
+    `type`: String = "function",
     function: OllamaFunction
 ) derives JsonCodec
 
-given JsonEncoder[Map[String, String]] = (a: Map[String, String]) =>
-  JsonObject(a.map { case (k, v) => k -> JsonString(v) })
-given JsonDecoder[Map[String, String]] = (json: Json) =>
-  Try(json.objVal.map { case (k, v) => k -> v.strVal })
-
 case class OllamaFunction(
     name: String,
-    arguments: Map[String, String]
+    arguments: String
+) derives JsonCodec
+
+case class OllamaUsage(
+    prompt_tokens: Int,
+    completion_tokens: Int,
+    total_tokens: Int
+) derives JsonCodec
+
+case class OllamaLogprobs(
+    content: Option[List[OllamaTokenLogprob]] = None
+) derives JsonCodec
+
+case class OllamaTokenLogprob(
+    token: String,
+    logprob: Double,
+    bytes: Option[List[Int]] = None,
+    top_logprobs: Option[List[OllamaTopLogprob]] = None
+) derives JsonCodec
+
+case class OllamaTopLogprob(
+    token: String,
+    logprob: Double,
+    bytes: Option[List[Int]] = None
 ) derives JsonCodec

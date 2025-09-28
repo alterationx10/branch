@@ -1,6 +1,7 @@
 import dev.alteration.branch.hollywood.tools.schema.{Param, ToolRegistry, ToolSchema, Tool as ToolS}
-import dev.alteration.branch.hollywood.tools.{OllamaResponse, OllamaRequest, RequestMessage, RequestToolCall, RequestFunction, Tool}
+import dev.alteration.branch.hollywood.tools.{CallableTool, OllamaRequest, OllamaResponse, RequestFunction, RequestMessage, RequestToolCall}
 import dev.alteration.branch.friday.Json
+import dev.alteration.branch.friday.Json.JsonString
 
 import java.net.URI
 import java.net.http.{HttpClient, HttpRequest, HttpResponse}
@@ -14,7 +15,7 @@ case object Fahrenheit extends TemperatureUnit
 case class WeatherService(
     @Param("The location") location: String,
     @Param("Temperature unit") unit: TemperatureUnit
-) extends Tool[Double] {
+) extends CallableTool[Double] {
   override def execute(): Double = 72.0
 }
 
@@ -39,10 +40,7 @@ object SimpleToolExample extends App {
     messages = List(
       RequestMessage(
         role = "user",
-        content =
-          s"""
-             |What's the temperature in Paris in Fahrenheit according to the WeatherService? You don't have to add commentary about the strange result.
-             |""".stripMargin.trim
+        content = Some(JsonString("What's the temperature in Paris in Fahrenheit according to the WeatherService?"))
       )
     ),
     tools = Json.parse(toolJson).toOption.get, // booooo me

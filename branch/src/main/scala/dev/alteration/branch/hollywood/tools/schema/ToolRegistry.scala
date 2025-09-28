@@ -1,15 +1,15 @@
 package dev.alteration.branch.hollywood.tools.schema
 
-import dev.alteration.branch.hollywood.tools.{Tool, ToolExecutor}
+import dev.alteration.branch.hollywood.tools.{CallableTool, ToolExecutor}
 
 import scala.collection.mutable
 import scala.deriving.Mirror
 
 // Don't know how I feel about this being a singleton with a global state...
 object ToolRegistry {
-  private val tools = mutable.Map[String, (ToolSchema, ToolExecutor[? <: Tool[?]])]()
+  private val tools = mutable.Map[String, (ToolSchema, ToolExecutor[? <: CallableTool[?]])]()
 
-  inline def register[T <: Tool[?]](using m: Mirror.ProductOf[T]): Unit = {
+  inline def register[T <: CallableTool[?]](using m: Mirror.ProductOf[T]): Unit = {
     val schema = ToolSchema.derive[T]
     val executor = ToolExecutor.derived[T]
     tools(schema.name) = (schema, executor)
