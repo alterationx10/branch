@@ -1,5 +1,6 @@
 import dev.alteration.branch.hollywood.tools.schema.{Param, ToolRegistry, ToolSchema, Tool as ToolS}
-import dev.alteration.branch.hollywood.tools.{OllamaResponse, Tool}
+import dev.alteration.branch.hollywood.tools.{OllamaResponse, OllamaRequest, RequestMessage, RequestToolCall, RequestFunction, Tool}
+import dev.alteration.branch.friday.Json
 
 import java.net.URI
 import java.net.http.{HttpClient, HttpRequest, HttpResponse}
@@ -33,17 +34,22 @@ object SimpleToolExample extends App {
   val toolJson = ToolRegistry.getSchemasJson
 
   // 2. Build initial request
-  val requestBody = s"""{
-    "model": "gpt-oss",
-    "messages": [
-      {
-        "role": "user",
-        "content": "What's the temperature in Paris in Celsius?"
-      }
-    ],
-    "tools": $toolJson,
-    "stream": false
-  }"""
+  val initialRequest = OllamaRequest(
+    model = "gpt-oss",
+    messages = List(
+      RequestMessage(
+        role = "user",
+        content =
+          s"""
+             |What's the temperature in Paris in Fahrenheit according to the WeatherService? You don't have to add commentary about the strange result.
+             |""".stripMargin.trim
+      )
+    ),
+    tools = Json.parse(toolJson).toOption.get, // booooo me
+    stream = false
+  )
+
+  val requestBody = OllamaRequest.derived$JsonCodec.encode(initialRequest).toString
 
   println("Request:")
   println(requestBody)
@@ -64,37 +70,19 @@ object SimpleToolExample extends App {
   println(responseJson)
   println("\n---\n")
 
-  responseJson.get
+  val ollamaResponse = responseJson.get
 
   // 4. Check if there's a tool call
-  val toolCallPattern =
-    """"function":\s*\{\s*"name":\s*"([^"]+)",\s*"arguments":\s*\{([^}]+)\}""".r
-
-  toolCallPattern.findFirstMatchIn(response.body()) match {
-    case Some(m) =>
-      val functionName = m.group(1)
-      val arguments    = m.group(2)
+  ollamaResponse.message.tool_calls.headOption match {
+    case Some(toolCall) =>
+      val functionName = toolCall.function.name
+      val args = toolCall.function.arguments
 
       println(s"Tool call detected: $functionName")
-      println(s"Arguments: $arguments")
+      println(s"Arguments: $args")
 
-      // 5. Parse arguments
-      val locationPattern = """"location":\s*"([^"]+)"""".r
-      val unitPattern     = """"unit":\s*"([^"]+)"""".r
-
-      val location = locationPattern
-        .findFirstMatchIn(arguments)
-        .map(_.group(1))
-        .getOrElse("")
-      val unitStr  = unitPattern
-        .findFirstMatchIn(arguments)
-        .map(_.group(1))
-        .getOrElse("Fahrenheit")
-
-      val args = Map(
-        "location" -> location,
-        "unit" -> unitStr
-      )
+      val location = args.getOrElse("location", "")
+      val unitStr = args.getOrElse("unit", "Fahrenheit")
 
       // 6. Execute the tool using registry
       val result = ToolRegistry.execute(functionName, args)
@@ -105,44 +93,46 @@ object SimpleToolExample extends App {
       val contextualResult = s"The current temperature in $location is $result degrees ${unitStr.toLowerCase}."
 
       // 7. Send result back to model
-      val followUpRequest = s"""{
-        "model": "gpt-oss",
-        "messages": [
-          {
-            "role": "user",
-            "content": "What's the temperature in Paris in Celsius?"
-          },
-          {
-            "role": "assistant",
-            "content": "",
-            "tool_calls": [
-              {
-                "function": {
-                  "name": "$functionName",
-                  "arguments": {
-                    "location": "$location",
-                    "unit": "$unitStr"
-                  }
-                }
-              }
-            ]
-          },
-          {
-            "role": "tool",
-            "content": "$contextualResult"
-          }
-        ],
-        "stream": false
-      }"""
+      val followUpRequest = OllamaRequest(
+        model = "gpt-oss",
+        messages = List(
+          RequestMessage(
+            role = "user",
+            content = "What's the temperature in Paris in Celsius?"
+          ),
+          RequestMessage(
+            role = "assistant",
+            content = "",
+            tool_calls = List(
+              RequestToolCall(
+                function = RequestFunction(
+                  name = functionName,
+                  arguments = Map(
+                    "location" -> location,
+                    "unit" -> unitStr
+                  )
+                )
+              )
+            )
+          ),
+          RequestMessage(
+            role = "tool",
+            content = contextualResult
+          )
+        ),
+        stream = false
+      )
+
+      val followUpRequestBody = OllamaRequest.derived$JsonCodec.encode(followUpRequest).toString
 
       println("\nFollow-up Request:")
-      println(followUpRequest)
+      println(followUpRequestBody)
 
       val followUpHttpRequest = HttpRequest
         .newBuilder()
         .uri(URI.create("http://localhost:11434/api/chat"))
         .header("Content-Type", "application/json")
-        .POST(HttpRequest.BodyPublishers.ofString(followUpRequest))
+        .POST(HttpRequest.BodyPublishers.ofString(followUpRequestBody))
         .build()
 
       val finalResponse =
