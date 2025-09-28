@@ -12,31 +12,23 @@ case class ToolSchema(
 
 object ToolSchema {
 
-  inline def derive[T](inline methodName: String): ToolSchema =
-    ${ deriveImpl[T]('methodName) }
+  inline def derive[T]: ToolSchema =
+    ${ deriveImpl[T] }
 
-  private def deriveImpl[T: Type](
-      methodName: Expr[String]
-  )(using Quotes): Expr[ToolSchema] = {
+  private def deriveImpl[T: Type](using Quotes): Expr[ToolSchema] = {
     import quotes.reflect.*
 
-    val tpe           = TypeRepr.of[T]
-    val methodNameStr = methodName.valueOrAbort
+    val tpe = TypeRepr.of[T]
+    val classSymbol = tpe.typeSymbol
 
-    // Find the method
-    val method = tpe.typeSymbol
-      .methodMember(methodNameStr)
-      .headOption
-      .getOrElse(report.errorAndAbort(s"Method $methodNameStr not found"))
-
-    // Extract @Tool annotation
-    val toolAnnot = method.annotations
+    // Extract @Tool annotation from the case class
+    val toolAnnot = classSymbol.annotations
       .find { annot =>
-        annot.tpe =:= TypeRepr.of[Tool]
+        annot.tpe =:= TypeRepr.of[schema.Tool]
       }
       .getOrElse(
         report.errorAndAbort(
-          s"Method $methodNameStr must have @Tool annotation"
+          s"Class ${classSymbol.name} must have @ToolS annotation"
         )
       )
 
@@ -45,15 +37,16 @@ object ToolSchema {
       case _                                             => ""
     }
 
-    // Get method signature
-    val methodType = tpe.memberType(method).widen
+    // Get case class constructor parameters
+    val constructor = classSymbol.primaryConstructor
+    val constructorType = tpe.memberType(constructor)
 
-    val (paramsList, properties, required) = methodType match {
+    val (properties, required) = constructorType match {
       case MethodType(paramNames, paramTypes, _) =>
         val props = (paramNames zip paramTypes).map { case (name, tpe) =>
           // Find @Param annotation on this parameter
-          val paramSymbol = method.paramSymss.flatten.find(_.name == name)
-          val paramAnnot  = paramSymbol.flatMap { sym =>
+          val paramSymbol = constructor.paramSymss.flatten.find(_.name == name)
+          val paramAnnot = paramSymbol.flatMap { sym =>
             sym.annotations.find(_.tpe =:= TypeRepr.of[Param])
           }
 
@@ -63,7 +56,7 @@ object ToolSchema {
           }
 
           val (jsonType, enumValues) = typeToJsonType(tpe)
-          val isOptional             = isOptionType(tpe)
+          val isOptional = isOptionType(tpe)
 
           (name, jsonType, paramDesc, enumValues, isOptional)
         }
@@ -74,14 +67,14 @@ object ToolSchema {
 
         val requiredList = props.filterNot(_._5).map(_._1)
 
-        (props, propsMap, requiredList)
+        (propsMap, requiredList)
 
       case _ =>
-        report.errorAndAbort(s"Invalid method type for $methodNameStr")
+        report.errorAndAbort(s"Invalid constructor type for ${classSymbol.name}")
     }
 
     // Generate the expression
-    val propsSeq  = properties.toSeq.map { case (k, v) =>
+    val propsSeq = properties.toSeq.map { case (k, v) =>
       '{
         (
           ${ Expr(k) },
@@ -97,7 +90,7 @@ object ToolSchema {
 
     '{
       ToolSchema(
-        ${ Expr(methodNameStr) },
+        ${ Expr(classSymbol.name) },
         ${ Expr(description) },
         ParameterSchema(
           "object",

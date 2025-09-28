@@ -1,29 +1,32 @@
-import dev.alteration.branch.hollywood.tools.schema.{Param, Tool, ToolSchema}
-import dev.alteration.branch.hollywood.tools.OllamaResponse
+import dev.alteration.branch.hollywood.tools.schema.{
+  Param,
+  Tool as ToolS,
+  ToolSchema
+}
+import dev.alteration.branch.hollywood.tools.{OllamaResponse, Tool}
 
 import java.net.URI
 import java.net.http.{HttpClient, HttpRequest, HttpResponse}
 
 // Tool service
 sealed trait TemperatureUnit
-case object Celsius extends TemperatureUnit
+case object Celsius    extends TemperatureUnit
 case object Fahrenheit extends TemperatureUnit
 
-trait WeatherService {
-  @Tool("Get temperature in specific unit")
-  def getTemp(
-               @Param("The location") location: String,
-               @Param("Temperature unit") unit: TemperatureUnit
-             ): Double = 72.0
+@ToolS("Get temperature in specific unit")
+case class WeatherService(
+    @Param("The location") location: String,
+    @Param("Temperature unit") unit: TemperatureUnit
+) extends Tool[Double] {
+  override def execute(): Double = 72.0
 }
 
 object SimpleToolExample extends App {
 
-  val client = HttpClient.newHttpClient()
-  val weatherService = new WeatherService {}
+  val client         = HttpClient.newHttpClient()
 
   // 1. Generate tool schema
-  val schema = ToolSchema.derive[WeatherService]("getTemp")
+  val schema   = ToolSchema.derive[WeatherService]
   val toolJson = ToolSchema.toJson(schema)
 
   // 2. Build initial request
@@ -44,7 +47,8 @@ object SimpleToolExample extends App {
   println("\n---\n")
 
   // 3. Call Ollama
-  val request = HttpRequest.newBuilder()
+  val request = HttpRequest
+    .newBuilder()
     .uri(URI.create("http://localhost:11434/api/chat"))
     .header("Content-Type", "application/json")
     .POST(HttpRequest.BodyPublishers.ofString(requestBody))
@@ -60,30 +64,37 @@ object SimpleToolExample extends App {
   responseJson.get
 
   // 4. Check if there's a tool call
-  val toolCallPattern = """"function":\s*\{\s*"name":\s*"(\w+)",\s*"arguments":\s*\{([^}]+)\}""".r
+  val toolCallPattern =
+    """"function":\s*\{\s*"name":\s*"(\w+)",\s*"arguments":\s*\{([^}]+)\}""".r
 
   toolCallPattern.findFirstMatchIn(response.body()) match {
     case Some(m) =>
       val functionName = m.group(1)
-      val arguments = m.group(2)
+      val arguments    = m.group(2)
 
       println(s"Tool call detected: $functionName")
       println(s"Arguments: $arguments")
 
       // 5. Parse arguments
       val locationPattern = """"location":\s*"([^"]+)"""".r
-      val unitPattern = """"unit":\s*"([^"]+)"""".r
+      val unitPattern     = """"unit":\s*"([^"]+)"""".r
 
-      val location = locationPattern.findFirstMatchIn(arguments).map(_.group(1)).getOrElse("")
-      val unitStr = unitPattern.findFirstMatchIn(arguments).map(_.group(1)).getOrElse("Fahrenheit")
-      val unit = if (unitStr == "Celsius") Celsius else Fahrenheit
+      val location = locationPattern
+        .findFirstMatchIn(arguments)
+        .map(_.group(1))
+        .getOrElse("")
+      val unitStr  = unitPattern
+        .findFirstMatchIn(arguments)
+        .map(_.group(1))
+        .getOrElse("Fahrenheit")
+      val unit     = if (unitStr == "Celsius") Celsius else Fahrenheit
 
       // 6. Execute the tool
 //      given Conversion[String, scala.Predef.String] = (s: String) => s
 //      val executor = ToolExecutor.derived[WeatherService]
 //      val result = weatherService.getTemp(location, unit)
-      val fuck = responseJson.get.message.tool_calls.head.function
-      val result = ???//ToolExecutor.execute(weatherService, fuck)
+      val fuck   = responseJson.get.message.tool_calls.head.function
+      val result = ??? // ToolExecutor.execute(weatherService, fuck)
       println(s"\nTool result: $result")
 
       // 7. Send result back to model
@@ -117,13 +128,15 @@ object SimpleToolExample extends App {
       println("\nFollow-up Request:")
       println(followUpRequest)
 
-      val followUpHttpRequest = HttpRequest.newBuilder()
+      val followUpHttpRequest = HttpRequest
+        .newBuilder()
         .uri(URI.create("http://localhost:11434/api/chat"))
         .header("Content-Type", "application/json")
         .POST(HttpRequest.BodyPublishers.ofString(followUpRequest))
         .build()
 
-      val finalResponse = client.send(followUpHttpRequest, HttpResponse.BodyHandlers.ofString())
+      val finalResponse =
+        client.send(followUpHttpRequest, HttpResponse.BodyHandlers.ofString())
 
       println("\n---\n")
       println("Final Response:")

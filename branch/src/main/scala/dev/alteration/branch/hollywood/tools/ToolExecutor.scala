@@ -3,6 +3,7 @@ package dev.alteration.branch.hollywood.tools
 import scala.deriving.Mirror
 import scala.reflect.ClassTag
 import scala.compiletime.*
+import scala.language.implicitConversions
 
 trait ToolExecutor[T <: Tool[?]] {
   def execute(
@@ -11,6 +12,25 @@ trait ToolExecutor[T <: Tool[?]] {
 }
 
 object ToolExecutor {
+
+  // Use explicit method calls, not implicit conversions
+  // e.g. Converter[String, Int] = s => _.toInt
+  // _.toInt is itself an implicit conversion, so... infinite recursion
+  given Conversion[String, String] = identity
+
+  given Conversion[String, Int] = s => Integer.parseInt(s) // Not s.toInt
+
+  given Conversion[String, Long] = s =>
+    java.lang.Long.parseLong(s) // Not s.toLong
+
+  given Conversion[String, Double] = s =>
+    java.lang.Double.parseDouble(s) // Not s.toDouble
+
+  given Conversion[String, Float] = s =>
+    java.lang.Float.parseFloat(s) // Not s.toFloat
+
+  given Conversion[String, Boolean] = s =>
+    java.lang.Boolean.parseBoolean(s) // Not s.toBoolean
 
   private inline def summonConverters[A <: Tuple]: List[Conversion[String, ?]] =
     inline erasedValue[A] match {
@@ -23,6 +43,7 @@ object ToolExecutor {
   inline def derived[T <: Tool[?]: ClassTag](using
       m: Mirror.ProductOf[T]
   ): ToolExecutor[T] = {
+    import ToolExecutor.given
     type Parameters = m.MirroredElemLabels
     type Elements   = m.MirroredElemTypes
 
@@ -38,26 +59,10 @@ object ToolExecutor {
     new ToolExecutor[T] {
       override def execute(args: Map[String, String]): String = {
         val convertedArgs = namedConverters.map { case (name, converter) =>
-          println("converting " + name + " with " + args(name))
-          converter.convert(args(name))
+          converter(args(name))
         }
         m.fromProduct(Tuple.fromArray(convertedArgs)).execute().toString
       }
     }
   }
-}
-
-import scala.language.implicitConversions
-
-object Fart extends App {
-
-
-  case class Turd(a: Int, b: String) extends Tool[Int] {
-    override def execute(): Int = a + b.toInt
-  }
-
-  given Conversion[String, Int]    = (s: String) => s.toInt
-  given Conversion[String, String] = (s: String) => s
-  val thingy                       = ToolExecutor.derived[Turd]
-  println(thingy.execute(Map("a" -> "1", "b" -> "2")))
 }
