@@ -16,7 +16,6 @@ case class OllamaResponse(
     eval_duration: Option[Long] = None
 ) derives JsonCodec
 
-
 case class OllamaMessage(
     role: String,
     content: String = "",
@@ -30,7 +29,7 @@ case class OllamaToolCall(
 
 case class OllamaFunction(
     name: String,
-    arguments: Json
+    arguments: Json // Object format in Ollama response
 ) derives JsonCodec
 
 case class OllamaUsage(

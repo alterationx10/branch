@@ -1,13 +1,25 @@
 package dev.alteration.branch.hollywood.tools
 
-import dev.alteration.branch.hollywood.tools.schema.{Param, ToolRegistry, ToolSchema, Tool as ToolS}
-import dev.alteration.branch.hollywood.tools.{CallableTool, OllamaRequest, OllamaResponse, RequestFunction, RequestMessage, RequestToolCall, Tool}
+import dev.alteration.branch.hollywood.tools.schema.{
+  Param,
+  Tool as ToolS,
+  ToolRegistry,
+  ToolSchema
+}
+import dev.alteration.branch.hollywood.tools.{
+  CallableTool,
+  OllamaRequest,
+  OllamaResponse,
+  RequestFunction,
+  RequestMessage,
+  RequestToolCall,
+  Tool
+}
 import dev.alteration.branch.friday.Json
 import dev.alteration.branch.friday.Json.JsonString
 
 import java.net.URI
 import java.net.http.{HttpClient, HttpRequest, HttpResponse}
-
 
 // Tool service
 sealed trait TemperatureUnit
@@ -34,7 +46,6 @@ object SimpleToolExample extends App {
   // Register tools
   ToolRegistry.register[WeatherService]
 
-
   // 1. Get tool definitions from registry
   val toolDefinitions = ToolRegistry.getFunctionDefinitions
   val tools           = toolDefinitions.map(fd => Tool("function", fd))
@@ -46,9 +57,7 @@ object SimpleToolExample extends App {
       RequestMessage(
         role = "user",
         content = Some(
-          JsonString(
-            "What's the temperature in Paris in Fahrenheit according to the WeatherService?"
-          )
+          "What's the temperature in Paris in Fahrenheit according to the WeatherService?"
         )
       )
     ),
@@ -73,7 +82,6 @@ object SimpleToolExample extends App {
 
   val response = client.send(request, HttpResponse.BodyHandlers.ofString())
 
-
   println("Response:")
   println(response.body())
   println("\n---\n")
@@ -95,13 +103,13 @@ object SimpleToolExample extends App {
       println(s"Arguments: $arguments")
 
       // Arguments are now a JSON object, not a string
-      val argsMap = arguments.objVal.map { case (k, v) => 
+      val argsMap = arguments.objVal.map { case (k, v) =>
         k -> (v match {
           case Json.JsonString(s) => s
-          case other => other.toString.stripPrefix("\"").stripSuffix("\"")
+          case other              => other.toString.stripPrefix("\"").stripSuffix("\"")
         })
       }
-      
+
       val location = argsMap.getOrElse("location", "")
       val unitStr  = argsMap.getOrElse("unit", "Fahrenheit")
 
@@ -121,20 +129,19 @@ object SimpleToolExample extends App {
         messages = List(
           RequestMessage(
             role = "user",
-            content =
-              Some(JsonString("What's the temperature in Paris in Celsius?"))
+            content = Some(
+              "What's the temperature in Paris in Fahrenheit according to the WeatherService?"
+            )
           ),
           RequestMessage(
             role = "assistant",
-            content = Some(JsonString("")),
+            content = Some(""),
             tool_calls = Some(
               List(
                 RequestToolCall(
-                  id = "call_generated_id",
-                  `type` = "function",
                   function = RequestFunction(
                     name = functionName,
-                    arguments = arguments.toJsonString
+                    arguments = arguments
                   )
                 )
               )
@@ -142,14 +149,15 @@ object SimpleToolExample extends App {
           ),
           RequestMessage(
             role = "tool",
-            content = Some(JsonString(contextualResult)),
+            content = Some(contextualResult),
             tool_call_id = Some("call_generated_id")
           )
         ),
         stream = false
       )
 
-      val followUpRequestBody = OllamaRequest.derived$JsonCodec.encode(followUpRequest).toString
+      val followUpRequestBody =
+        OllamaRequest.derived$JsonCodec.encode(followUpRequest).toString
 
       println("\nFollow-up Request:")
       println(followUpRequestBody)
