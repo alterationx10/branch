@@ -34,7 +34,7 @@ object SimpleToolExample extends App {
 
   // 2. Build initial request
   val requestBody = s"""{
-    "model": "llama3.2",
+    "model": "gpt-oss",
     "messages": [
       {
         "role": "user",
@@ -101,9 +101,12 @@ object SimpleToolExample extends App {
         .getOrElse("Tool execution failed")
       println(s"\nTool result: $result")
 
+      // Create contextual result message
+      val contextualResult = s"The current temperature in $location is $result degrees ${unitStr.toLowerCase}."
+
       // 7. Send result back to model
       val followUpRequest = s"""{
-        "model": "llama3.2",
+        "model": "gpt-oss",
         "messages": [
           {
             "role": "user",
@@ -116,14 +119,17 @@ object SimpleToolExample extends App {
               {
                 "function": {
                   "name": "$functionName",
-                  "arguments": {$arguments}
+                  "arguments": {
+                    "location": "$location",
+                    "unit": "$unitStr"
+                  }
                 }
               }
             ]
           },
           {
             "role": "tool",
-            "content": "$result"
+            "content": "$contextualResult"
           }
         ],
         "stream": false
