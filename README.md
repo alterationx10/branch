@@ -17,3 +17,20 @@ Metals.
 
 Some tests use `testcontainers` to run tests, so you will need Docker running to be able to run those tests
 successfully.
+
+
+We are writing a typeclass that be derived for a trait that has tool calls for an llm.
+The derived instance should have one method, and be able to execute any/multiple functions of the deriving class annotated with @Tool.
+The LLM will call it by method name, and a Map[String, String]. We should summon a Conversion[String, A] for the 'A'/types of the method signature.
+
+And example tool would look like:
+
+```scala
+trait WeatherService {
+  @Tool("Get temperature in specific unit")
+  def getTemp(
+               @Param("The location") location: String,
+               @Param("Temperature unit") unit: TemperatureUnit
+             ): Double = 72.0
+}
+```
