@@ -1,7 +1,8 @@
 package dev.alteration.branch.hollywood
 
-import dev.alteration.branch.hollywood.api._
-import dev.alteration.branch.friday.Json
+import dev.alteration.branch.hollywood.api.*
+import dev.alteration.branch.hollywood.api.ChatCompletionsResponse.derived$JsonCodec
+
 import java.net.http.{HttpRequest, HttpResponse}
 import java.net.URI
 import java.net.http.HttpClient
@@ -15,7 +16,7 @@ object Example extends App {
     messages = List(
       ChatMessage(
         role = "user",
-        content = Some(Json.JsonString("Hello!"))
+        content = Some("Hello!")
       )
     ),
     model = "gpt-oss"
@@ -36,7 +37,8 @@ object Example extends App {
   println(s"Status: ${response.statusCode()}")
   println(s"Body: ${response.body()}")
 
-  val resp = ChatCompletionsResponse.derived$JsonCodec.decode(response.body())
-  println(resp)
+  val resp = response.body().decodeAs
+  println(s"Decoded response: $resp")
+  println(resp.get.choices.head.message.get.content.get)
   
 }

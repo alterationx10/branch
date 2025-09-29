@@ -39,10 +39,11 @@ case class ChatCompletionsRequest(
 
 case class ChatMessage(
     role: String,                 // "system", "user", "assistant", "tool"
-    content: Option[Json] = None, // Can be string or array of ContentPart
+    content: Option[String] = None, // Can be string or array of ContentPart
     name: Option[String] = None,
     tool_calls: Option[List[ToolCall]] = None,
-    tool_call_id: Option[String] = None
+    tool_call_id: Option[String] = None,
+    reasoning_content: Option[String] = None // llama.cpp reasoning content
 ) derives JsonCodec
 
 case class ContentPart(
