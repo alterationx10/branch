@@ -88,7 +88,7 @@ object SimpleToolExample extends App {
   // 3. Call Ollama
   val request = HttpRequest
     .newBuilder()
-    .uri(URI.create("http://localhost:11434/api/chat"))
+    .uri(URI.create("http://localhost:8080/api/chat"))
     .header("Content-Type", "application/json")
     .POST(HttpRequest.BodyPublishers.ofString(requestBody))
     .build()
@@ -176,7 +176,7 @@ object SimpleToolExample extends App {
 
       val followUpHttpRequest = HttpRequest
         .newBuilder()
-        .uri(URI.create("http://localhost:11434/api/chat"))
+        .uri(URI.create("http://localhost:8080/api/chat"))
         .header("Content-Type", "application/json")
         .POST(HttpRequest.BodyPublishers.ofString(followUpRequestBody))
         .build()
