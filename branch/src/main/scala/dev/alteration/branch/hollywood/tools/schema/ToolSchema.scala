@@ -28,7 +28,7 @@ object ToolSchema {
       }
       .getOrElse(
         report.errorAndAbort(
-          s"Class ${classSymbol.name} must have @ToolS annotation"
+          s"Class ${classSymbol.name} must have @Tool annotation"
         )
       )
 

@@ -1,7 +1,9 @@
-package dev.alteration.branch.hollywood.tools.schema
+package dev.alteration.branch.hollywood.tools
 
-import dev.alteration.branch.hollywood.tools.{CallableTool, FunctionDefinition, ToolExecutor}
 import dev.alteration.branch.friday.Json
+import dev.alteration.branch.hollywood.api.{FunctionDefinition, Tool}
+import dev.alteration.branch.hollywood.tools.schema.{ParameterSchema, ToolSchema}
+import dev.alteration.branch.hollywood.tools.{CallableTool, ToolExecutor}
 
 import scala.collection.mutable
 import scala.deriving.Mirror
@@ -20,6 +22,10 @@ object ToolRegistry {
 
   def getFunctionDefinitions: List[FunctionDefinition] = {
     getSchemas.map(schemaToFunctionDefinition)
+  }
+
+  def getTools: List[Tool] = {
+    getFunctionDefinitions.map(funcDef => Tool("function", funcDef))
   }
 
   def getSchemasJson: String = {
