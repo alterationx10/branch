@@ -38,8 +38,8 @@ case class ChatCompletionsRequest(
 ) derives JsonCodec
 
 case class ChatMessage(
-    role: String,                 // "system", "user", "assistant", "tool"
-    content: Option[String] = None, // Can be string or array of ContentPart
+    role: String,                            // "system", "user", "assistant", "tool"
+    content: Option[String] = None,          // Can be string or array of ContentPart
     name: Option[String] = None,
     tool_calls: Option[List[ToolCall]] = None,
     tool_call_id: Option[String] = None,
@@ -78,7 +78,13 @@ case class ToolCall(
 case class FunctionCall(
     name: String,
     arguments: String // JSON string
-) derives JsonCodec
+) derives JsonCodec {
+  def argumentMap: Map[String, String] =
+    Json
+      .parse(arguments.translateEscapes())
+      .map(_.objVal.map { case (k, v) => k -> v.toString })
+      .getOrElse(Map.empty)
+}
 
 case class ToolChoice(
     `type`: String, // "function"

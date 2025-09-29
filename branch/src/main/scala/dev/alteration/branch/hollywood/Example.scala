@@ -1,6 +1,5 @@
 package dev.alteration.branch.hollywood
 
-import dev.alteration.branch.friday.Json
 import dev.alteration.branch.hollywood.api.*
 import dev.alteration.branch.hollywood.tools.{CallableTool, ToolRegistry, schema}
 import dev.alteration.branch.hollywood.api.ChatCompletionsResponse.derived$JsonCodec
@@ -68,14 +67,10 @@ object Example extends App {
           println("Tool calls made:")
           toolCalls.foreach { toolCall =>
             println(s"  Tool: ${toolCall.function.name}")
-            println(s"  Arguments: ${toolCall.function.arguments.translateEscapes()}")
+            println(s"  Arguments: ${toolCall.function.arguments}")
+            println(s"  Argument Map: ${toolCall.function.argumentMap}")
 
-            // Execute the tool if it's registered
-            // Get arguments using the helper method
-            val argsMap = Json.parse(toolCall.function.arguments.translateEscapes()).map(_.objVal.map{case (k,v) => k -> v.toString}).getOrElse(Map.empty)
-            println(s"  Parsed args map: $argsMap")
-
-            ToolRegistry.execute(toolCall.function.name, argsMap) match {
+            ToolRegistry.execute(toolCall.function.name, toolCall.function.argumentMap) match {
               case Some(result) => println(s"  Result: $result")
               case None => println(s"  Tool not found in registry")
             }
