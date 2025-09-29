@@ -1,7 +1,11 @@
 package dev.alteration.branch.hollywood
 
 import dev.alteration.branch.hollywood.api.*
-import dev.alteration.branch.hollywood.tools.{CallableTool, ToolRegistry, schema}
+import dev.alteration.branch.hollywood.tools.{
+  schema,
+  CallableTool,
+  ToolRegistry
+}
 import dev.alteration.branch.hollywood.api.ChatCompletionsResponse.derived$JsonCodec
 import dev.alteration.branch.hollywood.tools.schema.Param
 
@@ -29,7 +33,9 @@ object Example extends App {
     messages = List(
       ChatMessage(
         role = "user",
-        content = Some("I need you to use the addition tool to calculate two random numbers")
+        content = Some(
+          "I need you to use the addition tool to calculate two random numbers"
+        )
       )
     ),
     model = "gpt-oss",
@@ -55,13 +61,13 @@ object Example extends App {
   val resp = response.body().decodeAs
   println(s"Decoded response: $resp")
 
-  val choice = resp.get.choices.head
+  val choice  = resp.get.choices.head
   val message = choice.message.get
 
   message.content match {
     case Some(content) =>
       println(s"Response: $content")
-    case None =>
+    case None          =>
       message.tool_calls match {
         case Some(toolCalls) =>
           println("Tool calls made:")
@@ -70,12 +76,15 @@ object Example extends App {
             println(s"  Arguments: ${toolCall.function.arguments}")
             println(s"  Argument Map: ${toolCall.function.argumentMap}")
 
-            ToolRegistry.execute(toolCall.function.name, toolCall.function.argumentMap) match {
+            ToolRegistry.execute(
+              toolCall.function.name,
+              toolCall.function.argumentMap
+            ) match {
               case Some(result) => println(s"  Result: $result")
-              case None => println(s"  Tool not found in registry")
+              case None         => println(s"  Tool not found in registry")
             }
           }
-        case None =>
+        case None            =>
           println("No content or tool calls in response")
       }
   }

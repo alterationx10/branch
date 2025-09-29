@@ -12,7 +12,7 @@ object StringContextExtensions {
       *   A Regex that matches the interpolated string case-insensitively
       */
     def ci: Regex = ("(?i)" + sc.parts.mkString).r
-  
+
   }
 
 }

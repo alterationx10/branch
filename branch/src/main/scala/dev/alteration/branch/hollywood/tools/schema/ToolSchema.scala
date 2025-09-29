@@ -18,7 +18,7 @@ object ToolSchema {
   private def deriveImpl[T: Type](using Quotes): Expr[ToolSchema] = {
     import quotes.reflect.*
 
-    val tpe = TypeRepr.of[T]
+    val tpe         = TypeRepr.of[T]
     val classSymbol = tpe.typeSymbol
 
     // Extract @Tool annotation from the case class
@@ -38,7 +38,7 @@ object ToolSchema {
     }
 
     // Get case class constructor parameters
-    val constructor = classSymbol.primaryConstructor
+    val constructor     = classSymbol.primaryConstructor
     val constructorType = tpe.memberType(constructor)
 
     val (properties, required) = constructorType match {
@@ -46,7 +46,7 @@ object ToolSchema {
         val props = (paramNames zip paramTypes).map { case (name, tpe) =>
           // Find @Param annotation on this parameter
           val paramSymbol = constructor.paramSymss.flatten.find(_.name == name)
-          val paramAnnot = paramSymbol.flatMap { sym =>
+          val paramAnnot  = paramSymbol.flatMap { sym =>
             sym.annotations.find(_.tpe =:= TypeRepr.of[Param])
           }
 
@@ -56,7 +56,7 @@ object ToolSchema {
           }
 
           val (jsonType, enumValues) = typeToJsonType(tpe)
-          val isOptional = isOptionType(tpe)
+          val isOptional             = isOptionType(tpe)
 
           (name, jsonType, paramDesc, enumValues, isOptional)
         }
@@ -70,11 +70,13 @@ object ToolSchema {
         (propsMap, requiredList)
 
       case _ =>
-        report.errorAndAbort(s"Invalid constructor type for ${classSymbol.name}")
+        report.errorAndAbort(
+          s"Invalid constructor type for ${classSymbol.name}"
+        )
     }
 
     // Generate the expression
-    val propsSeq = properties.toSeq.map { case (k, v) =>
+    val propsSeq  = properties.toSeq.map { case (k, v) =>
       '{
         (
           ${ Expr(k) },

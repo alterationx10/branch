@@ -41,7 +41,7 @@ object ToolExecutor {
     }
 
   inline def derived[T <: CallableTool[?]](using
-                                           m: Mirror.ProductOf[T]
+      m: Mirror.ProductOf[T]
   ): ToolExecutor[T] = {
     import ToolExecutor.given
     type Parameters = m.MirroredElemLabels

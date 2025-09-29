@@ -185,7 +185,7 @@ object JsonEncoder {
     */
   implicit def vectorEncoder[A: JsonEncoder]: JsonEncoder[Vector[A]] =
     iterableEncoder[A, Vector]
-  
+
   implicit def optionEncoder[A](using
       aEncoder: JsonEncoder[A]
   ): JsonEncoder[Option[A]] = {
@@ -204,7 +204,7 @@ object JsonEncoder {
         .map { case (label, (value, encoder)) =>
           label -> encoder.asInstanceOf[JsonEncoder[Any]].encode(value)
         }
-        .filter(_._2 != Json.JsonNull)  // Omit null values from JSON objects
+        .filter(_._2 != Json.JsonNull) // Omit null values from JSON objects
       JsonObject(js.toMap)
     }
   }

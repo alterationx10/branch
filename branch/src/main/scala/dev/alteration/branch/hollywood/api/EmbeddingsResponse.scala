@@ -10,7 +10,7 @@ case class EmbeddingsResponse(
 ) derives JsonCodec
 
 case class Embedding(
-    `object`: String, // "embedding"
+    `object`: String,        // "embedding"
     embedding: List[Double], // The embedding vector
     index: Int
 ) derives JsonCodec

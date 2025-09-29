@@ -196,13 +196,15 @@ object JsonDecoder {
   implicit def vectorDecoder[A: JsonDecoder]: JsonDecoder[Vector[A]] =
     iterableDecoder[A, Vector](Vector.newBuilder[A])
 
-  implicit def optionDecoder[A](using aDecoder: JsonDecoder[A]): JsonDecoder[Option[A]] = {
+  implicit def optionDecoder[A](using
+      aDecoder: JsonDecoder[A]
+  ): JsonDecoder[Option[A]] = {
     {
       case Json.JsonNull => Try(Option.empty[A])
-      case other => aDecoder.decode(other).map(Option.apply)
+      case other         => aDecoder.decode(other).map(Option.apply)
     }
   }
-  
+
   protected class DerivedJsonDecoder[A](using
       p: Mirror.ProductOf[A],
       decoders: List[JsonDecoder[?]],

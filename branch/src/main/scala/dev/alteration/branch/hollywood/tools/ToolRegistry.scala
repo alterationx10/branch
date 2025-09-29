@@ -2,7 +2,10 @@ package dev.alteration.branch.hollywood.tools
 
 import dev.alteration.branch.friday.Json
 import dev.alteration.branch.hollywood.api.{FunctionDefinition, Tool}
-import dev.alteration.branch.hollywood.tools.schema.{ParameterSchema, ToolSchema}
+import dev.alteration.branch.hollywood.tools.schema.{
+  ParameterSchema,
+  ToolSchema
+}
 import dev.alteration.branch.hollywood.tools.{CallableTool, ToolExecutor}
 
 import scala.collection.mutable
@@ -10,10 +13,13 @@ import scala.deriving.Mirror
 
 // Don't know how I feel about this being a singleton with a global state...
 object ToolRegistry {
-  private val tools = mutable.Map[String, (ToolSchema, ToolExecutor[? <: CallableTool[?]])]()
+  private val tools =
+    mutable.Map[String, (ToolSchema, ToolExecutor[? <: CallableTool[?]])]()
 
-  inline def register[T <: CallableTool[?]](using m: Mirror.ProductOf[T]): Unit = {
-    val schema = ToolSchema.derive[T]
+  inline def register[T <: CallableTool[?]](using
+      m: Mirror.ProductOf[T]
+  ): Unit = {
+    val schema   = ToolSchema.derive[T]
     val executor = ToolExecutor.derived[T]
     tools(schema.name) = (schema, executor)
   }
@@ -33,7 +39,9 @@ object ToolRegistry {
     s"[${schemas.mkString(", ")}]"
   }
 
-  private def schemaToFunctionDefinition(schema: ToolSchema): FunctionDefinition = {
+  private def schemaToFunctionDefinition(
+      schema: ToolSchema
+  ): FunctionDefinition = {
     val parametersJson = parametersToJson(schema.parameters)
     FunctionDefinition(
       name = schema.name,
@@ -46,21 +54,31 @@ object ToolRegistry {
   private def parametersToJson(params: ParameterSchema): Json = {
     val properties = Json.JsonObject(
       params.properties.map { case (name, prop) =>
-        val propJson = Json.JsonObject(Map(
-          "type" -> Json.JsonString(prop.`type`),
-          "description" -> Json.JsonString(prop.description)
-        ) ++ prop.enumValues.map(values => 
-          "enum" -> Json.JsonArray(values.map(Json.JsonString.apply).toIndexedSeq)
-        ).toMap)
+        val propJson = Json.JsonObject(
+          Map(
+            "type"        -> Json.JsonString(prop.`type`),
+            "description" -> Json.JsonString(prop.description)
+          ) ++ prop.enumValues
+            .map(values =>
+              "enum" -> Json.JsonArray(
+                values.map(Json.JsonString.apply).toIndexedSeq
+              )
+            )
+            .toMap
+        )
         name -> propJson
       }
     )
 
-    Json.JsonObject(Map(
-      "type" -> Json.JsonString(params.`type`),
-      "properties" -> properties,
-      "required" -> Json.JsonArray(params.required.map(Json.JsonString.apply).toIndexedSeq)
-    ))
+    Json.JsonObject(
+      Map(
+        "type"       -> Json.JsonString(params.`type`),
+        "properties" -> properties,
+        "required"   -> Json.JsonArray(
+          params.required.map(Json.JsonString.apply).toIndexedSeq
+        )
+      )
+    )
   }
 
   def execute(toolName: String, args: Map[String, String]): Option[String] = {

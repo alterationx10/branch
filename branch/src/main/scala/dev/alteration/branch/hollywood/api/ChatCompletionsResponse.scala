@@ -17,9 +17,10 @@ case class ChatCompletionsResponse(
 case class Choice(
     index: Int,
     message: Option[ChatMessage] = None, // Present in non-streaming
-    delta: Option[Delta] = None, // Present in streaming
+    delta: Option[Delta] = None,         // Present in streaming
     logprobs: Option[ChoiceLogprobs] = None,
-    finish_reason: Option[String] = None // "stop", "length", "tool_calls", "content_filter", "function_call"
+    finish_reason: Option[String] =
+      None                               // "stop", "length", "tool_calls", "content_filter", "function_call"
 ) derives JsonCodec
 
 case class Delta(
