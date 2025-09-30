@@ -65,7 +65,7 @@ object MultiTurnExample extends App {
     ChatMessage(
       role = "user",
       content = Some(
-        "Using the tools you have: 1. get a random number 2. get the factorial of it 3. check if the factorial is a prime number. Report the results"
+        "Using the tools you have: 1. get a random number 2. get the factorial of it 3. check if the factorial is a prime number. Repeat until it is prime."
       )
     )
   )
@@ -102,7 +102,7 @@ object MultiTurnExample extends App {
   }
 
   // Main conversation loop
-  var maxTurns = 10
+  var maxTurns = 25
   var currentTurn = 0
 
   while (currentTurn < maxTurns) {
