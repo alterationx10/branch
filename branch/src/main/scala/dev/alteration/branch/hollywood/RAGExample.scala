@@ -1,6 +1,11 @@
 package dev.alteration.branch.hollywood
 
-/** Example demonstrating RAG (Retrieval-Augmented Generation) agent usage */
+/** Example demonstrating RAG (Retrieval-Augmented Generation) agent usage
+  *
+  * Prerequisites:
+  * - llama-server must be running with embeddings support enabled 
+  * - Example: `llama-server --embeddings -m model.gguf`
+  */
 object RAGExample {
 
   def main(args: Array[String]): Unit = {
@@ -77,27 +82,19 @@ object RAGExample {
       println()
     }
 
-    // Example with vector store operations
+    // Example: Check vector store contents
     println("\n" + "=" * 80)
-    println("Vector Store Operations:")
+    println("Vector Store Summary:")
     println("=" * 80)
-
-    // Direct search example
-    val searchQuery = "programming languages and type systems"
-    println(s"\nSearching for: '$searchQuery'")
-
-    // Create a dummy embedding for demonstration (in real use, call the embedding API)
-    // For this example, we'll use the agent's internal method by asking it to chat
-    val searchResults = vectorStore.search(
-      queryEmbedding = List.fill(1536)(scala.util.Random.nextDouble()),
-      topK = 2
-    )
-
-    println(s"\nTop ${searchResults.size} results:")
-    searchResults.foreach { scored =>
-      println(s"\nDocument ID: ${scored.document.id}")
-      println(f"Score: ${scored.score}%.4f")
-      println(s"Content: ${scored.document.content.take(100)}...")
+    println(s"Total documents indexed: ${documents.size}")
+    documents.foreach { case (id, content) =>
+      val doc = vectorStore.get(id)
+      doc.foreach { d =>
+        println(s"\nDocument '$id':")
+        println(s"  Content preview: ${d.content.take(80).replaceAll("\n", " ")}...")
+        println(s"  Embedding dimensions: ${d.embedding.size}")
+      }
     }
+    println("\nRAG agent successfully demonstrated!")
   }
 }

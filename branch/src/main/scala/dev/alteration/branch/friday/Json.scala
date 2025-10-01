@@ -50,12 +50,26 @@ enum Json {
     case JsonBool(value)    => value.toString
     case JsonNumber(value)  =>
       if (value % 1 == 0) value.toInt.toString else value.toString
-    case JsonString(value)  => s""""$value""""
+    case JsonString(value)  => s""""${escapeString(value)}""""
     case JsonArray(values)  => values.map(_.toJsonString).mkString("[", ",", "]")
     case JsonObject(values) =>
       values
-        .map { case (k, v) => s""""$k":${v.toJsonString}""" }
+        .map { case (k, v) => s""""${escapeString(k)}":${v.toJsonString}""" }
         .mkString("{", ",", "}")
+  }
+
+  private def escapeString(s: String): String = {
+    s.flatMap {
+      case '"'  => "\\\""
+      case '\\' => "\\\\"
+      case '\b' => "\\b"
+      case '\f' => "\\f"
+      case '\n' => "\\n"
+      case '\r' => "\\r"
+      case '\t' => "\\t"
+      case c if c < ' ' => f"\\u${c.toInt}%04x"
+      case c => c.toString
+    }
   }
 }
 

@@ -302,16 +302,36 @@ object RAGAgent {
   val defaultEmbeddingHandler: EmbeddingsRequest => EmbeddingsResponse = {
     req =>
       {
+        import java.net.http.HttpResponse
+        import java.nio.charset.StandardCharsets
+        import dev.alteration.branch.friday.Json
+
         val httpRequest = ClientRequest
           .builder(URI.create("http://localhost:8080/v1/embeddings"))
           .withContentType(ContentType.json)
           .POST(JsonBodyPublisher.of[EmbeddingsRequest](req))
           .build()
 
-        defaultClient
-          .send(httpRequest, JsonBodyHandler.of[EmbeddingsResponse])
-          .body()
-          .get
+        // First check status code by getting raw response
+        val rawResponse = defaultClient.send(
+          httpRequest,
+          HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8)
+        )
+
+        if (rawResponse.statusCode() != 200) {
+          val errorBody = rawResponse.body()
+          throw new RuntimeException(
+            s"Embeddings API returned error status ${rawResponse.statusCode()}. " +
+            s"Response: $errorBody"
+          )
+        }
+
+        // Parse the successful response
+        Json.decode[EmbeddingsResponse](rawResponse.body()).getOrElse {
+          throw new RuntimeException(
+            s"Failed to parse embeddings response. Body: ${rawResponse.body()}"
+          )
+        }
       }
   }
 }
