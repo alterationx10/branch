@@ -4,12 +4,6 @@ import dev.alteration.branch.friday.{Json, JsonCodec, JsonDecoder, JsonEncoder}
 
 import scala.util.Try
 
-given JsonEncoder[Map[String, Double]] = (a: Map[String, Double]) =>
-  Json.JsonObject(a.map { case (k, v) => k -> Json.JsonNumber(v) })
-
-given JsonDecoder[Map[String, Double]] = (json: Json) =>
-  Try(json.objVal.map { case (k, v) => k -> v.numVal })
-
 case class ChatCompletionsRequest(
     messages: List[ChatMessage],
     model: String,
@@ -36,6 +30,14 @@ case class ChatCompletionsRequest(
     reasoning_format: Option[String] = None,
     parse_tool_calls: Option[Boolean] = None
 ) derives JsonCodec
+
+object ChatCompletionsRequest {
+  given JsonEncoder[Map[String, Double]] = (a: Map[String, Double]) =>
+    Json.JsonObject(a.map { case (k, v) => k -> Json.JsonNumber(v) })
+
+  given JsonDecoder[Map[String, Double]] = (json: Json) =>
+    Try(json.objVal.map { case (k, v) => k -> v.numVal })
+}
 
 case class ChatMessage(
     role: String,                            // "system", "user", "assistant", "tool"
