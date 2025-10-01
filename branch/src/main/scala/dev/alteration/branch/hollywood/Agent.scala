@@ -1,21 +1,55 @@
 package dev.alteration.branch.hollywood
 
+import dev.alteration.branch.friday.http.{JsonBodyHandler, JsonBodyPublisher}
 import dev.alteration.branch.hollywood.api.*
+import dev.alteration.branch.hollywood.tools.ToolRegistry
+import dev.alteration.branch.spider.ContentType
+import dev.alteration.branch.spider.client.ClientRequest
+import dev.alteration.branch.spider.client.ClientRequest.withContentType
+
+import java.net.URI
+import java.net.http.HttpClient
 
 case class AgentConfig(
-  maxTurns: Int = 50,
-  model: String = "gpt-oss",
-  onTurn: Option[(Int, ChatMessage) => Unit] = None
+    maxTurns: Int = 50,
+    model: String = "gpt-oss",
+    onTurn: Option[(Int, ChatMessage) => Unit] = None
 )
 
 trait Agent {
   def chat(message: String): String
 }
 
+object ConversationalAgent {
+
+  import ChatCompletionsRequest.given
+
+  val defaultClient: HttpClient =
+    HttpClient.newHttpClient()
+
+  val defaultHandler: ChatCompletionsRequest => ChatCompletionsResponse = {
+    req =>
+      {
+        val httpRequest = ClientRequest
+          .builder(URI.create("http://localhost:8080/v1/chat/completions"))
+          .withContentType(ContentType.json)
+          .POST(JsonBodyPublisher.of[ChatCompletionsRequest](req))
+          .build()
+
+        defaultClient
+          .send(httpRequest, JsonBodyHandler.of[ChatCompletionsResponse])
+          .body()
+          .get
+      }
+  }
+  
+}
+
 class ConversationalAgent(
-  requestHandler: ChatCompletionsRequest => ChatCompletionsResponse,
-  toolRegistry: tools.ToolRegistry,
-  config: AgentConfig = AgentConfig()
+    requestHandler: ChatCompletionsRequest => ChatCompletionsResponse =
+      defaultHandler,
+    toolRegistry: Option[ToolRegistry] = None,
+    config: AgentConfig = AgentConfig()
 ) extends Agent {
 
   private var conversationMessages: List[ChatMessage] = List.empty
@@ -26,9 +60,9 @@ class ConversationalAgent(
     conversationMessages = conversationMessages :+ userMessage
 
     // Run multi-turn loop
-    var currentTurn = 0
+    var currentTurn          = 0
     var continueConversation = true
-    var finalResponse = ""
+    var finalResponse        = ""
 
     while (continueConversation && currentTurn < config.maxTurns) {
       currentTurn += 1
@@ -36,12 +70,12 @@ class ConversationalAgent(
       // Make API request with full conversation history
       val request = ChatCompletionsRequest(
         messages = conversationMessages,
-        tools = Some(toolRegistry.getTools),
+        tools = toolRegistry.map(_.getTools),
         model = config.model
       )
 
       val response = requestHandler(request)
-      val choice = response.choices.head
+      val choice   = response.choices.head
 
       // Get assistant's message
       val assistantMessage = choice.message.getOrElse(
@@ -60,16 +94,20 @@ class ConversationalAgent(
           assistantMessage.tool_calls match {
             case Some(toolCalls) =>
               val toolResults = toolCalls.map { toolCall =>
-                val result = try {
-                  val args = toolCall.function.argumentMap
-                  toolRegistry.execute(toolCall.function.name, args) match {
-                    case Some(value) => s"Tool ${toolCall.function.name} executed successfully. Result: $value"
-                    case None => s"Tool ${toolCall.function.name} not found"
+                val result =
+                  try {
+                    val args = toolCall.function.argumentMap
+                    toolRegistry.flatMap(
+                      _.execute(toolCall.function.name, args)
+                    ) match {
+                      case Some(value) =>
+                        s"Tool ${toolCall.function.name} executed successfully. Result: $value"
+                      case None        => s"Tool ${toolCall.function.name} not found"
+                    }
+                  } catch {
+                    case e: Exception =>
+                      s"Error executing tool ${toolCall.function.name}: ${e.getMessage}"
                   }
-                } catch {
-                  case e: Exception =>
-                    s"Error executing tool ${toolCall.function.name}: ${e.getMessage}"
-                }
 
                 ChatMessage(
                   role = "tool",
@@ -80,7 +118,9 @@ class ConversationalAgent(
               conversationMessages = conversationMessages ++ toolResults
 
             case None =>
-              finalResponse = assistantMessage.content.getOrElse("Error: tool_calls finish reason but no tools")
+              finalResponse = assistantMessage.content.getOrElse(
+                "Error: tool_calls finish reason but no tools"
+              )
               continueConversation = false
           }
 
@@ -95,7 +135,8 @@ class ConversationalAgent(
     }
 
     if (currentTurn >= config.maxTurns && continueConversation) {
-      finalResponse = s"Max turns ($config.maxTurns) reached. Last response: ${conversationMessages.lastOption.flatMap(_.content).getOrElse("")}"
+      finalResponse =
+        s"Max turns ($config.maxTurns) reached. Last response: ${conversationMessages.lastOption.flatMap(_.content).getOrElse("")}"
     }
 
     finalResponse
