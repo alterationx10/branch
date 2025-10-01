@@ -11,16 +11,43 @@ import dev.alteration.branch.hollywood.tools.{CallableTool, ToolExecutor}
 import scala.collection.mutable
 import scala.deriving.Mirror
 
-// Don't know how I feel about this being a singleton with a global state...
+trait ToolRegistry {
+  def registerTool(
+      schema: ToolSchema,
+      executor: ToolExecutor[? <: CallableTool[?]]
+  ): Unit
+  def getSchemas: List[ToolSchema]
+  def getFunctionDefinitions: List[FunctionDefinition]
+  def getTools: List[Tool]
+  def getSchemasJson: String
+  def execute(toolName: String, args: Map[String, String]): Option[String]
+  def clear(): Unit
+  def getRegisteredToolNames: List[String]
+}
+
 object ToolRegistry {
+  def apply(): ToolRegistry = MutableToolRegistry()
+
+  // Extension method to add inline register to any ToolRegistry
+  extension (registry: ToolRegistry) {
+    inline def register[T <: CallableTool[?]](using
+        m: Mirror.ProductOf[T]
+    ): Unit = {
+      val schema   = ToolSchema.derive[T]
+      val executor = ToolExecutor.derived[T]
+      registry.registerTool(schema, executor)
+    }
+  }
+}
+
+case class MutableToolRegistry() extends ToolRegistry {
   private val tools =
     mutable.Map[String, (ToolSchema, ToolExecutor[? <: CallableTool[?]])]()
 
-  inline def register[T <: CallableTool[?]](using
-      m: Mirror.ProductOf[T]
+  def registerTool(
+      schema: ToolSchema,
+      executor: ToolExecutor[? <: CallableTool[?]]
   ): Unit = {
-    val schema   = ToolSchema.derive[T]
-    val executor = ToolExecutor.derived[T]
     tools(schema.name) = (schema, executor)
   }
 

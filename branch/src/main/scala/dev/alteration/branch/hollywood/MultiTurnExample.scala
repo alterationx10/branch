@@ -3,6 +3,7 @@ package dev.alteration.branch.hollywood
 import dev.alteration.branch.hollywood.api.*
 import dev.alteration.branch.hollywood.tools.schema.Param
 import dev.alteration.branch.hollywood.tools.{CallableTool, ToolRegistry, schema}
+import dev.alteration.branch.hollywood.tools.ToolRegistry.register
 import dev.alteration.branch.friday.JsonCodec
 
 import java.net.URI
@@ -54,9 +55,10 @@ case class PrimeCheckTool(
 
 object MultiTurnExample extends App {
 
-  ToolRegistry.register[FactorialTool]
-  ToolRegistry.register[RandomNumberTool]
-  ToolRegistry.register[PrimeCheckTool]
+  val toolRegistry = ToolRegistry()
+  toolRegistry.register[FactorialTool]
+  toolRegistry.register[RandomNumberTool]
+  toolRegistry.register[PrimeCheckTool]
 
   val client = HttpClient.newHttpClient()
 
@@ -73,7 +75,7 @@ object MultiTurnExample extends App {
   def makeApiRequest(messages: List[ChatMessage]): ChatCompletionsResponse = {
     val requestBody = ChatCompletionsRequest(
       messages = messages,
-      tools = Some(ToolRegistry.getTools),
+      tools = Some(toolRegistry.getTools),
       model = "gpt-oss"
     )
 
@@ -90,7 +92,7 @@ object MultiTurnExample extends App {
   def executeToolCall(toolCall: ToolCall): String = {
     try {
       val args = toolCall.function.argumentMap
-      val result = ToolRegistry.execute(toolCall.function.name, args)
+      val result = toolRegistry.execute(toolCall.function.name, args)
       result match {
         case Some(value) => s"Tool ${toolCall.function.name} executed successfully. Result: $value"
         case None => s"Tool ${toolCall.function.name} not found"

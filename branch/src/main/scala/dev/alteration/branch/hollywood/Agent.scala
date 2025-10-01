@@ -14,6 +14,7 @@ trait Agent {
 
 class ConversationalAgent(
   requestHandler: ChatCompletionsRequest => ChatCompletionsResponse,
+  toolRegistry: tools.ToolRegistry,
   config: AgentConfig = AgentConfig()
 ) extends Agent {
 
@@ -35,7 +36,7 @@ class ConversationalAgent(
       // Make API request with full conversation history
       val request = ChatCompletionsRequest(
         messages = conversationMessages,
-        tools = Some(tools.ToolRegistry.getTools),
+        tools = Some(toolRegistry.getTools),
         model = config.model
       )
 
@@ -61,7 +62,7 @@ class ConversationalAgent(
               val toolResults = toolCalls.map { toolCall =>
                 val result = try {
                   val args = toolCall.function.argumentMap
-                  tools.ToolRegistry.execute(toolCall.function.name, args) match {
+                  toolRegistry.execute(toolCall.function.name, args) match {
                     case Some(value) => s"Tool ${toolCall.function.name} executed successfully. Result: $value"
                     case None => s"Tool ${toolCall.function.name} not found"
                   }

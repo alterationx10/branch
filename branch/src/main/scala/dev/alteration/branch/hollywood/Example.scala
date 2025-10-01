@@ -6,6 +6,7 @@ import dev.alteration.branch.hollywood.tools.{
   CallableTool,
   ToolRegistry
 }
+import dev.alteration.branch.hollywood.tools.ToolRegistry.register
 import dev.alteration.branch.hollywood.api.ChatCompletionsResponse.derived$JsonCodec
 import dev.alteration.branch.hollywood.tools.schema.Param
 
@@ -24,7 +25,8 @@ case class AdditionTool(
 
 object Example extends App {
 
-  ToolRegistry.register[AdditionTool]
+  val toolRegistry = ToolRegistry()
+  toolRegistry.register[AdditionTool]
 
   val client = HttpClient.newHttpClient()
 
@@ -39,7 +41,7 @@ object Example extends App {
       )
     ),
     model = "gpt-oss",
-    tools = Some(ToolRegistry.getTools)
+    tools = Some(toolRegistry.getTools)
   )
 
   // Encode the request to JSON
@@ -76,7 +78,7 @@ object Example extends App {
             println(s"  Arguments: ${toolCall.function.arguments}")
             println(s"  Argument Map: ${toolCall.function.argumentMap}")
 
-            ToolRegistry.execute(
+            toolRegistry.execute(
               toolCall.function.name,
               toolCall.function.argumentMap
             ) match {

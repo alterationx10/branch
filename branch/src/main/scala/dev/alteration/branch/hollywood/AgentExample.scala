@@ -7,6 +7,7 @@ import dev.alteration.branch.hollywood.api.{
 }
 import dev.alteration.branch.friday.JsonDecoder
 import dev.alteration.branch.hollywood.tools.ToolRegistry
+import dev.alteration.branch.hollywood.tools.ToolRegistry.register
 import dev.alteration.branch.spider.ContentType
 import dev.alteration.branch.spider.client.ClientRequest
 import dev.alteration.branch.spider.client.ClientRequest.*
@@ -17,9 +18,10 @@ import scala.io.StdIn
 
 object AgentExample extends App {
 
-  ToolRegistry.register[FactorialTool]
-  ToolRegistry.register[RandomNumberTool]
-  ToolRegistry.register[PrimeCheckTool]
+  val toolRegistry = ToolRegistry()
+  toolRegistry.register[FactorialTool]
+  toolRegistry.register[RandomNumberTool]
+  toolRegistry.register[PrimeCheckTool]
 
   import ChatCompletionsRequest.given
 
@@ -40,7 +42,7 @@ object AgentExample extends App {
     }
   }
 
-  val agent = ConversationalAgent(handler)
+  val agent = ConversationalAgent(handler, toolRegistry = toolRegistry)
 
   var continue = true
   while (continue) {
