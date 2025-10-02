@@ -3,12 +3,6 @@ package dev.alteration.branch.hollywood
 import dev.alteration.branch.hollywood.api.*
 import dev.alteration.branch.hollywood.tools.ToolRegistry
 
-case class AgentConfig(
-    maxTurns: Int = 50,
-    model: String = "gpt-oss",
-    onTurn: Option[(Int, ChatMessage) => Unit] = None
-)
-
 trait Agent {
   def chat(message: String): String
 }
@@ -23,8 +17,12 @@ private[hollywood] object AgentConversationLoop {
     *   Function to make chat completion requests
     * @param toolRegistry
     *   Optional tool registry for tool execution
-    * @param config
-    *   Agent configuration
+    * @param maxTurns
+    *   Maximum number of conversation turns
+    * @param model
+    *   Model to use for chat completions
+    * @param onTurn
+    *   Optional callback for each turn
     * @return
     *   Tuple of (final response, updated conversation messages)
     */
@@ -32,21 +30,23 @@ private[hollywood] object AgentConversationLoop {
       messages: List[ChatMessage],
       requestHandler: ChatCompletionsRequest => ChatCompletionsResponse,
       toolRegistry: Option[ToolRegistry],
-      config: AgentConfig
+      maxTurns: Int,
+      model: String,
+      onTurn: Option[(Int, ChatMessage) => Unit]
   ): (String, List[ChatMessage]) = {
     var conversationMessages = messages
     var currentTurn          = 0
     var continueConversation = true
     var finalResponse        = ""
 
-    while (continueConversation && currentTurn < config.maxTurns) {
+    while (continueConversation && currentTurn < maxTurns) {
       currentTurn += 1
 
       // Make API request with full conversation history
       val request = ChatCompletionsRequest(
         messages = conversationMessages,
         tools = toolRegistry.map(_.getTools),
-        model = config.model
+        model = model
       )
 
       val response = requestHandler(request)
@@ -61,7 +61,7 @@ private[hollywood] object AgentConversationLoop {
       conversationMessages = conversationMessages :+ assistantMessage
 
       // Callback for observability
-      config.onTurn.foreach(_(currentTurn, assistantMessage))
+      onTurn.foreach(_(currentTurn, assistantMessage))
 
       // Handle finish reason
       choice.finish_reason match {
@@ -109,18 +109,11 @@ private[hollywood] object AgentConversationLoop {
       }
     }
 
-    if (currentTurn >= config.maxTurns && continueConversation) {
+    if (currentTurn >= maxTurns && continueConversation) {
       finalResponse =
-        s"Max turns (${config.maxTurns}) reached. Last response: ${conversationMessages.lastOption.flatMap(_.content).getOrElse("")}"
+        s"Max turns ($maxTurns) reached. Last response: ${conversationMessages.lastOption.flatMap(_.content).getOrElse("")}"
     }
 
     (finalResponse, conversationMessages)
   }
 }
-
-/** RAG (Retrieval-Augmented Generation) Agent Configuration */
-case class RAGConfig(
-    embeddingModel: String = "text-embedding-3-small",
-    topK: Int = 5,
-    embeddingEndpoint: String = "http://localhost:8080/v1/embeddings"
-)

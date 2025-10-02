@@ -13,14 +13,17 @@ import java.net.URI
 import java.net.http.HttpClient
 
 class RagAgent(
-    vectorStore: VectorStore,
     requestHandler: ChatCompletionsRequest => ChatCompletionsResponse =
       ConversationalAgent.defaultHandler,
     embeddingHandler: EmbeddingsRequest => EmbeddingsResponse =
       RagAgent.defaultEmbeddingHandler,
     toolRegistry: Option[ToolRegistry] = None,
-    config: AgentConfig = AgentConfig(),
-    ragConfig: RAGConfig = RAGConfig()
+    vectorStore: VectorStore,
+    maxTurns: Int = 50,
+    model: String = "gpt-oss",
+    embeddingModel: String = "gpt-oss",
+    onTurn: Option[(Int, ChatMessage) => Unit] = None,
+    topK: Int = 5
 ) extends Agent {
 
   private var conversationMessages: List[ChatMessage] = List.empty
@@ -37,7 +40,7 @@ class RagAgent(
   private def getEmbedding(text: String): List[Double] = {
     val request  = EmbeddingsRequest(
       input = dev.alteration.branch.friday.Json.JsonString(text),
-      model = ragConfig.embeddingModel
+      model = embeddingModel
     )
     val response = embeddingHandler(request)
     response.data.headOption
@@ -48,7 +51,7 @@ class RagAgent(
   override def chat(message: String): String = {
     // Get query embedding and retrieve relevant documents
     val queryEmbedding = getEmbedding(message)
-    val relevantDocs   = vectorStore.search(queryEmbedding, ragConfig.topK)
+    val relevantDocs   = vectorStore.search(queryEmbedding, topK)
 
     // Build context from retrieved documents
     val context = if (relevantDocs.nonEmpty) {
@@ -82,7 +85,9 @@ Based on the above context, please answer the following question:"""
       conversationMessages,
       requestHandler,
       toolRegistry,
-      config
+      maxTurns,
+      model,
+      onTurn
     )
     conversationMessages = updatedMessages
 

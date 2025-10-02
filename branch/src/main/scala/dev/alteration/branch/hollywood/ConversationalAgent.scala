@@ -43,7 +43,9 @@ class ConversationalAgent(
     requestHandler: ChatCompletionsRequest => ChatCompletionsResponse =
       ConversationalAgent.defaultHandler,
     toolRegistry: Option[ToolRegistry] = None,
-    config: AgentConfig = AgentConfig()
+    maxTurns: Int = 50,
+    model: String = "gpt-oss",
+    onTurn: Option[(Int, ChatMessage) => Unit] = None
 ) extends Agent {
 
   private var conversationMessages: List[ChatMessage] = List.empty
@@ -58,7 +60,9 @@ class ConversationalAgent(
       conversationMessages,
       requestHandler,
       toolRegistry,
-      config
+      maxTurns,
+      model,
+      onTurn
     )
     conversationMessages = updatedMessages
 

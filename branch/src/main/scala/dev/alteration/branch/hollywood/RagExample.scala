@@ -15,28 +15,16 @@ object RagExample {
     // Create an in-memory vector store
     val vectorStore = new InMemoryVectorStore()
 
-    // Create RAG agent with custom configuration
-    val ragConfig = RAGConfig(
-      embeddingModel = "text-embedding-3-small",
-      topK = 3,
-      embeddingEndpoint = "http://localhost:8080/v1/embeddings"
-    )
-
-    val agentConfig = AgentConfig(
-      maxTurns = 10,
-      model = "gpt-oss",
+    val ragAgent = new RagAgent(
+      vectorStore = vectorStore,
       onTurn = Some { (turn, message) =>
         println(s"Turn $turn: ${message.role}")
         message.content.foreach(content =>
           println(s"  Content: ${content.take(100)}...")
         )
-      }
-    )
-
-    val ragAgent = new RagAgent(
-      vectorStore = vectorStore,
-      ragConfig = ragConfig,
-      config = agentConfig
+      },
+      topK = 3,
+      maxTurns = 10
     )
 
     // Index some documents into the knowledge base
