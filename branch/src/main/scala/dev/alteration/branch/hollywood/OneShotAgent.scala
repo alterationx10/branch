@@ -79,41 +79,6 @@ class OneShotAgent(
 
 object OneShotAgent {
 
-  /** Create a one-shot agent with a simple system/user prompt pair
-    *
-    * @param systemPrompt
-    *   The system prompt
-    * @param requestHandler
-    *   Optional request handler
-    * @param toolRegistry
-    *   Optional tool registry
-    * @param maxTurns
-    *   Maximum turns (default 10)
-    * @param model
-    *   Model to use
-    * @param onTurn
-    *   Optional turn callback
-    * @return
-    *   A new OneShotAgent instance
-    */
-  def apply(
-      systemPrompt: String,
-      requestHandler: ChatCompletionsRequest => ChatCompletionsResponse =
-        ConversationalAgent.defaultHandler,
-      toolRegistry: Option[ToolRegistry] = None,
-      maxTurns: Int = 10,
-      model: String = "gpt-oss",
-      onTurn: Option[(Int, ChatMessage) => Unit] = None
-  ): OneShotAgent =
-    new OneShotAgent(
-      systemPrompt,
-      requestHandler,
-      toolRegistry,
-      maxTurns,
-      model,
-      onTurn
-    )
-
   /** Create a specialized one-shot agent for a specific task
     *
     * @param taskName
