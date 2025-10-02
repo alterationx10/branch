@@ -12,7 +12,6 @@ object AgentExample extends App {
   toolRegistry.register[RandomNumberTool]
   toolRegistry.register[PrimeCheckTool]
 
-  
   val agent = ConversationalAgent(toolRegistry = Some(toolRegistry))
 
   var continue = true

@@ -60,15 +60,15 @@ enum Json {
 
   private def escapeString(s: String): String = {
     s.flatMap {
-      case '"'  => "\\\""
-      case '\\' => "\\\\"
-      case '\b' => "\\b"
-      case '\f' => "\\f"
-      case '\n' => "\\n"
-      case '\r' => "\\r"
-      case '\t' => "\\t"
+      case '"'          => "\\\""
+      case '\\'         => "\\\\"
+      case '\b'         => "\\b"
+      case '\f'         => "\\f"
+      case '\n'         => "\\n"
+      case '\r'         => "\\r"
+      case '\t'         => "\\t"
       case c if c < ' ' => f"\\u${c.toInt}%04x"
-      case c => c.toString
+      case c            => c.toString
     }
   }
 }

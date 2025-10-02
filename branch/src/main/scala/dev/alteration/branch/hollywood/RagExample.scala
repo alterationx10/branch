@@ -91,7 +91,7 @@ object RagExample {
     println("Vector Store Summary:")
     println("=" * 80)
     println(s"Total documents indexed: ${documents.size}")
-    documents.foreach { case (id, content) =>
+    documents.foreach { case (id, _) =>
       val doc = vectorStore.get(id)
       doc.foreach { d =>
         println(s"\nDocument '$id':")

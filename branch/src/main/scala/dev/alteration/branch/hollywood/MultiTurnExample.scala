@@ -2,7 +2,11 @@ package dev.alteration.branch.hollywood
 
 import dev.alteration.branch.hollywood.api.*
 import dev.alteration.branch.hollywood.tools.schema.Param
-import dev.alteration.branch.hollywood.tools.{CallableTool, ToolRegistry, schema}
+import dev.alteration.branch.hollywood.tools.{
+  schema,
+  CallableTool,
+  ToolRegistry
+}
 import dev.alteration.branch.hollywood.tools.ToolRegistry.register
 import dev.alteration.branch.friday.JsonCodec
 
@@ -16,7 +20,10 @@ case class FactorialTool(
 ) extends CallableTool[Long] {
 
   override def execute(): Long = {
-    if (n < 0) throw new IllegalArgumentException("Factorial is not defined for negative numbers")
+    if (n < 0)
+      throw new IllegalArgumentException(
+        "Factorial is not defined for negative numbers"
+      )
     if (n == 0 || n == 1) 1L
     else (2L to n.toLong).product
   }
@@ -79,7 +86,8 @@ object MultiTurnExample extends App {
       model = "gpt-oss"
     )
 
-    val request = HttpRequest.newBuilder()
+    val request = HttpRequest
+      .newBuilder()
       .uri(URI.create("http://localhost:8080/v1/chat/completions"))
       .header("Content-Type", "application/json")
       .POST(HttpRequest.BodyPublishers.ofString(requestBody.toJsonString))
@@ -91,11 +99,12 @@ object MultiTurnExample extends App {
 
   def executeToolCall(toolCall: ToolCall): String = {
     try {
-      val args = toolCall.function.argumentMap
+      val args   = toolCall.function.argumentMap
       val result = toolRegistry.execute(toolCall.function.name, args)
       result match {
-        case Some(value) => s"Tool ${toolCall.function.name} executed successfully. Result: $value"
-        case None => s"Tool ${toolCall.function.name} not found"
+        case Some(value) =>
+          s"Tool ${toolCall.function.name} executed successfully. Result: $value"
+        case None        => s"Tool ${toolCall.function.name} not found"
       }
     } catch {
       case e: Exception =>
@@ -104,7 +113,7 @@ object MultiTurnExample extends App {
   }
 
   // Main conversation loop
-  var currentTurn = 0
+  var currentTurn          = 0
   var continueConversation = true
 
   while (continueConversation) {
@@ -113,7 +122,7 @@ object MultiTurnExample extends App {
 
     // Make API request
     val response = makeApiRequest(conversationMessages)
-    val choice = response.choices.head
+    val choice   = response.choices.head
 
     // Get the first choice's message
     val assistantMessage = choice.message.getOrElse(
@@ -123,7 +132,9 @@ object MultiTurnExample extends App {
     // Add assistant's response to conversation
     conversationMessages = conversationMessages :+ assistantMessage
 
-    println(s"Assistant: ${assistantMessage.content.getOrElse("No text content")}")
+    println(
+      s"Assistant: ${assistantMessage.content.getOrElse("No text content")}"
+    )
     println(s"Finish reason: ${choice.finish_reason}")
 
     // Check finish reason to determine if we should continue
@@ -134,7 +145,9 @@ object MultiTurnExample extends App {
             println(s"Executing ${toolCalls.length} tool call(s)...")
 
             val toolResults = toolCalls.map { toolCall =>
-              println(s"Calling tool: ${toolCall.function.name} with args: ${toolCall.function.arguments}")
+              println(
+                s"Calling tool: ${toolCall.function.name} with args: ${toolCall.function.arguments}"
+              )
               val result = executeToolCall(toolCall)
               println(s"Tool result: $result")
 
@@ -149,7 +162,9 @@ object MultiTurnExample extends App {
             conversationMessages = conversationMessages ++ toolResults
 
           case None =>
-            println("Finish reason was tool_calls but no tool calls found. Ending conversation.")
+            println(
+              "Finish reason was tool_calls but no tool calls found. Ending conversation."
+            )
             continueConversation = false
         }
 

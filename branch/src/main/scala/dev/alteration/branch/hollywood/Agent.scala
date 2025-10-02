@@ -3,7 +3,6 @@ package dev.alteration.branch.hollywood
 import dev.alteration.branch.hollywood.api.*
 import dev.alteration.branch.hollywood.tools.ToolRegistry
 
-
 case class AgentConfig(
     maxTurns: Int = 50,
     model: String = "gpt-oss",
@@ -18,11 +17,16 @@ trait Agent {
 private[hollywood] object AgentConversationLoop {
 
   /** Runs the multi-turn conversation loop
-    * @param messages The current conversation messages
-    * @param requestHandler Function to make chat completion requests
-    * @param toolRegistry Optional tool registry for tool execution
-    * @param config Agent configuration
-    * @return Tuple of (final response, updated conversation messages)
+    * @param messages
+    *   The current conversation messages
+    * @param requestHandler
+    *   Function to make chat completion requests
+    * @param toolRegistry
+    *   Optional tool registry for tool execution
+    * @param config
+    *   Agent configuration
+    * @return
+    *   Tuple of (final response, updated conversation messages)
     */
   def run(
       messages: List[ChatMessage],
@@ -114,11 +118,9 @@ private[hollywood] object AgentConversationLoop {
   }
 }
 
-
 /** RAG (Retrieval-Augmented Generation) Agent Configuration */
 case class RAGConfig(
     embeddingModel: String = "text-embedding-3-small",
     topK: Int = 5,
     embeddingEndpoint: String = "http://localhost:8080/v1/embeddings"
 )
-

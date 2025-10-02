@@ -1,7 +1,11 @@
 package dev.alteration.branch.hollywood
 
 import dev.alteration.branch.friday.http.{JsonBodyHandler, JsonBodyPublisher}
-import dev.alteration.branch.hollywood.api.{ChatCompletionsRequest, ChatCompletionsResponse, ChatMessage}
+import dev.alteration.branch.hollywood.api.{
+  ChatCompletionsRequest,
+  ChatCompletionsResponse,
+  ChatMessage
+}
 import dev.alteration.branch.hollywood.tools.ToolRegistry
 import dev.alteration.branch.spider.ContentType
 import dev.alteration.branch.spider.client.ClientRequest
