@@ -1,12 +1,14 @@
 package dev.alteration.branch.hollywood
 
+import dev.alteration.branch.hollywood.rag.InMemoryVectorStore
+
 /** Example demonstrating RAG (Retrieval-Augmented Generation) agent usage
   *
   * Prerequisites:
   *   - llama-server must be running with embeddings support enabled
   *   - Example: `llama-server --embeddings -m model.gguf`
   */
-object RAGExample {
+object RagExample {
 
   def main(args: Array[String]): Unit = {
 
@@ -31,7 +33,7 @@ object RAGExample {
       }
     )
 
-    val ragAgent = new RAGAgent(
+    val ragAgent = new RagAgent(
       vectorStore = vectorStore,
       ragConfig = ragConfig,
       config = agentConfig

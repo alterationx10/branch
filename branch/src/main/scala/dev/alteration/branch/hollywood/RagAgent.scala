@@ -1,21 +1,23 @@
 package dev.alteration.branch.hollywood
 
-import dev.alteration.branch.friday.http.JsonBodyPublisher
+import dev.alteration.branch.friday.http.{JsonBodyHandler, JsonBodyPublisher}
 import dev.alteration.branch.hollywood.api.*
 import dev.alteration.branch.hollywood.tools.ToolRegistry
 import dev.alteration.branch.spider.ContentType
 import dev.alteration.branch.spider.client.ClientRequest
 import dev.alteration.branch.spider.client.ClientRequest.withContentType
+import dev.alteration.branch.friday.Json
+import dev.alteration.branch.hollywood.rag.VectorStore
 
 import java.net.URI
 import java.net.http.HttpClient
 
-class RAGAgent(
+class RagAgent(
     vectorStore: VectorStore,
     requestHandler: ChatCompletionsRequest => ChatCompletionsResponse =
       ConversationalAgent.defaultHandler,
     embeddingHandler: EmbeddingsRequest => EmbeddingsResponse =
-      RAGAgent.defaultEmbeddingHandler,
+      RagAgent.defaultEmbeddingHandler,
     toolRegistry: Option[ToolRegistry] = None,
     config: AgentConfig = AgentConfig(),
     ragConfig: RAGConfig = RAGConfig()
@@ -88,7 +90,7 @@ Based on the above context, please answer the following question:"""
   }
 }
 
-object RAGAgent {
+object RagAgent {
 
   val defaultClient: HttpClient =
     HttpClient.newHttpClient()
@@ -96,9 +98,6 @@ object RAGAgent {
   val defaultEmbeddingHandler: EmbeddingsRequest => EmbeddingsResponse = {
     req =>
       {
-        import java.net.http.HttpResponse
-        import java.nio.charset.StandardCharsets
-        import dev.alteration.branch.friday.Json
 
         val httpRequest = ClientRequest
           .builder(URI.create("http://localhost:8080/v1/embeddings"))
@@ -106,26 +105,13 @@ object RAGAgent {
           .POST(JsonBodyPublisher.of[EmbeddingsRequest](req))
           .build()
 
-        // First check status code by getting raw response
-        val rawResponse = defaultClient.send(
-          httpRequest,
-          HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8)
-        )
-
-        if (rawResponse.statusCode() != 200) {
-          val errorBody = rawResponse.body()
-          throw new RuntimeException(
-            s"Embeddings API returned error status ${rawResponse.statusCode()}. " +
-              s"Response: $errorBody"
+        defaultClient
+          .send(
+            httpRequest,
+            JsonBodyHandler.of[EmbeddingsResponse]
           )
-        }
-
-        // Parse the successful response
-        Json.decode[EmbeddingsResponse](rawResponse.body()).getOrElse {
-          throw new RuntimeException(
-            s"Failed to parse embeddings response. Body: ${rawResponse.body()}"
-          )
-        }
+          .body()
+          .get
       }
   }
 }
