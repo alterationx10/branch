@@ -47,6 +47,14 @@ object ToolRegistry {
       registry.registerTool(schema, executor)
       registry
     }
+
+    // Method to register a tuple of (ToolSchema, ToolExecutor) directly
+    def register(
+        tool: (ToolSchema, ToolExecutor[? <: CallableTool[?]])
+    ): ToolRegistry = {
+      registry.registerTool(tool._1, tool._2)
+      registry
+    }
   }
 }
 

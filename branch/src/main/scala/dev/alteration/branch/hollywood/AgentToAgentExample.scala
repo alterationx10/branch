@@ -26,25 +26,25 @@ object AgentToAgentExample {
         Some("Write in a friendly, educational tone suitable for a blog post")
     )
 
-    // Derive tools from the specialized agents
-    val (mathToolSchema, mathToolExecutor) = Agent.deriveAgentTool(
-      mathAgent,
-      agentName = Some("math_expert"),
-      description =
-        "Consult a mathematics expert for calculations and mathematical explanations"
-    )
-
-    val (writerToolSchema, writerToolExecutor) = Agent.deriveAgentTool(
-      writerAgent,
-      agentName = Some("writer"),
-      description =
-        "Consult a technical writer to polish and improve written content"
-    )
-
     // Create a coordinator agent with access to both specialized agents
+    // deriveAgentTool returns a tuple that can be registered directly
     val coordinatorRegistry = ToolRegistry()
-      .register(mathToolSchema, mathToolExecutor)
-      .register(writerToolSchema, writerToolExecutor)
+      .register(
+        Agent.deriveAgentTool(
+          mathAgent,
+          agentName = Some("math_expert"),
+          description =
+            "Consult a mathematics expert for calculations and mathematical explanations"
+        )
+      )
+      .register(
+        Agent.deriveAgentTool(
+          writerAgent,
+          agentName = Some("writer"),
+          description =
+            "Consult a technical writer to polish and improve written content"
+        )
+      )
 
     val coordinator = new ConversationalAgent(
       toolRegistry = Some(coordinatorRegistry),
