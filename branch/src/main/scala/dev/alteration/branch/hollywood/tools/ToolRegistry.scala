@@ -32,10 +32,20 @@ object ToolRegistry {
   extension (registry: ToolRegistry) {
     inline def register[T <: CallableTool[?]](using
         m: Mirror.ProductOf[T]
-    ): Unit = {
+    ): ToolRegistry = {
       val schema   = ToolSchema.derive[T]
       val executor = ToolExecutor.derived[T]
       registry.registerTool(schema, executor)
+      registry
+    }
+
+    // Method to register with pre-built schema and executor (for agent tools)
+    def register(
+        schema: ToolSchema,
+        executor: ToolExecutor[? <: CallableTool[?]]
+    ): ToolRegistry = {
+      registry.registerTool(schema, executor)
+      registry
     }
   }
 }
