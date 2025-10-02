@@ -1,6 +1,7 @@
 package dev.alteration.branch.hollywood
 
-import dev.alteration.branch.hollywood.rag.InMemoryVectorStore
+import dev.alteration.branch.hollywood.clients.EmbeddingClient
+import dev.alteration.branch.hollywood.rag.{DocumentIndexer, InMemoryVectorStore}
 
 /** Example demonstrating RAG (Retrieval-Augmented Generation) agent usage
   *
@@ -15,7 +16,14 @@ object RagExample {
     // Create an in-memory vector store
     val vectorStore = new InMemoryVectorStore()
 
+    // Create embedding client
+    val embeddingClient = new EmbeddingClient()
+
+    // Create document indexer
+    val documentIndexer = new DocumentIndexer(embeddingClient, vectorStore)
+
     val ragAgent = new RagAgent(
+      embeddingClient = embeddingClient,
       vectorStore = vectorStore,
       onTurn = Some { (turn, message) =>
         println(s"Turn $turn: ${message.role}")
@@ -56,7 +64,7 @@ object RagExample {
     )
 
     println("Indexing documents into vector store...")
-    ragAgent.indexDocuments(documents)
+    documentIndexer.indexDocuments(documents)
     println(s"Indexed ${documents.size} documents\n")
 
     // Ask questions that should be answered using the knowledge base
