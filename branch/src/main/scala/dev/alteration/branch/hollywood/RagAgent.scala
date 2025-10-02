@@ -17,8 +17,6 @@ class RagAgent(
     topK: Int = 5
 ) extends Agent {
 
-  private var conversationMessages: List[ChatMessage] = List.empty
-
   override def chat(message: String): String = {
     // Get query embedding and retrieve relevant documents
     val queryEmbedding = embeddingClient.getEmbedding(message)
@@ -43,24 +41,20 @@ Based on the above context, please answer the following question:"""
       "No relevant context found in the knowledge base. Please answer based on your general knowledge:"
     }
 
-    // Create system message with context and add user message
+    // Create system message with context and user message for single-turn RAG query
     val systemMessage = ChatMessage(role = "system", content = Some(context))
     val userMessage   = ChatMessage(role = "user", content = Some(message))
-
-    conversationMessages =
-      List(systemMessage) ++ conversationMessages.filterNot(_.role == "system")
-    conversationMessages = conversationMessages :+ userMessage
+    val messages      = List(systemMessage, userMessage)
 
     // Run shared conversation loop
-    val (response, updatedMessages) = AgentConversationLoop.run(
-      conversationMessages,
+    val (response, _) = AgentConversationLoop.run(
+      messages,
       requestHandler,
       toolRegistry,
       maxTurns,
       model,
       onTurn
     )
-    conversationMessages = updatedMessages
 
     response
   }
