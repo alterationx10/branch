@@ -3,8 +3,8 @@ package dev.alteration.branch.hollywood
 /** Example demonstrating RAG (Retrieval-Augmented Generation) agent usage
   *
   * Prerequisites:
-  * - llama-server must be running with embeddings support enabled 
-  * - Example: `llama-server --embeddings -m model.gguf`
+  *   - llama-server must be running with embeddings support enabled
+  *   - Example: `llama-server --embeddings -m model.gguf`
   */
 object RAGExample {
 
@@ -25,7 +25,9 @@ object RAGExample {
       model = "gpt-oss",
       onTurn = Some { (turn, message) =>
         println(s"Turn $turn: ${message.role}")
-        message.content.foreach(content => println(s"  Content: ${content.take(100)}..."))
+        message.content.foreach(content =>
+          println(s"  Content: ${content.take(100)}...")
+        )
       }
     )
 
@@ -72,7 +74,7 @@ object RAGExample {
       "What is Scala?",
       "Tell me about functional programming",
       "What does the JVM do?"
-    )
+    ).map(_ + " A one line summary will do.")
 
     questions.foreach { question =>
       println(s"\nQuestion: $question")
@@ -91,7 +93,9 @@ object RAGExample {
       val doc = vectorStore.get(id)
       doc.foreach { d =>
         println(s"\nDocument '$id':")
-        println(s"  Content preview: ${d.content.take(80).replaceAll("\n", " ")}...")
+        println(
+          s"  Content preview: ${d.content.take(80).replaceAll("\n", " ")}..."
+        )
         println(s"  Embedding dimensions: ${d.embedding.size}")
       }
     }
