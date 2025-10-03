@@ -20,7 +20,7 @@ case class Choice(
     delta: Option[Delta] = None,         // Present in streaming
     logprobs: Option[ChoiceLogprobs] = None,
     finish_reason: Option[String] =
-      None                               // "stop", "length", "tool_calls", "content_filter", "function_call"
+      None // "stop", "length", "tool_calls", "content_filter", "function_call"
 ) derives JsonCodec
 
 case class Delta(
