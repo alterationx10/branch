@@ -9,7 +9,7 @@ class OneShotAgentSpec extends LlamaServerFixture {
 
   // Set this to false if llama-server is already running
   override val shouldStartLlamaServer: Boolean = true
-  
+
   test("OneShotAgent should respond to basic chat messages") {
     val agent = OneShotAgent(
       systemPrompt = "You are a helpful assistant. Respond concisely."
@@ -20,7 +20,9 @@ class OneShotAgentSpec extends LlamaServerFixture {
     assert(response.contains("4"))
   }
 
-  test("OneShotAgent.forTask should create agent with structured task definition") {
+  test(
+    "OneShotAgent.forTask should create agent with structured task definition"
+  ) {
     val summarizer = OneShotAgent.forTask(
       taskName = "Text Summarization",
       taskDescription = "Summarize the given text in one sentence.",
@@ -28,7 +30,7 @@ class OneShotAgentSpec extends LlamaServerFixture {
       outputFormat = Some("One sentence summary")
     )
 
-    val text = "Artificial intelligence has made tremendous progress. " +
+    val text    = "Artificial intelligence has made tremendous progress. " +
       "AI systems are becoming increasingly capable in many domains."
     val summary = summarizer.chat(text)
 
@@ -42,7 +44,7 @@ class OneShotAgentSpec extends LlamaServerFixture {
     )
 
     val template = "Generate a {style} greeting for {name}."
-    val result = agent.execute(
+    val result   = agent.execute(
       template,
       Map("style" -> "formal", "name" -> "Dr. Smith")
     )
