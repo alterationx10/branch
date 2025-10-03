@@ -29,3 +29,4 @@ _Branch_ is made up of a collection of modules, each focusing on different parts
 - **[Keanu](/keanu)** - A simple _typed_ EventBus implementation, and a mediocre _untyped_ ActorSystem
 - **[Ursula](/ursula)** - A slim CLI framework
 - **[Mustachio](/mustachio)** - A Mustache template engine, great for HTML templating
+- **[Holywood](/hollywood)** - A library for LLM Agents, with local LLMs in mind
