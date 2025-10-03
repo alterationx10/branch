@@ -2,8 +2,8 @@
 title: Hollywood
 description: LLM Agents
 author: Mark Rudolph
-published: 2025-01-25T04:36:00Z
-lastUpdated: 2025-01-25T04:36:00Z
+published: 2025-10-03T00:00:00Z
+lastUpdated: 2025-10-03T00:00:00Z
 tags:
   - llm
   - agent
@@ -15,9 +15,12 @@ tags:
 
 A library for LLM Agents.
 
-Focused on local LLMs. It is built to use with llama-server, and primarily using gpt-oss. llama-server is supposed to
-be "open ai compatible", so presumably this library would work with others llm servers that are as well, though no real
-testing has gone into that.
+Designed with local LLMs in mind, this library is built to work with llama-server, primarily tested with gpt-oss. Since
+llama-server implements OpenAI-compatible endpoints, the library should work with other compatible LLM servers, though
+compatibility beyond llama-server has not been extensively validated.
+
+This is an early-stage project that provides core functionality for straightforward agent workflows. As the library
+evolves, the API structure is subject to change — more so than other modules in this project.
 
 Here is what I am using to start llama-server, which allows gpt-oss to completions and embeddings:
 
@@ -39,7 +42,8 @@ This simple interface allows agents to be easily composed and used as tools with
 
 ### One Shot Agent
 
-A stateless agent that executes a single request-response cycle with a fixed system prompt. Useful for specific tasks or as a tool within other agents.
+A stateless agent that executes a single request-response cycle with a fixed system prompt. Useful for specific tasks or
+as a tool within other agents.
 
 ```scala
 val agent = OneShotAgent(
@@ -80,7 +84,8 @@ val result = agent.execute(
 
 ### RAG Agent
 
-A Retrieval-Augmented Generation agent that uses a vector store to retrieve relevant documents and include them as context when answering questions.
+A Retrieval-Augmented Generation agent that uses a vector store to retrieve relevant documents and include them as
+context when answering questions.
 
 ```scala
 val vectorStore = new InMemoryVectorStore()
@@ -106,6 +111,7 @@ val answer = ragAgent.chat("What is Scala?")
 ```
 
 The agent:
+
 1. Embeds the query using the embedding client
 2. Searches the vector store for the top K relevant documents
 3. Constructs a system message with the retrieved context
@@ -118,10 +124,15 @@ The `VectorStore` trait defines the interface for document storage and retrieval
 ```scala
 trait VectorStore {
   def add(id: String, content: String, embedding: List[Double]): Unit
+
   def addAll(documents: List[(String, String, List[Double])]): Unit
+
   def search(queryEmbedding: List[Double], topK: Int = 5): List[ScoredDocument]
+
   def get(id: String): Option[Document]
+
   def remove(id: String): Unit
+
   def clear(): Unit
 }
 ```
@@ -147,6 +158,7 @@ Conversation history is managed by the `ConversationState` trait:
 ```scala
 trait ConversationState {
   def get: List[ChatMessage]
+
   def update(messages: List[ChatMessage]): Unit
 }
 ```
@@ -162,7 +174,8 @@ val agent = ConversationalAgent(
 
 ## Tools
 
-Tools allow agents to perform actions beyond text generation. The library provides a type-safe system for defining and executing tools using compile-time derivation.
+Tools allow agents to perform actions beyond text generation. The library provides a type-safe system for defining and
+executing tools using compile-time derivation.
 
 ### CallableTool
 
@@ -179,9 +192,9 @@ Annotate your tool with `@Tool` and parameters with `@Param` to generate schemas
 ```scala
 @schema.Tool("Add two numbers together")
 case class Calculator(
-  @Param("a number") a: Int,
-  @Param("a number") b: Int
-) extends CallableTool[Int] {
+                       @Param("a number") a: Int,
+                       @Param("a number") b: Int
+                     ) extends CallableTool[Int] {
   def execute(): Int = a + b
 }
 ```
@@ -199,6 +212,7 @@ trait ToolExecutor[T <: CallableTool[?]] {
 ```
 
 Executors are automatically derived at compile time using `ToolExecutor.derived[T]`, which:
+
 1. Extracts parameter names and types from the case class
 2. Summons type converters for each parameter
 3. Converts string arguments to the correct types
@@ -225,6 +239,7 @@ val response = agent.chat("What is 15 plus 27?")
 ```
 
 The registry:
+
 - Stores tool schemas and executors
 - Converts schemas to OpenAI-compatible function definitions
 - Executes tools by name with string arguments
@@ -241,6 +256,7 @@ Tool schemas are derived at compile time from annotated case classes using macro
 5. Handles optional parameters and enum types
 
 The generated schema includes:
+
 - Tool name (fully qualified class name)
 - Description from `@Tool` annotation
 - Parameter definitions with types and descriptions
@@ -287,15 +303,18 @@ Tests are included but ignored by default since they require a running llama-ser
 To run the tests:
 
 1. Start llama-server with embeddings support:
+
 ```bash
 llama-server -hf ggml-org/gpt-oss-20b-GGUF --ctx-size 8192 --jinja -ub 2048 -b 2048 --embeddings --pooling mean
 ```
 
 2. In the test file, set `munitIgnore` to `false`:
+
 ```scala
 class OneShotAgentSpec extends LlamaServerFixture {
-  override def munitIgnore: Boolean = false  // Enable tests
-  override val shouldStartLlamaServer: Boolean = false  // Using external server
+  override def munitIgnore: Boolean = false // Enable tests
+
+  override val shouldStartLlamaServer: Boolean = false // Using external server
 
   // ... tests ...
 }

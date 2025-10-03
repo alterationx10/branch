@@ -12,12 +12,11 @@ The docs (so far ™️) are on: https://branch.alteration.dev
 
 ## Development
 
-It's a fairly standard `sbt` project; download and open in IntelliJ IDEA, or Visual Studio Code/Your editor with
-Metals.
+It's a fairly standard `sbt` project; download and open in IntelliJ IDEA, or Visual Studio Code/Your editor with Metals.
 
 Some tests use `testcontainers` to run tests, so you will need Docker running to be able to run those tests
 successfully.
 
-hollywood note:
-The examples are being tested against:
+The hollywood tests have a fixture to spin up llama-server, and are being tested against:
 `llama-server -hf ggml-org/gpt-oss-20b-GGUF --ctx-size 8192 --jinja -ub 2048 -b 2048 --embeddings --pooling mean`
+Because of this, these tests are ignored by default, and need to be enabled per-suite when running them.
