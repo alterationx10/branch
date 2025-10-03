@@ -50,7 +50,11 @@ enum Json {
     case JsonBool(value)    => value.toString
     case JsonNumber(value)  =>
       if (value % 1 == 0) value.toInt.toString else value.toString
-    case JsonString(value)  => s""""${escapeString(value)}""""
+    case JsonString(value)  =>
+      value match {
+        case null => "null"
+        case _    => s""""${escapeString(value)}""""
+      }
     case JsonArray(values)  => values.map(_.toJsonString).mkString("[", ",", "]")
     case JsonObject(values) =>
       values
