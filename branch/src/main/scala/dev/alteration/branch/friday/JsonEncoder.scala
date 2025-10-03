@@ -204,7 +204,6 @@ object JsonEncoder {
         .map { case (label, (value, encoder)) =>
           label -> encoder.asInstanceOf[JsonEncoder[Any]].encode(value)
         }
-        .filter(_._2 != Json.JsonNull) // Omit null values from JSON objects
       JsonObject(js.toMap)
     }
   }

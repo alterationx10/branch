@@ -153,6 +153,21 @@ object Json {
 
   extension (j: Json) {
 
+    /** Recursively remove all null values from JSON objects
+      * @return
+      *   a new JSON value with all JsonNull values removed from objects
+      */
+    def removeNulls(): Json = j match {
+      case JsonObject(values) =>
+        JsonObject(
+          values
+            .filter(_._2 != JsonNull)
+            .map { case (k, v) => k -> v.removeNulls() }
+        )
+      case JsonArray(values) => JsonArray(values.map(_.removeNulls()))
+      case other             => other
+    }
+
     /** Optionally get a field from a JSON object if present
       * @param field
       *   the field name to retrieve
