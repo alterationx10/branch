@@ -12,7 +12,7 @@ ThisBuild / description          := "A zero-dependency Scala framework"
 ThisBuild / licenses             := List(
   "Apache 2" -> url("https://www.apache.org/licenses/LICENSE-2.0.txt")
 )
-ThisBuild / scmInfo := Some(
+ThisBuild / scmInfo              := Some(
   ScmInfo(
     url("https://github.com/alterationx10/branch"),
     "scm:git@github.com:alterationx10/branch.git"
@@ -45,7 +45,8 @@ ThisBuild / scalacOptions ++= Seq(
   "-source:3.4-migration",
   "-Wunused:all",
   "-deprecation",
-  "-feature"
+  "-feature",
+  "-Xmax-inlines", "64",
 )
 
 ThisBuild / semanticdbEnabled := true

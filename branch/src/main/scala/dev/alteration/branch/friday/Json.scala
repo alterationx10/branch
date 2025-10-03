@@ -50,12 +50,30 @@ enum Json {
     case JsonBool(value)    => value.toString
     case JsonNumber(value)  =>
       if (value % 1 == 0) value.toInt.toString else value.toString
-    case JsonString(value)  => s""""$value""""
+    case JsonString(value)  =>
+      value match {
+        case null => "null"
+        case _    => s""""${escapeString(value)}""""
+      }
     case JsonArray(values)  => values.map(_.toJsonString).mkString("[", ",", "]")
     case JsonObject(values) =>
       values
-        .map { case (k, v) => s""""$k":${v.toJsonString}""" }
+        .map { case (k, v) => s""""${escapeString(k)}":${v.toJsonString}""" }
         .mkString("{", ",", "}")
+  }
+
+  private def escapeString(s: String): String = {
+    s.flatMap {
+      case '"'          => "\\\""
+      case '\\'         => "\\\\"
+      case '\b'         => "\\b"
+      case '\f'         => "\\f"
+      case '\n'         => "\\n"
+      case '\r'         => "\\r"
+      case '\t'         => "\\t"
+      case c if c < ' ' => f"\\u${c.toInt}%04x"
+      case c            => c.toString
+    }
   }
 }
 
@@ -134,6 +152,21 @@ object Json {
   }.getOrElse(JsonNull)
 
   extension (j: Json) {
+
+    /** Recursively remove all null values from JSON objects
+      * @return
+      *   a new JSON value with all JsonNull values removed from objects
+      */
+    def removeNulls(): Json = j match {
+      case JsonObject(values) =>
+        JsonObject(
+          values
+            .filter(_._2 != JsonNull)
+            .map { case (k, v) => k -> v.removeNulls() }
+        )
+      case JsonArray(values)  => JsonArray(values.map(_.removeNulls()))
+      case other              => other
+    }
 
     /** Optionally get a field from a JSON object if present
       * @param field

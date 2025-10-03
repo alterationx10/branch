@@ -18,9 +18,13 @@ object JsonConversions {
   /** A Conversion[A, Array[Byte]], useful for marshalling response bodies in
     * spider
     */
-  def convertToBytes[A](using
-      encoder: JsonEncoder[A]
-  ): Conversion[A, Array[Byte]] =
-    (a: A) => encoder.encode(a).toJsonString.getBytes
+  def convertToBytes[A](
+      removeNulls: Boolean = false
+  )(using encoder: JsonEncoder[A]): Conversion[A, Array[Byte]] = { (a: A) =>
+    val json =
+      if removeNulls then encoder.encode(a).removeNulls()
+      else encoder.encode(a)
+    json.toJsonString.getBytes
+  }
 
 }

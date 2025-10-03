@@ -6,6 +6,7 @@ import dev.alteration.branch.macaroni.meta.Summons.summonHigherListOf
 import java.time.Instant
 import scala.compiletime.*
 import scala.deriving.Mirror
+import scala.language.implicitConversions
 
 /** A type-class for encoding values to JSON
   * @tparam A
@@ -184,6 +185,13 @@ object JsonEncoder {
     */
   implicit def vectorEncoder[A: JsonEncoder]: JsonEncoder[Vector[A]] =
     iterableEncoder[A, Vector]
+
+  implicit def optionEncoder[A](using
+      aEncoder: JsonEncoder[A]
+  ): JsonEncoder[Option[A]] = {
+    case None        => Json.JsonNull
+    case Some(value) => aEncoder.encode(value)
+  }
 
   protected class DerivedJsonEncoder[A](using encoders: List[JsonEncoder[?]])
       extends JsonEncoder[A] {

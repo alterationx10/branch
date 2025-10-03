@@ -10,6 +10,8 @@ import scala.deriving.Mirror
 import scala.util.*
 import dev.alteration.branch.macaroni.meta.Summons.summonListOfValuesAs
 
+import scala.language.implicitConversions
+
 /** A type-class for decoding JSON into a given type
   * @tparam A
   *   the type of the value to decode
@@ -194,6 +196,15 @@ object JsonDecoder {
   implicit def vectorDecoder[A: JsonDecoder]: JsonDecoder[Vector[A]] =
     iterableDecoder[A, Vector](Vector.newBuilder[A])
 
+  implicit def optionDecoder[A](using
+      aDecoder: JsonDecoder[A]
+  ): JsonDecoder[Option[A]] = {
+    {
+      case Json.JsonNull => Try(Option.empty[A])
+      case other         => aDecoder.decode(other).map(Option.apply)
+    }
+  }
+
   protected class DerivedJsonDecoder[A](using
       p: Mirror.ProductOf[A],
       decoders: List[JsonDecoder[?]],
@@ -205,8 +216,8 @@ object JsonDecoder {
         val consArr: Array[Any] = productLabels
           .zip(decoders)
           .map { case (label, decoder) =>
-            val json = underlying(label)
-            decoder.decode(json).get
+            val jsonValue = underlying.getOrElse(label, Json.JsonNull)
+            decoder.decode(jsonValue).get
           }
           .toArray
 
