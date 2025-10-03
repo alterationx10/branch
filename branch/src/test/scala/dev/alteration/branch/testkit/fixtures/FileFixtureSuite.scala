@@ -5,7 +5,7 @@ import munit.*
 
 import java.util.Comparator
 
-class FileFixtureSuite extends FunSuite {
+trait FileFixtureSuite extends FunSuite {
 
   val files = FunFixture[Path](
     setup = { test =>
