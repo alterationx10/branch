@@ -1,19 +1,22 @@
 package dev.alteration.branch.hollywood
 
 import dev.alteration.branch.hollywood.clients.EmbeddingClient
-import dev.alteration.branch.hollywood.rag.{DocumentIndexer, InMemoryVectorStore}
+import dev.alteration.branch.hollywood.rag.{
+  DocumentIndexer,
+  InMemoryVectorStore
+}
 import dev.alteration.branch.testkit.fixtures.LlamaServerFixture
 
 class RagAgentSpec extends LlamaServerFixture {
 
   // Comment this in/out to run
-  override def munitIgnore: Boolean = false
+  override def munitIgnore: Boolean = true
 
   // Set this to false if llama-server is already running
   override val shouldStartLlamaServer: Boolean = true
 
   test("RagAgent should answer questions using indexed documents") {
-    val vectorStore = new InMemoryVectorStore()
+    val vectorStore     = new InMemoryVectorStore()
     val embeddingClient = new EmbeddingClient()
     val documentIndexer = new DocumentIndexer(embeddingClient, vectorStore)
 
@@ -51,7 +54,7 @@ class RagAgentSpec extends LlamaServerFixture {
   }
 
   test("RagAgent should retrieve relevant context for queries") {
-    val vectorStore = new InMemoryVectorStore()
+    val vectorStore     = new InMemoryVectorStore()
     val embeddingClient = new EmbeddingClient()
     val documentIndexer = new DocumentIndexer(embeddingClient, vectorStore)
 
@@ -85,7 +88,7 @@ class RagAgentSpec extends LlamaServerFixture {
   }
 
   test("DocumentIndexer should successfully index multiple documents") {
-    val vectorStore = new InMemoryVectorStore()
+    val vectorStore     = new InMemoryVectorStore()
     val embeddingClient = new EmbeddingClient()
     val documentIndexer = new DocumentIndexer(embeddingClient, vectorStore)
 
@@ -110,7 +113,7 @@ class RagAgentSpec extends LlamaServerFixture {
   }
 
   test("InMemoryVectorStore should support search operations") {
-    val vectorStore = new InMemoryVectorStore()
+    val vectorStore     = new InMemoryVectorStore()
     val embeddingClient = new EmbeddingClient()
     val documentIndexer = new DocumentIndexer(embeddingClient, vectorStore)
 
