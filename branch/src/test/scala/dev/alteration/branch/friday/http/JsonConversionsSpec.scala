@@ -9,7 +9,7 @@ class JsonConversionsSpec extends FunSuite {
 
   test("JsonConversions.convertToBytes") {
     given conv: Conversion[Person, Array[Byte]] =
-      JsonConversions.convertToBytes
+      JsonConversions.convertToBytes()
 
     val person = Person("Alice", 42)
 

@@ -10,9 +10,13 @@ object JsonBodyPublisher {
     * JsonEncoder to encode the value to a JSON string.
     */
   inline def of[I](
-      i: I
+      i: I,
+      removeNulls: Boolean = false
   )(using jsonEncoder: JsonEncoder[I]): HttpRequest.BodyPublisher = {
-    BodyPublishers.ofString(jsonEncoder.encode(i).toJsonString)
+    val json =
+      if removeNulls then jsonEncoder.encode(i).removeNulls()
+      else jsonEncoder.encode(i)
+    BodyPublishers.ofString(json.toJsonString)
   }
 
 }

@@ -27,7 +27,10 @@ object ConversationalAgent {
         val httpRequest = ClientRequest
           .builder(URI.create("http://localhost:8080/v1/chat/completions"))
           .withContentType(ContentType.json)
-          .POST(JsonBodyPublisher.of[ChatCompletionsRequest](req))
+          .POST(
+            JsonBodyPublisher
+              .of[ChatCompletionsRequest](req, removeNulls = true)
+          )
           .build()
 
         defaultClient

@@ -164,8 +164,8 @@ object Json {
             .filter(_._2 != JsonNull)
             .map { case (k, v) => k -> v.removeNulls() }
         )
-      case JsonArray(values) => JsonArray(values.map(_.removeNulls()))
-      case other             => other
+      case JsonArray(values)  => JsonArray(values.map(_.removeNulls()))
+      case other              => other
     }
 
     /** Optionally get a field from a JSON object if present

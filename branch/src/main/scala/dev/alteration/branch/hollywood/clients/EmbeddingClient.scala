@@ -39,7 +39,9 @@ object EmbeddingClient {
         val httpRequest = ClientRequest
           .builder(URI.create("http://localhost:8080/v1/embeddings"))
           .withContentType(ContentType.json)
-          .POST(JsonBodyPublisher.of[EmbeddingsRequest](req))
+          .POST(
+            JsonBodyPublisher.of[EmbeddingsRequest](req, removeNulls = true)
+          )
           .build()
 
         defaultClient
