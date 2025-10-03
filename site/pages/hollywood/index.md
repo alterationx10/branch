@@ -199,8 +199,6 @@ case class Calculator(
 }
 ```
 
-The library supports standard types: `String`, `Int`, `Long`, `Double`, `Float`, and `Boolean`.
-
 ### Tool Executor
 
 The `ToolExecutor` trait handles converting string arguments from the LLM into typed parameters and executing the tool:
@@ -214,10 +212,13 @@ trait ToolExecutor[T <: CallableTool[?]] {
 Executors are automatically derived at compile time using `ToolExecutor.derived[T]`, which:
 
 1. Extracts parameter names and types from the case class
-2. Summons type converters for each parameter
+2. Summons type converters for each parameter (`Conversion[String, T]`)
 3. Converts string arguments to the correct types
 4. Calls the tool's `execute()` method
 5. Returns the result as a string
+
+Default conversions are currently provided for these types: `String`, `Int`, `Long`, `Double`, `Float`, and `Boolean`.
+You can provide your own `given Conversion[String, YourType]` in scope for other types when deriving.
 
 ### Tool Registry
 
