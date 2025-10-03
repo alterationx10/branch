@@ -5,9 +5,11 @@ import dev.alteration.branch.testkit.fixtures.LlamaServerFixture
 class OneShotAgentSpec extends LlamaServerFixture {
 
   // Comment this in/out to run
-  // It will start up llama-server via LlamaServerFixture
   override def munitIgnore: Boolean = true
 
+  // Set this to false if llama-server is already running
+  override val shouldStartLlamaServer: Boolean = true
+  
   test("OneShotAgent should respond to basic chat messages") {
     val agent = OneShotAgent(
       systemPrompt = "You are a helpful assistant. Respond concisely."
