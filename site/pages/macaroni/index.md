@@ -14,7 +14,8 @@ tags:
 
 # Macaroni
 
-Macaroni provides a collection of reusable utilities and helpers that could be useful in any project. It includes modules for meta-programming, parsing, resource pooling, cryptography, and filesystem operations.
+Macaroni provides a collection of reusable utilities and helpers that could be useful in any project. It includes
+modules for meta-programming, parsing, resource pooling, cryptography, and filesystem operations.
 
 ## Meta Programming
 
@@ -35,11 +36,14 @@ type INothingType[T <: Tuple] = Tuple.Fold[T, Nothing, [x, y] =>> x & y]
 type UAnyType[T <: Tuple] = Tuple.Fold[T, Any, [x, y] =>> x | y]
 ```
 
-These are particularly useful when working with case class fields via mirrors to create intersection or union types of all fields.
+These are particularly useful when working with case class fields via mirrors to create intersection or union types of
+all fields.
 
 ## Parser Combinators
 
-The `parsers` package provides a parser combinator library, which powers the [Friday](../friday/index.md) JSON parser. The implementation is based on the approach described in [Functional Programming in Scala (2nd Ed)](https://www.manning.com/books/functional-programming-in-scala-second-edition).
+The `parsers` package provides a parser combinator library, which powers the [Friday](../friday/index.md) JSON parser.
+The implementation is based on the approach described
+in [Functional Programming in Scala (2nd Ed)](https://www.manning.com/books/functional-programming-in-scala-second-edition).
 
 Key components:
 
@@ -77,6 +81,7 @@ import dev.alteration.branch.macaroni.pool.ResourcePool
 
 class DatabasePool extends ResourcePool[Connection] {
   def acquire: Connection = // Create new connection
+
   def release(conn: Connection): Unit = conn.close()
 
   // Optional: Override to add connection testing
@@ -85,49 +90,11 @@ class DatabasePool extends ResourcePool[Connection] {
 }
 ```
 
-## Filesystem Operations
-
-The `fs` package provides convenient filesystem utilities through the `PathOps` object:
-
-```scala
-import dev.alteration.branch.macaroni.fs.PathOps.*
-
-// Get working directory
-val wd: Path = PathOps.wd
-
-// Path operations using extension methods
-val configPath = wd / "config" / "app.conf"  // Append segments using /
-val otherPath = Path.of("other/path")
-val combined = configPath / otherPath        // Can combine with other Paths
-
-// Path relativization
-val relative = configPath.relativeTo(wd)      // Get path relative to working dir
-val relativeStr = configPath.relativeTo("/home/user") // Or relative to string path
-
-// Convert path to sequence of segments
-val segments: Seq[String] = configPath.toSeq  // Split path into parts
-
-// Pattern matching on paths using / extractor
-configPath match {
-  case parent / "app.conf" => println(s"Found config in $parent")
-  case _ => println("Config not found")
-}
-
-// String interpolation
-val srcPath = p"src/main/resources"     // Create Path using p"" interpolator
-val pattern = ci"Config.JSON"           // Case-insensitive pattern matching
-
-// Empty path constant
-val emptyPath = >>                      // Represents Path.of("")
-```
-
-The PathOps utilities make it easy to work with filesystem paths in a more idiomatic Scala way, with extension methods for common operations and pattern matching support.
-
 ## Cryptography
 
 The `crypto` package provides common cryptographic operations:
 
-- Secure random key generation 
+- Secure random key generation
 - Base64 encoding/decoding
 - PBKDF2 password hashing
 - HMAC message authentication
@@ -139,7 +106,7 @@ Example usage:
 import dev.alteration.branch.macaroni.crypto.Crypto
 
 // Generate random keys
-val publicKey = Crypto.generatePublicKey(16)  // 16-char key using limited ASCII range
+val publicKey = Crypto.generatePublicKey(16) // 16-char key using limited ASCII range
 val privateKey = Crypto.generatePrivateKey(32) // 32-char key using full ASCII range
 
 // Password hashing with PBKDF2
