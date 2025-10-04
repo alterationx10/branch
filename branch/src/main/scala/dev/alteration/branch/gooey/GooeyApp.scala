@@ -4,7 +4,7 @@ import dev.alteration.branch.gooey.components.panels.SlidingDirection.Horizontal
 import dev.alteration.branch.gooey.components.panels.SlidingPanel
 
 import javax.swing.*
-import java.awt.*
+import java.awt.{TextField as leftPanel, *}
 import scala.util.Try
 
 trait GooeyApp {
@@ -39,7 +39,7 @@ trait GooeyApp {
   // Main content panel with BorderLayout
   def mainContent: Component
 
-  lazy val rootFrame: JFrame = configureRootFrame {
+  private lazy val rootFrame: JFrame = configureRootFrame {
     val frame = new JFrame(appTitle)
     frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE)
     frame.setSize(800, 600)
@@ -52,11 +52,13 @@ trait GooeyApp {
   final def main(args: Array[String]): Unit = {
     _args = args
 
-    setSystemProperties()
-    setSystemLookAndFeel()
+    SwingUtilities.invokeLater(() => {
+      setSystemProperties()
+      setSystemLookAndFeel()
+      rootFrame.add(mainContent, BorderLayout.CENTER)
+      rootFrame.setVisible(true)
+    })
 
-    rootFrame.add(mainContent, BorderLayout.CENTER)
-    rootFrame.setVisible(true)
   }
 
 }
@@ -65,17 +67,18 @@ object GooeyDemo extends GooeyApp {
 
   override val appTitle: String = "Gooey Demo"
 
-  val mainPanel = new JPanel(new BorderLayout())
-  val centerText = new TextArea("Center Text")
-  mainPanel.add(centerText, BorderLayout.CENTER)
-  val leftPanel = new SlidingPanel(Horizontal, 200)
-  leftPanel.setLayout(new BorderLayout())
-  leftPanel.add(new TextField("Left Text"), BorderLayout.CENTER)
-  mainPanel.add(leftPanel, BorderLayout.WEST)
-  val toggleButton = new JButton("Toggle")
-  toggleButton.addActionListener(e => leftPanel.toggle())
-  mainPanel.add(toggleButton, BorderLayout.SOUTH)
+  override def mainContent: Component = {
+    val mainPanel    = new JPanel(new BorderLayout())
+    val centerText   = new TextArea("Center Text")
+    mainPanel.add(centerText, BorderLayout.CENTER)
+    val leftPanel    = new SlidingPanel(Horizontal, 200)
+    leftPanel.setLayout(new BorderLayout())
+    leftPanel.add(new leftPanel("Left Text"), BorderLayout.CENTER)
+    mainPanel.add(leftPanel, BorderLayout.WEST)
+    val toggleButton = new JButton("Toggle")
+    toggleButton.addActionListener(e => leftPanel.toggle())
+    mainPanel.add(toggleButton, BorderLayout.SOUTH)
+    mainPanel
+  }
 
-
-  override def mainContent: Component = mainPanel
 }
