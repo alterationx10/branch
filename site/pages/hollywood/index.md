@@ -327,7 +327,7 @@ Alternatively, let the test fixture manage the server by keeping `shouldStartLla
 
 The test suite demonstrates key functionality:
 
-**OneShotAgentSpec**: Basic agent usage and task-specific agents
-**RagAgentSpec**: Document indexing, vector search, and RAG queries
-**ConversationalAgentSpec**: Conversation history management
-**CallableToolSpec**: Tool registration and agent-to-agent tool composition
+- **OneShotAgentSpec**: Basic agent usage and task-specific agents
+- **RagAgentSpec**: Document indexing, vector search, and RAG queries
+- **ConversationalAgentSpec**: Conversation history management
+- **CallableToolSpec**: Tool registration and agent-to-agent tool composition
