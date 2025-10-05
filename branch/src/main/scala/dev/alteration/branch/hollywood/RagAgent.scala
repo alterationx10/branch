@@ -7,7 +7,7 @@ import dev.alteration.branch.hollywood.rag.VectorStore
 
 class RagAgent(
     requestHandler: ChatCompletionsRequest => ChatCompletionsResponse =
-      ConversationalAgent.defaultHandler,
+      Agent.defaultHandler,
     embeddingClient: EmbeddingClient,
     toolRegistry: Option[ToolRegistry] = None,
     vectorStore: VectorStore,

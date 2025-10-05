@@ -23,7 +23,7 @@ import dev.alteration.branch.hollywood.tools.ToolRegistry
 class OneShotAgent(
     systemPrompt: String,
     requestHandler: ChatCompletionsRequest => ChatCompletionsResponse =
-      ConversationalAgent.defaultHandler,
+      Agent.defaultHandler,
     toolRegistry: Option[ToolRegistry] = None,
     maxTurns: Int = 10,
     model: String = "gpt-oss",
@@ -106,7 +106,7 @@ object OneShotAgent {
       inputFormat: Option[String] = None,
       outputFormat: Option[String] = None,
       requestHandler: ChatCompletionsRequest => ChatCompletionsResponse =
-        ConversationalAgent.defaultHandler,
+        Agent.defaultHandler,
       toolRegistry: Option[ToolRegistry] = None,
       maxTurns: Int = 10,
       model: String = "gpt-oss"

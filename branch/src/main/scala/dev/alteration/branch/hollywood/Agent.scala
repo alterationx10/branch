@@ -1,6 +1,11 @@
 package dev.alteration.branch.hollywood
 
 import dev.alteration.branch.friday.Json
+import dev.alteration.branch.friday.http.{JsonBodyHandler, JsonBodyPublisher}
+import dev.alteration.branch.hollywood.api.{
+  ChatCompletionsRequest,
+  ChatCompletionsResponse
+}
 import dev.alteration.branch.hollywood.tools.schema.{
   ParameterSchema,
   PropertySchema,
@@ -11,7 +16,12 @@ import dev.alteration.branch.hollywood.tools.{
   CallableTool,
   ToolExecutor
 }
+import dev.alteration.branch.spider.ContentType
+import dev.alteration.branch.spider.client.{Client, ClientRequest}
+import dev.alteration.branch.spider.client.ClientRequest.withContentType
+import dev.alteration.branch.veil.Veil
 
+import java.net.URI
 import scala.util.*
 
 trait Agent {
@@ -19,6 +29,31 @@ trait Agent {
 }
 
 object Agent {
+
+  import ChatCompletionsRequest.given
+
+  val defaultHandler: ChatCompletionsRequest => ChatCompletionsResponse = {
+    req =>
+      {
+        val baseUrl = Veil
+          .get("LLAMA_SERVER_URL")
+          .getOrElse("http://localhost:8080")
+
+        val httpRequest = ClientRequest
+          .builder(URI.create(s"$baseUrl/v1/chat/completions"))
+          .withContentType(ContentType.json)
+          .POST(
+            JsonBodyPublisher
+              .of[ChatCompletionsRequest](req, removeNulls = true)
+          )
+          .build()
+
+        Client.defaultClient
+          .send(httpRequest, JsonBodyHandler.of[ChatCompletionsResponse])
+          .body()
+          .get
+      }
+  }
 
   /** Derives a tool that wraps an agent's chat method for agent-to-agent
     * communication
