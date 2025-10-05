@@ -6,10 +6,6 @@ import dev.alteration.branch.testkit.fixtures.LlamaServerFixture
 
 class SearXNGAgentSpec extends LlamaServerFixture {
 
-  // Set to false to run the test when both llama-server and SearXNG are available
-  // Note: These tests require a properly configured LLM that can reliably generate tool calls
-  override def munitIgnore: Boolean = false
-
   test("OneShotAgent using SearXNGTool returns search results") {
     val toolRegistry = ToolRegistry()
       .register[SearXNGTool]

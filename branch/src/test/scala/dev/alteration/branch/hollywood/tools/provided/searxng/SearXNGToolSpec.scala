@@ -5,7 +5,7 @@ import munit.FunSuite
 class SearXNGToolSpec extends FunSuite {
 
   // Set to false to run the test when SearXNG is available at localhost:8888
-  override def munitIgnore: Boolean = false
+  override def munitIgnore: Boolean = true
 
   test("SearXNGTool makes a real search request") {
     val tool = SearXNGTool(
