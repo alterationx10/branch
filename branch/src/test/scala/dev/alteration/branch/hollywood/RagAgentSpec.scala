@@ -9,12 +9,6 @@ import dev.alteration.branch.testkit.fixtures.LlamaServerFixture
 
 class RagAgentSpec extends LlamaServerFixture {
 
-  // Comment this in/out to run
-  override def munitIgnore: Boolean = true
-
-  // Set this to false if llama-server is already running
-  override val shouldStartLlamaServer: Boolean = false
-
   test("RagAgent should answer questions using indexed documents") {
     val vectorStore     = new InMemoryVectorStore()
     val embeddingClient = new EmbeddingClient()

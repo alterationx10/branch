@@ -19,4 +19,10 @@ successfully.
 
 The hollywood tests have a fixture to spin up llama-server, and are being tested against:
 `llama-server -hf ggml-org/gpt-oss-20b-GGUF --ctx-size 8192 --jinja -ub 2048 -b 2048 --embeddings --pooling mean`
-Because of this, these tests are ignored by default, and need to be enabled per-suite when running them.
+
+These tests are controlled by environment variables in `LlamaServerFixture`:
+
+- Set `LLAMA_SERVER_TEST` to enable running the tests (otherwise they are ignored by default)
+- Set `LLAMA_SERVER_START` to have the fixture automatically start llama-server (otherwise use an external instance)
+
+or override them in the suite directly.

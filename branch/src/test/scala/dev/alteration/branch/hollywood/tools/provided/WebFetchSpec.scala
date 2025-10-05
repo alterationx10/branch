@@ -11,22 +11,19 @@ class WebFetchSpec extends FunSuite {
     val tool   = WebFetch("https://branch.alteration.dev")
     val result = tool.execute()
 
-    assert(result.nonEmpty, "Response body should not be empty")
-    assert(
-      result.contains("branch.alteration.dev") || result.contains("html"),
-      "Response should contain expected webpage content"
-    )
+    assert(result.isSuccess, "Request should succeed")
+    result.foreach { body =>
+      assert(body.nonEmpty, "Response body should not be empty")
+      assert(
+        body.contains("branch.alteration.dev") || body.contains("html"),
+        "Response should contain expected webpage content"
+      )
+    }
   }
 
 }
 
 class WebFetchAgentSpec extends LlamaServerFixture {
-
-  // Comment this in/out to run
-  override def munitIgnore: Boolean = true
-
-  // Set this to false if llama-server is already running
-  override val shouldStartLlamaServer: Boolean = false
 
   test("OneShotAgent should use WebFetch to fetch webpage content") {
     val toolRegistry = ToolRegistry().register[WebFetch]
