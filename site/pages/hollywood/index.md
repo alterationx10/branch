@@ -213,19 +213,28 @@ Executors are automatically derived at compile time using `ToolExecutor.derived[
 
 1. Uses `JsonDecoder` to deserialize the JSON arguments into the tool case class
 2. Calls the tool's `execute()` method
-3. Encodes the result as JSON (preserving structure for complex return types)
+3. Uses match types to extract the result type `A` from `CallableTool[A]`
+4. Automatically summons `JsonEncoder[A]` at compile time to encode the result as JSON
 
-Since tool arguments are deserialized via JSON, tools automatically support all types that have a `JsonDecoder`
-instance, including:
+The derivation uses Scala 3's match types to extract the return type from the tool definition:
+
+```scala
+type ResultType[T <: CallableTool[?]] <: Any = T match {
+  case CallableTool[a] => a
+}
+```
+
+This means tools automatically support any return type that has a `JsonEncoder` instance. The compiler will verify at compile time that an encoder exists for the tool's return type.
+
+**Supported types** (both for arguments and results):
 
 - Primitives: `String`, `Int`, `Long`, `Double`, `Float`, `Boolean`
 - Collections: `List[T]`, `Option[T]`, `Map[String, T]`
 - Nested case classes
-- Any custom types with a `JsonCodec`
+- Any custom types with `JsonCodec`
 
 Case classes extending `CallableTool` automatically derive `JsonCodec` through Scala 3's derivation mechanism, so no
-explicit `derives` clause is needed, but you will get a compile error if one is not in scope/can't be automatically
-derived.
+explicit `derives` clause is needed. If a required encoder is missing, you'll get a clear compile-time error.
 
 ### Tool Registry
 
