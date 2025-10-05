@@ -23,7 +23,7 @@ class WebFetchSpec extends FunSuite {
 class WebFetchAgentSpec extends LlamaServerFixture {
 
   // Comment this in/out to run
-  override def munitIgnore: Boolean = false
+  override def munitIgnore: Boolean = true
 
   // Set this to false if llama-server is already running
   override val shouldStartLlamaServer: Boolean = false
