@@ -19,7 +19,7 @@ object ToolExecutor {
 
   inline def derived[T <: CallableTool[?]](using
       m: Mirror.ProductOf[T],
-      decoder: JsonDecoder[T],
+      decoder: JsonDecoder[T]
   ): ToolExecutor[T] = {
     // Summon the encoder for the result type at compile time
     // TODO move this to a using arg

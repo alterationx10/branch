@@ -2,7 +2,10 @@ package dev.alteration.branch.hollywood.tools
 
 import dev.alteration.branch.friday.Json
 import dev.alteration.branch.hollywood.api.{FunctionDefinition, Tool}
-import dev.alteration.branch.hollywood.tools.schema.{ParameterSchema, ToolSchema}
+import dev.alteration.branch.hollywood.tools.schema.{
+  ParameterSchema,
+  ToolSchema
+}
 import dev.alteration.branch.hollywood.tools.{CallableTool, ToolExecutor}
 
 import scala.collection.mutable

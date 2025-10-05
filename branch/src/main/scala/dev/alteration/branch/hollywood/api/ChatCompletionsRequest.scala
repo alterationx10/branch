@@ -87,7 +87,7 @@ case class FunctionCall(
     Json
       .parse(arguments.translateEscapes())
       .getOrElse(Json.JsonObject(Map.empty))
-  
+
 }
 
 case class ToolChoice(

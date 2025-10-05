@@ -19,5 +19,5 @@ object Client {
 
   val defaultClient: HttpClient =
     builder.build()
-    
+
 }

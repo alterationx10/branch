@@ -21,11 +21,13 @@ class ToolExecutorSpec extends FunSuite {
     val executor = ToolExecutor.derived[TestTool]
 
     // Create Json arguments
-    val jsonArgs = Json.JsonObject(Map(
-      "stringParam" -> Json.JsonString("hello"),
-      "intParam" -> Json.JsonNumber(42),
-      "boolParam" -> Json.JsonBool(true)
-    ))
+    val jsonArgs = Json.JsonObject(
+      Map(
+        "stringParam" -> Json.JsonString("hello"),
+        "intParam"    -> Json.JsonNumber(42),
+        "boolParam"   -> Json.JsonBool(true)
+      )
+    )
 
     // Execute
     val result = executor.execute(jsonArgs)
@@ -44,9 +46,11 @@ class ToolExecutorSpec extends FunSuite {
 
     val executor = ToolExecutor.derived[UrlTestTool]
 
-    val jsonArgs = Json.JsonObject(Map(
-      "url" -> Json.JsonString("https://example.com")
-    ))
+    val jsonArgs = Json.JsonObject(
+      Map(
+        "url" -> Json.JsonString("https://example.com")
+      )
+    )
 
     val result = executor.execute(jsonArgs)
     assertEquals(result, Json.JsonString("https://example.com"))
@@ -62,10 +66,12 @@ class ToolExecutorSpec extends FunSuite {
     }
 
     val executor = ToolExecutor.derived[MathTool]
-    val jsonArgs = Json.JsonObject(Map(
-      "x" -> Json.JsonNumber(10),
-      "y" -> Json.JsonNumber(32)
-    ))
+    val jsonArgs = Json.JsonObject(
+      Map(
+        "x" -> Json.JsonNumber(10),
+        "y" -> Json.JsonNumber(32)
+      )
+    )
 
     val result = executor.execute(jsonArgs)
     assertEquals(result, Json.JsonNumber(42))

@@ -78,7 +78,7 @@ private[hollywood] object AgentConversationLoop {
                       case Some(jsonResult) =>
                         // Convert Json result to string for the LLM
                         s"Tool ${toolCall.function.name} executed successfully. Result: ${jsonResult.toJsonString}"
-                      case None        => s"Tool ${toolCall.function.name} not found"
+                      case None             => s"Tool ${toolCall.function.name} not found"
                     }
                   } catch {
                     case e: Exception =>
