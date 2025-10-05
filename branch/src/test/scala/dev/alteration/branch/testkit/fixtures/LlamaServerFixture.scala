@@ -12,7 +12,7 @@ import java.util.concurrent.{CountDownLatch, TimeUnit}
 trait LlamaServerFixture extends FunSuite {
 
   // Override if you don't want this ENV controlled
-  override def munitIgnore: Boolean = Veil.get("LLAMA_SERVER_TEST").isDefined
+  override def munitIgnore: Boolean = Veil.get("LLAMA_SERVER_TEST").isEmpty
 
   // Override this in your test if you dont want in ENV controlled
   val shouldStartLlamaServer: Boolean = Veil.get("LLAMA_SERVER_START").isDefined
