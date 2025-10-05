@@ -2,7 +2,6 @@ package dev.alteration.branch.hollywood.tools
 
 import dev.alteration.branch.friday.{Json, JsonDecoder, JsonEncoder}
 
-import scala.compiletime.summonInline
 import scala.deriving.Mirror
 import scala.language.implicitConversions
 
@@ -19,12 +18,9 @@ object ToolExecutor {
 
   inline def derived[T <: CallableTool[?]](using
       m: Mirror.ProductOf[T],
-      decoder: JsonDecoder[T]
+      decoder: JsonDecoder[T],
+      encoder: JsonEncoder[ResultType[T]]
   ): ToolExecutor[T] = {
-    // Summon the encoder for the result type at compile time
-    // TODO move this to a using arg
-    val encoder = summonInline[JsonEncoder[ResultType[T]]]
-
     new ToolExecutor[T] {
       override def execute(args: Json): Json = {
         decoder.decode(args) match {

@@ -1,6 +1,6 @@
 package dev.alteration.branch.hollywood.tools
 
-import dev.alteration.branch.friday.Json
+import dev.alteration.branch.friday.{Json, JsonEncoder}
 import dev.alteration.branch.hollywood.api.{FunctionDefinition, Tool}
 import dev.alteration.branch.hollywood.tools.schema.{
   ParameterSchema,
@@ -31,7 +31,8 @@ object ToolRegistry {
   // Extension method to add inline register to any ToolRegistry
   extension (registry: ToolRegistry) {
     inline def register[T <: CallableTool[?]](using
-        m: Mirror.ProductOf[T]
+        m: Mirror.ProductOf[T],
+        encoder: JsonEncoder[ToolExecutor.ResultType[T]]
     ): ToolRegistry = {
       val schema   = ToolSchema.derive[T]
       val executor = ToolExecutor.derived[T]

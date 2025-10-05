@@ -214,7 +214,7 @@ Executors are automatically derived at compile time using `ToolExecutor.derived[
 1. Uses `JsonDecoder` to deserialize the JSON arguments into the tool case class
 2. Calls the tool's `execute()` method
 3. Uses match types to extract the result type `A` from `CallableTool[A]`
-4. Automatically summons `JsonEncoder[A]` at compile time to encode the result as JSON
+4. Requires `JsonEncoder[A]` as a `using` parameter, resolved implicitly by the compiler to encode the result as JSON
 
 The derivation uses Scala 3's match types to extract the return type from the tool definition:
 
