@@ -1,6 +1,6 @@
 package dev.alteration.branch.hollywood.tools
 
-import dev.alteration.branch.friday.{Json, JsonCodec}
+import dev.alteration.branch.friday.Json
 import dev.alteration.branch.hollywood.tools.schema.Param
 import munit.FunSuite
 
@@ -13,7 +13,7 @@ class ToolExecutorSpec extends FunSuite {
         @Param("a string parameter") stringParam: String,
         @Param("an integer parameter") intParam: Int,
         @Param("a boolean parameter") boolParam: Boolean
-    ) extends CallableTool[String] derives JsonCodec {
+    ) extends CallableTool[String] {
       def execute(): String = s"$stringParam-$intParam-$boolParam"
     }
 
@@ -38,7 +38,7 @@ class ToolExecutorSpec extends FunSuite {
     @schema.Tool("URL test tool")
     case class UrlTestTool(
         @Param("A URL") url: String
-    ) extends CallableTool[String] derives JsonCodec {
+    ) extends CallableTool[String] {
       def execute(): String = url
     }
 

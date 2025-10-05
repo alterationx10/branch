@@ -201,24 +201,31 @@ case class Calculator(
 
 ### Tool Executor
 
-The `ToolExecutor` trait handles converting string arguments from the LLM into typed parameters and executing the tool:
+The `ToolExecutor` trait handles deserializing JSON arguments from the LLM into typed tool instances and executing them:
 
 ```scala
 trait ToolExecutor[T <: CallableTool[?]] {
-  def execute(args: Map[String, String]): String
+  def execute(args: Json): String
 }
 ```
 
 Executors are automatically derived at compile time using `ToolExecutor.derived[T]`, which:
 
-1. Extracts parameter names and types from the case class
-2. Summons type converters for each parameter (`Conversion[String, T]`)
-3. Converts string arguments to the correct types
-4. Calls the tool's `execute()` method
-5. Returns the result as a string
+1. Uses `JsonDecoder` to deserialize the JSON arguments into the tool case class
+2. Calls the tool's `execute()` method
+3. Returns the result as a string
 
-Default conversions are currently provided for these types: `String`, `Int`, `Long`, `Double`, `Float`, and `Boolean`.
-You can provide your own `given Conversion[String, YourType]` in scope for other types when deriving.
+Since tool arguments are deserialized via JSON, tools automatically support all types that have a `JsonDecoder`
+instance, including:
+
+- Primitives: `String`, `Int`, `Long`, `Double`, `Float`, `Boolean`
+- Collections: `List[T]`, `Option[T]`, `Map[String, T]`
+- Nested case classes
+- Any custom types with a `JsonCodec`
+
+Case classes extending `CallableTool` automatically derive `JsonCodec` through Scala 3's derivation mechanism, so no
+explicit `derives` clause is needed, but you will get a compile error if one is not in scope/can't be automatically
+derived.
 
 ### Tool Registry
 
