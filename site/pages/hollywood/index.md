@@ -311,6 +311,28 @@ val response = mainAgent.chat("What is 100 divided by 4?")
 
 This enables agent composition and specialization, where complex tasks can be delegated to domain-specific agents.
 
+### Provided Tools
+
+The library includes some built-in tools that can be registered with agents:
+
+#### WebFetch
+
+Fetch a webpage by url.
+
+```scala
+import dev.alteration.branch.hollywood.tools.provided.WebFetch
+
+val toolRegistry = ToolRegistry()
+  .register[WebFetch]
+
+val agent = OneShotAgent(
+  systemPrompt = "You are a helpful assistant that can fetch web pages.",
+  toolRegistry = Some(toolRegistry)
+)
+
+val response = agent.chat("What's on the page at https://branch.alteration.dev?")
+```
+
 ## Tests
 
 Tests are included but ignored by default since they require a running llama-server instance.

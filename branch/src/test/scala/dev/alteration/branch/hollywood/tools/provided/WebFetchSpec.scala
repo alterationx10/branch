@@ -5,10 +5,10 @@ import dev.alteration.branch.hollywood.tools.ToolRegistry
 import dev.alteration.branch.testkit.fixtures.LlamaServerFixture
 import munit.FunSuite
 
-class UrlGetToolSpec extends FunSuite {
+class WebFetchSpec extends FunSuite {
 
-  test("UrlGetTool should GET a webpage by url") {
-    val tool   = UrlGetTool("https://branch.alteration.dev")
+  test("WebFetch should GET a webpage by url") {
+    val tool   = WebFetch("https://branch.alteration.dev")
     val result = tool.execute()
 
     assert(result.nonEmpty, "Response body should not be empty")
@@ -20,7 +20,7 @@ class UrlGetToolSpec extends FunSuite {
 
 }
 
-class UrlGetToolAgentSpec extends LlamaServerFixture {
+class WebFetchAgentSpec extends LlamaServerFixture {
 
   // Comment this in/out to run
   override def munitIgnore: Boolean = false
@@ -28,8 +28,8 @@ class UrlGetToolAgentSpec extends LlamaServerFixture {
   // Set this to false if llama-server is already running
   override val shouldStartLlamaServer: Boolean = false
 
-  test("OneShotAgent should use UrlGetTool to fetch webpage content") {
-    val toolRegistry = ToolRegistry().register[UrlGetTool]
+  test("OneShotAgent should use WebFetch to fetch webpage content") {
+    val toolRegistry = ToolRegistry().register[WebFetch]
 
     val agent = new OneShotAgent(
       systemPrompt =

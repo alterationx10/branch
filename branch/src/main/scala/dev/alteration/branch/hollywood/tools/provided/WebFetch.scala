@@ -9,20 +9,17 @@ import dev.alteration.branch.hollywood.tools.schema.Param
 import java.net.http.HttpResponse.BodyHandlers
 
 @schema.Tool("Fetch a webpage by url")
-case class UrlGetTool(
+case class WebFetch(
     @Param("A valid url") url: String
 ) extends CallableTool[String] {
 
   override def execute(): String = {
-    println(s"Calling tool with $url")
-    val result = Client.defaultClient
+    Client.defaultClient
       .send(
         ClientRequest.builder(uri"$url").GET().build(),
         BodyHandlers.ofString()
       )
       .body()
-    println(s"Got response $result")
-    result
   }
 
 }
