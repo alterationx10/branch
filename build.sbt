@@ -75,3 +75,4 @@ lazy val branch = project
 
 addCommandAlias("fmt", "scalafmtAll")
 addCommandAlias("fix", "scalafixAll")
+addCommandAlias("fixfmt", "clean;scalafixAll;scalafmtAll")

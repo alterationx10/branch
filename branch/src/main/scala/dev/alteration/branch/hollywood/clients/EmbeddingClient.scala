@@ -3,11 +3,11 @@ package dev.alteration.branch.hollywood.clients
 import dev.alteration.branch.friday.http.{JsonBodyHandler, JsonBodyPublisher}
 import dev.alteration.branch.hollywood.api.*
 import dev.alteration.branch.spider.ContentType
-import dev.alteration.branch.spider.client.ClientRequest
+import dev.alteration.branch.spider.client.{Client, ClientRequest}
 import dev.alteration.branch.spider.client.ClientRequest.withContentType
+import dev.alteration.branch.veil.Veil
 
 import java.net.URI
-import java.net.http.HttpClient
 
 class EmbeddingClient(
     embeddingHandler: EmbeddingsRequest => EmbeddingsResponse =
@@ -30,21 +30,23 @@ class EmbeddingClient(
 
 object EmbeddingClient {
 
-  val defaultClient: HttpClient =
-    HttpClient.newHttpClient()
+  val baseUrl: String =
+    Veil
+      .getFirst("LLAMA_SERVER_EMBEDDING_URL", "LLAMA_SERVER_URL")
+      .getOrElse("http://localhost:8080")
 
   val defaultEmbeddingHandler: EmbeddingsRequest => EmbeddingsResponse = {
     req =>
       {
         val httpRequest = ClientRequest
-          .builder(URI.create("http://localhost:8080/v1/embeddings"))
+          .builder(URI.create(s"$baseUrl/v1/embeddings"))
           .withContentType(ContentType.json)
           .POST(
             JsonBodyPublisher.of[EmbeddingsRequest](req, removeNulls = true)
           )
           .build()
 
-        defaultClient
+        Client.defaultClient
           .send(
             httpRequest,
             JsonBodyHandler.of[EmbeddingsResponse]

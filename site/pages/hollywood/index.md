@@ -22,10 +22,24 @@ compatibility beyond llama-server has not been extensively validated.
 This is an early-stage project that provides core functionality for straightforward agent workflows. As the library
 evolves, the API structure is subject to change — more so than other modules in this project.
 
-Here is what I am using to start llama-server, which allows gpt-oss to completions and embeddings:
+## Configuration
+
+Hollywood uses environment variables for configuration:
+
+- `LLAMA_SERVER_URL` - Base URL for the LLM server (default: `http://localhost:8080`)
+- `LLAMA_SERVER_COMPLETION_URL` - Base URL for chat completions (falls back to `LLAMA_SERVER_URL`, then
+  `http://localhost:8080`)
+- `LLAMA_SERVER_EMBEDDING_URL` - Base URL for embeddings (falls back to `LLAMA_SERVER_URL`, then
+  `http://localhost:8080`)
+- `SEARXNG_URL` - Base URL for SearXNG search (default: `http://localhost:8888`)
+
+The completion and embedding URLs will first check their specific environment variable, then fall back to the general
+`LLAMA_SERVER_URL`, allowing you to configure a single URL for both or separate URLs if needed.
+
+Here is what I am using to start llama-server, which allows gpt-oss to handle completions and embeddings:
 
 ```bash
-`llama-server -hf ggml-org/gpt-oss-20b-GGUF --ctx-size 8192 --jinja -ub 2048 -b 2048 --embeddings --pooling mean`
+llama-server -hf ggml-org/gpt-oss-20b-GGUF --ctx-size 8192 --jinja -ub 2048 -b 2048 --embeddings --pooling mean
 ```
 
 ## Agent
@@ -187,7 +201,8 @@ trait CallableTool[A] extends Product {
 }
 ```
 
-The `execute()` method returns a `Try[A]` for safe execution. If execution fails, the error message is returned to the LLM as helpful feedback.
+The `execute()` method returns a `Try[A]` for safe execution. If execution fails, the error message is returned to the
+LLM as helpful feedback.
 
 Annotate your tool with `@Tool` and parameters with `@Param` to generate schemas:
 
@@ -216,8 +231,8 @@ Executors are automatically derived at compile time using `ToolExecutor.derived[
 1. Uses `JsonDecoder` to deserialize the JSON arguments into the tool case class
 2. Calls the tool's `execute()` method, which returns `Try[A]`
 3. Pattern matches on the `Try` result:
-   - On `Success`, encodes the result using `JsonEncoder[A]`
-   - On `Failure`, returns a helpful error message to the LLM
+    - On `Success`, encodes the result using `JsonEncoder[A]`
+    - On `Failure`, returns a helpful error message to the LLM
 4. Uses match types to extract the result type `A` from `CallableTool[A]`
 5. Requires `JsonEncoder[A]` as a `using` parameter, resolved implicitly by the compiler to encode the result as JSON
 
@@ -229,7 +244,8 @@ type ResultType[T <: CallableTool[?]] <: Any = T match {
 }
 ```
 
-This means tools automatically support any return type that has a `JsonEncoder` instance. The compiler will verify at compile time that an encoder exists for the tool's return type.
+This means tools automatically support any return type that has a `JsonEncoder` instance. The compiler will verify at
+compile time that an encoder exists for the tool's return type.
 
 **Supported types** (both for arguments and results):
 
@@ -322,7 +338,7 @@ The library includes some built-in tools that can be registered with agents:
 
 #### WebFetch
 
-Fetch a webpage by url.
+Fetch a webpage by URL.
 
 ```scala
 import dev.alteration.branch.hollywood.tools.provided.WebFetch
@@ -337,6 +353,54 @@ val agent = OneShotAgent(
 
 val response = agent.chat("What's on the page at https://branch.alteration.dev?")
 ```
+
+#### SearXNG
+
+Search the web using a SearXNG instance. Requires a running SearXNG server (configure via `SEARXNG_URL` environment
+variable).
+
+```scala
+import dev.alteration.branch.hollywood.tools.provided.searxng.SearXNGTool
+
+val toolRegistry = ToolRegistry()
+  .register[SearXNGTool]
+
+val agent = OneShotAgent(
+  systemPrompt = "You are a research assistant with web search capabilities.",
+  toolRegistry = Some(toolRegistry)
+)
+
+val response = agent.chat("Search for recent developments in Scala 3")
+```
+
+**Tool parameters:**
+
+```scala
+@schema.Tool("Search the web using SearXNG")
+case class SearXNGTool(
+                        @Param("search query (required)") q: String,
+                        @Param("comma-separated list of categories (e.g., 'general', 'news', 'images', 'videos', 'science')")
+                        categories: Option[String] = None,
+                        @Param("comma-separated list of specific engines")
+                        engines: Option[String] = None,
+                        @Param("language code (e.g., 'en', 'es', 'fr')")
+                        language: Option[String] = Some("en"),
+                        @Param("search page number (default: 1)")
+                        pageno: Option[Int] = None,
+                        @Param("time range filter: 'day', 'month', or 'year'")
+                        time_range: Option[String] = None,
+                        @Param("safesearch level: 0 (off), 1 (moderate), or 2 (strict)")
+                        safesearch: Option[Int] = Some(0),
+                        @Param("maximum number of search results to return. Defaults to 10")
+                        max_results: Option[Int] = None
+                      )
+```
+
+The tool returns search results with title, URL, content, engine, score, and published date when available.
+
+SearXNG is a privacy-focused metasearch engine that aggregates results from multiple search engines. It can be run
+locally, providing free web search capabilities without API keys. Learn more
+at [docs.searxng.org](https://docs.searxng.org).
 
 ## Tests
 
