@@ -205,7 +205,7 @@ The `ToolExecutor` trait handles deserializing JSON arguments from the LLM into 
 
 ```scala
 trait ToolExecutor[T <: CallableTool[?]] {
-  def execute(args: Json): String
+  def execute(args: Json): Json
 }
 ```
 
@@ -213,7 +213,7 @@ Executors are automatically derived at compile time using `ToolExecutor.derived[
 
 1. Uses `JsonDecoder` to deserialize the JSON arguments into the tool case class
 2. Calls the tool's `execute()` method
-3. Returns the result as a string
+3. Encodes the result as JSON (preserving structure for complex return types)
 
 Since tool arguments are deserialized via JSON, tools automatically support all types that have a `JsonDecoder`
 instance, including:

@@ -20,7 +20,7 @@ trait ToolRegistry {
   def getFunctionDefinitions: List[FunctionDefinition]
   def getTools: List[Tool]
   def getSchemasJson: String
-  def execute(toolName: String, args: Json): Option[String]
+  def execute(toolName: String, args: Json): Option[Json]
   def clear(): Unit
   def getRegisteredToolNames: List[String]
 }
@@ -126,7 +126,7 @@ case class MutableToolRegistry() extends ToolRegistry {
     )
   }
 
-  def execute(toolName: String, args: Json): Option[String] = {
+  def execute(toolName: String, args: Json): Option[Json] = {
     tools.get(toolName).map { case (_, executor) =>
       executor.execute(args)
     }

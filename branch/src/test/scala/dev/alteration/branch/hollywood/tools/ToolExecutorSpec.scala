@@ -30,8 +30,8 @@ class ToolExecutorSpec extends FunSuite {
     // Execute
     val result = executor.execute(jsonArgs)
 
-    // Verify
-    assertEquals(result, "hello-42-true")
+    // Verify - result should be Json
+    assertEquals(result, Json.JsonString("hello-42-true"))
   }
 
   test("ToolExecutor should handle URL strings without quotes") {
@@ -49,6 +49,25 @@ class ToolExecutorSpec extends FunSuite {
     ))
 
     val result = executor.execute(jsonArgs)
-    assertEquals(result, "https://example.com")
+    assertEquals(result, Json.JsonString("https://example.com"))
+  }
+
+  test("ToolExecutor should return Json for numeric results") {
+    @schema.Tool("Math tool")
+    case class MathTool(
+        @Param("a number") x: Int,
+        @Param("a number") y: Int
+    ) extends CallableTool[Int] {
+      def execute(): Int = x + y
+    }
+
+    val executor = ToolExecutor.derived[MathTool]
+    val jsonArgs = Json.JsonObject(Map(
+      "x" -> Json.JsonNumber(10),
+      "y" -> Json.JsonNumber(32)
+    ))
+
+    val result = executor.execute(jsonArgs)
+    assertEquals(result, Json.JsonNumber(42))
   }
 }

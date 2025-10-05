@@ -75,8 +75,9 @@ private[hollywood] object AgentConversationLoop {
                     toolRegistry.flatMap(
                       _.execute(toolCall.function.name, args)
                     ) match {
-                      case Some(value) =>
-                        s"Tool ${toolCall.function.name} executed successfully. Result: $value"
+                      case Some(jsonResult) =>
+                        // Convert Json result to string for the LLM
+                        s"Tool ${toolCall.function.name} executed successfully. Result: ${jsonResult.toJsonString}"
                       case None        => s"Tool ${toolCall.function.name} not found"
                     }
                   } catch {
