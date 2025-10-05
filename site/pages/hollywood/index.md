@@ -373,15 +373,34 @@ val agent = OneShotAgent(
 val response = agent.chat("Search for recent developments in Scala 3")
 ```
 
-The SearXNG tool supports:
+**Tool parameters:**
 
-- Query filtering by categories (`general`, `news`, `images`, `videos`, `science`)
-- Specific search engines
-- Language preferences
-- Time range filters (`day`, `month`, `year`)
-- Pagination
-- SafeSearch levels
-- Maximum result limits
+```scala
+@schema.Tool("Search the web using SearXNG")
+case class SearXNGTool(
+                        @Param("search query (required)") q: String,
+                        @Param("comma-separated list of categories (e.g., 'general', 'news', 'images', 'videos', 'science')")
+                        categories: Option[String] = None,
+                        @Param("comma-separated list of specific engines")
+                        engines: Option[String] = None,
+                        @Param("language code (e.g., 'en', 'es', 'fr')")
+                        language: Option[String] = Some("en"),
+                        @Param("search page number (default: 1)")
+                        pageno: Option[Int] = None,
+                        @Param("time range filter: 'day', 'month', or 'year'")
+                        time_range: Option[String] = None,
+                        @Param("safesearch level: 0 (off), 1 (moderate), or 2 (strict)")
+                        safesearch: Option[Int] = Some(0),
+                        @Param("maximum number of search results to return. Defaults to 10")
+                        max_results: Option[Int] = None
+                      )
+```
+
+The tool returns search results with title, URL, content, engine, score, and published date when available.
+
+SearXNG is a privacy-focused metasearch engine that aggregates results from multiple search engines. It can be run
+locally, providing free web search capabilities without API keys. Learn more
+at [docs.searxng.org](https://docs.searxng.org).
 
 ## Tests
 
