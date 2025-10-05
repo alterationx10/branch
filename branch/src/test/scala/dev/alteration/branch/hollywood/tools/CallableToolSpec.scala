@@ -10,7 +10,7 @@ class CallableToolSpec extends LlamaServerFixture {
   override def munitIgnore: Boolean = true
 
   // Set this to false if llama-server is already running
-  override val shouldStartLlamaServer: Boolean = true
+  override val shouldStartLlamaServer: Boolean = false
 
   test("Agent using a simple tool") {
 

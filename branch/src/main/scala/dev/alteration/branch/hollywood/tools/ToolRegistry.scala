@@ -2,10 +2,7 @@ package dev.alteration.branch.hollywood.tools
 
 import dev.alteration.branch.friday.Json
 import dev.alteration.branch.hollywood.api.{FunctionDefinition, Tool}
-import dev.alteration.branch.hollywood.tools.schema.{
-  ParameterSchema,
-  ToolSchema
-}
+import dev.alteration.branch.hollywood.tools.schema.{ParameterSchema, ToolSchema}
 import dev.alteration.branch.hollywood.tools.{CallableTool, ToolExecutor}
 
 import scala.collection.mutable
@@ -40,9 +37,9 @@ object ToolRegistry {
     }
 
     // Method to register with pre-built schema and executor (for agent tools)
-    def register(
+    def register[A](
         schema: ToolSchema,
-        executor: ToolExecutor[? <: CallableTool[?]]
+        executor: ToolExecutor[? <: CallableTool[A]]
     ): ToolRegistry = {
       registry.registerTool(schema, executor)
       registry
