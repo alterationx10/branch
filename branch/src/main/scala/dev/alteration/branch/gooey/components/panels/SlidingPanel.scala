@@ -153,7 +153,6 @@ class SlidingPanel(
           }
 
           parent.revalidate()
-          parent.repaint()
 
           if (step >= animationSteps) {
             animationTimer.stop()
@@ -217,7 +216,6 @@ class SlidingPanel(
           }
 
           parent.revalidate()
-          parent.repaint()
 
           if (step >= animationSteps) {
             animationTimer.stop()
