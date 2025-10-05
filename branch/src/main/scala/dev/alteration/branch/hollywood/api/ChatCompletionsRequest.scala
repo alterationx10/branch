@@ -81,16 +81,13 @@ case class FunctionCall(
     name: String,
     arguments: String // JSON string
 ) derives JsonCodec {
-  def argumentMap: Map[String, String] =
+
+  /** Parse arguments as Json */
+  def argumentsJson: Json =
     Json
       .parse(arguments.translateEscapes())
-      .map(_.objVal.map { case (k, v) =>
-        k -> (v match {
-          case Json.JsonString(str) => str
-          case other                => other.toString
-        })
-      })
-      .getOrElse(Map.empty)
+      .getOrElse(Json.JsonObject(Map.empty))
+  
 }
 
 case class ToolChoice(

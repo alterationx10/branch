@@ -71,7 +71,7 @@ private[hollywood] object AgentConversationLoop {
               val toolResults = toolCalls.map { toolCall =>
                 val result =
                   try {
-                    val args = toolCall.function.argumentMap
+                    val args = toolCall.function.argumentsJson
                     toolRegistry.flatMap(
                       _.execute(toolCall.function.name, args)
                     ) match {
