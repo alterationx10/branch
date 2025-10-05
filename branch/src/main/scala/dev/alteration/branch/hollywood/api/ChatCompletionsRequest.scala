@@ -84,7 +84,12 @@ case class FunctionCall(
   def argumentMap: Map[String, String] =
     Json
       .parse(arguments.translateEscapes())
-      .map(_.objVal.map { case (k, v) => k -> v.toString })
+      .map(_.objVal.map { case (k, v) =>
+        k -> (v match {
+          case Json.JsonString(str) => str
+          case other                => other.toString
+        })
+      })
       .getOrElse(Map.empty)
 }
 

@@ -17,7 +17,7 @@ case class UrlGetTool(
     println(s"Calling tool with $url")
     val result = Client.defaultClient
       .send(
-        ClientRequest.builder(uri"${url.stripPrefix("\"").stripSuffix("\"")}").GET().build(),
+        ClientRequest.builder(uri"$url").GET().build(),
         BodyHandlers.ofString()
       )
       .body()
