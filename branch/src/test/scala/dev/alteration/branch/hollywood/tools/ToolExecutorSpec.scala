@@ -14,7 +14,7 @@ class ToolExecutorSpec extends FunSuite {
         @Param("an integer parameter") intParam: Int,
         @Param("a boolean parameter") boolParam: Boolean
     ) extends CallableTool[String] {
-      def execute(): String = s"$stringParam-$intParam-$boolParam"
+      def execute(): scala.util.Try[String] = scala.util.Success(s"$stringParam-$intParam-$boolParam")
     }
 
     // Create the executor
@@ -41,7 +41,7 @@ class ToolExecutorSpec extends FunSuite {
     case class UrlTestTool(
         @Param("A URL") url: String
     ) extends CallableTool[String] {
-      def execute(): String = url
+      def execute(): scala.util.Try[String] = scala.util.Success(url)
     }
 
     val executor = ToolExecutor.derived[UrlTestTool]
@@ -62,7 +62,7 @@ class ToolExecutorSpec extends FunSuite {
         @Param("a number") x: Int,
         @Param("a number") y: Int
     ) extends CallableTool[Int] {
-      def execute(): Int = x + y
+      def execute(): scala.util.Try[Int] = scala.util.Success(x + y)
     }
 
     val executor = ToolExecutor.derived[MathTool]

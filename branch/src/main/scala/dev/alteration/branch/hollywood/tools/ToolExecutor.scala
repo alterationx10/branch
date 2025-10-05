@@ -25,7 +25,12 @@ object ToolExecutor {
       override def execute(args: Json): Json = {
         decoder.decode(args) match {
           case scala.util.Success(tool) =>
-            encoder.encode(tool.execute().asInstanceOf[ResultType[T]])
+            tool.execute() match {
+              case scala.util.Success(result) =>
+                encoder.encode(result.asInstanceOf[ResultType[T]])
+              case scala.util.Failure(e) =>
+                Json.JsonString(s"Error executing tool: ${e.getMessage}")
+            }
           case scala.util.Failure(e)    =>
             Json.JsonString(s"Error decoding tool arguments: ${e.getMessage}")
         }

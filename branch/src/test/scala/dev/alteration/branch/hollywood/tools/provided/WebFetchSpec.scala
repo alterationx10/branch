@@ -11,11 +11,14 @@ class WebFetchSpec extends FunSuite {
     val tool   = WebFetch("https://branch.alteration.dev")
     val result = tool.execute()
 
-    assert(result.nonEmpty, "Response body should not be empty")
-    assert(
-      result.contains("branch.alteration.dev") || result.contains("html"),
-      "Response should contain expected webpage content"
-    )
+    assert(result.isSuccess, "Request should succeed")
+    result.foreach { body =>
+      assert(body.nonEmpty, "Response body should not be empty")
+      assert(
+        body.contains("branch.alteration.dev") || body.contains("html"),
+        "Response should contain expected webpage content"
+      )
+    }
   }
 
 }

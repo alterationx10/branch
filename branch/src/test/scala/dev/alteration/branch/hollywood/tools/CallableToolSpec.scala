@@ -20,7 +20,7 @@ class CallableToolSpec extends LlamaServerFixture {
         @Param("a number") a: Int,
         @Param("a number") b: Int
     ) extends CallableTool[Int] {
-      def execute(): Int = a + b
+      def execute(): scala.util.Try[Int] = scala.util.Success(a + b)
     }
 
     // Create a tool registry and register the calculator
@@ -48,7 +48,7 @@ class CallableToolSpec extends LlamaServerFixture {
         @Param("first number") a: Int,
         @Param("second number") b: Int
     ) extends CallableTool[Int] {
-      def execute(): Int = a + b
+      def execute(): scala.util.Try[Int] = scala.util.Success(a + b)
     }
 
     @schema.Tool("Multiply two numbers")
@@ -56,7 +56,7 @@ class CallableToolSpec extends LlamaServerFixture {
         @Param("first number") a: Int,
         @Param("second number") b: Int
     ) extends CallableTool[Int] {
-      def execute(): Int = a * b
+      def execute(): scala.util.Try[Int] = scala.util.Success(a * b)
     }
 
     // Create a tool registry with multiple tools

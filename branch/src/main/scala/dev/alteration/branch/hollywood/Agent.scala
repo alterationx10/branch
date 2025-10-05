@@ -1,5 +1,6 @@
 package dev.alteration.branch.hollywood
 
+import dev.alteration.branch.friday.Json
 import dev.alteration.branch.hollywood.tools.schema.{
   ParameterSchema,
   PropertySchema,
@@ -10,6 +11,8 @@ import dev.alteration.branch.hollywood.tools.{
   CallableTool,
   ToolExecutor
 }
+
+import scala.util.*
 
 trait Agent {
   def chat(message: String): String
@@ -69,8 +72,12 @@ object Agent {
             }
           case _               => "Invalid arguments"
         }
-        val result  = agent.chat(message)
-        JsonString(result)
+        val result  = Try(agent.chat(message)) match {
+          case Success(value) => JsonString(value)
+          case Failure(e)     =>
+            Json.JsonString(s"Error executing Agent tool: ${e.getMessage}")
+        }
+        result
       }
     }
 
