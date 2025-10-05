@@ -2,6 +2,7 @@ package dev.alteration.branch.hollywood.tools.provided.searxng
 
 import dev.alteration.branch.hollywood.OneShotAgent
 import dev.alteration.branch.hollywood.tools.ToolRegistry
+import dev.alteration.branch.hollywood.tools.provided.WebFetch
 import dev.alteration.branch.testkit.fixtures.LlamaServerFixture
 
 class SearXNGAgentSpec extends LlamaServerFixture {
@@ -17,6 +18,7 @@ class SearXNGAgentSpec extends LlamaServerFixture {
     // Create a tool registry and register the SearXNG tool
     val toolRegistry = ToolRegistry()
       .register[SearXNGTool]
+      .register[WebFetch]
 
     // Create an agent with the search tool
     val agent = OneShotAgent(
@@ -43,6 +45,8 @@ class SearXNGAgentSpec extends LlamaServerFixture {
   test("OneShotAgent using SearXNGTool for recent information") {
     val toolRegistry = ToolRegistry()
       .register[SearXNGTool]
+      .register[WebFetch]
+
 
     val agent = OneShotAgent(
       systemPrompt =
@@ -60,6 +64,8 @@ class SearXNGAgentSpec extends LlamaServerFixture {
   test("OneShotAgent using SearXNGTool multiple times") {
     val toolRegistry = ToolRegistry()
       .register[SearXNGTool]
+      .register[WebFetch]
+
 
     val agent = OneShotAgent(
       systemPrompt =

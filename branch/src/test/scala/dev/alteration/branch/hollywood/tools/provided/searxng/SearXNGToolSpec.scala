@@ -12,7 +12,10 @@ class SearXNGToolSpec extends FunSuite {
       q = "scala programming language"
     )
 
-    val response = tool.execute()
+    val result = tool.execute()
+
+    assert(result.isSuccess, "Request should succeed")
+    val response = result.get
 
     // Verify response structure
     assert(response.query.nonEmpty, "Query should not be empty")
@@ -20,31 +23,50 @@ class SearXNGToolSpec extends FunSuite {
 
     val firstResult = response.results.head
     assert(firstResult.title.nonEmpty, "Result title should not be empty")
-//    assert(firstResult.url.isDefined, "Result URL should be defined")
-//    assert(firstResult.content.nonEmpty, "Result content should not be empty")
-
   }
 
   test("SearXNGTool with specific categories") {
     val tool = SearXNGTool(
-      q = "functional programming"
+      q = "functional programming",
+      categories = Some("science,it")
     )
 
-    val response = tool.execute()
+    val result = tool.execute()
 
+    assert(result.isSuccess, "Request should succeed")
+    val response = result.get
     assertEquals(response.query, "functional programming")
     assert(response.results.nonEmpty, "Should have at least one result")
   }
 
   test("SearXNGTool with time range filter") {
     val tool = SearXNGTool(
-      q = "scala 3 news"
+      q = "scala 3 news",
+      time_range = Some("month")
     )
 
-    val response = tool.execute()
+    val result = tool.execute()
 
+    assert(result.isSuccess, "Request should succeed")
+    val response = result.get
     assertEquals(response.query, "scala 3 news")
     assert(response.results.nonEmpty, "Should have at least one result")
+  }
 
+  test("SearXNGTool with multiple parameters") {
+    val tool = SearXNGTool(
+      q = "artificial intelligence",
+      categories = Some("news"),
+      language = Some("en"),
+      pageno = Some(1),
+      safesearch = Some(1)
+    )
+
+    val result = tool.execute()
+
+    assert(result.isSuccess, "Request should succeed")
+    val response = result.get
+    assertEquals(response.query, "artificial intelligence")
+    assert(response.results.nonEmpty, "Should have at least one result")
   }
 }
