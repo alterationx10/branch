@@ -7,10 +7,11 @@ import dev.alteration.branch.testkit.fixtures.LlamaServerFixture
 class SearXNGAgentSpec extends LlamaServerFixture {
 
   // Set to false to run the test when both llama-server and SearXNG are available
+  // Note: These tests require a properly configured LLM that can reliably generate tool calls
   override def munitIgnore: Boolean = false
 
   // Set this to false if llama-server is already running
-  override val shouldStartLlamaServer: Boolean = true
+  override val shouldStartLlamaServer: Boolean = false
 
   test("OneShotAgent using SearXNGTool to answer a question") {
     // Create a tool registry and register the SearXNG tool
@@ -27,13 +28,15 @@ class SearXNGAgentSpec extends LlamaServerFixture {
     // Test the agent using the search tool
     val response = agent.chat("What is Scala 3? Give me a brief overview based on web search results.")
 
-    println(s"Agent response: $response")
+    println(s"Agent response: '$response'")
+    println(s"Response length: ${response.length}")
+    println(s"Response isEmpty: ${response.isEmpty}")
 
-    assert(response.nonEmpty, "Agent should provide a response")
+    assert(response.nonEmpty, s"Agent should provide a response, got: '$response'")
     assert(
       response.toLowerCase.contains("scala") ||
       response.toLowerCase.contains("programming"),
-      "Response should mention Scala or programming"
+      s"Response should mention Scala or programming, got: '$response'"
     )
   }
 
