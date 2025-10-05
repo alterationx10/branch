@@ -20,21 +20,13 @@ class SearXNGToolSpec extends FunSuite {
 
     // Verify response structure
     assert(response.query.nonEmpty, "Query should not be empty")
-    assert(response.number_of_results >= 0, "Number of results should be non-negative")
+    assert(response.results.nonEmpty, "Should have at least one result")
 
-    // Verify results if any are returned
-    if (response.results.nonEmpty) {
-      val firstResult = response.results.head
-      assert(firstResult.title.nonEmpty, "Result title should not be empty")
-      assert(firstResult.url.nonEmpty, "Result URL should not be empty")
-      assert(firstResult.content.nonEmpty, "Result content should not be empty")
+    val firstResult = response.results.head
+    assert(firstResult.title.nonEmpty, "Result title should not be empty")
+    assert(firstResult.url.isDefined, "Result URL should be defined")
+    assert(firstResult.content.nonEmpty, "Result content should not be empty")
 
-      println(s"Query: ${response.query}")
-      println(s"Number of results: ${response.number_of_results}")
-      println(s"First result: ${firstResult.title}")
-      println(s"  URL: ${firstResult.url}")
-      println(s"  Content: ${firstResult.content.take(100)}...")
-    }
   }
 
   test("SearXNGTool with specific categories") {
@@ -65,7 +57,7 @@ class SearXNGToolSpec extends FunSuite {
     val response = tool.execute()
 
     assertEquals(response.query, "scala 3 news")
-    // Results may be empty depending on recent news
-    println(s"Recent results count: ${response.number_of_results}")
+    assert(response.results.nonEmpty, "Should have at least one result")
+
   }
 }
