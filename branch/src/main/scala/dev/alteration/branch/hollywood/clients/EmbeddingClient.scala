@@ -32,7 +32,7 @@ object EmbeddingClient {
 
   val baseUrl: String =
     Veil
-      .get("LLAMA_SERVER_EMBEDDING_URL")
+      .getFirst("LLAMA_SERVER_EMBEDDING_URL", "LLAMA_SERVER_URL")
       .getOrElse("http://localhost:8080")
 
   val defaultEmbeddingHandler: EmbeddingsRequest => EmbeddingsResponse = {

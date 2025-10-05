@@ -70,4 +70,22 @@ object Veil {
   final def get(key: String): Option[String] =
     dotEnv.get(key).map(stripQuotes).orElse(System.getenv().asScala.get(key))
 
+  /** Get the first environment variable defined in the arguments. It first
+    * searches through variables * loaded from an env file, then through system
+    * variables.
+    *
+    * @param key
+    *   The first key to search for
+    * @param alt
+    *   the alternative keys to look for
+    * @return
+    *   an `Option` containing the value of the environment variable, if found
+    */
+  final def getFirst(key: String, alt: String*): Option[String] = {
+    get(key)
+      .orElse {
+        alt.find(a => get(a).isDefined).flatMap(get)
+      }
+  }
+
 }

@@ -36,7 +36,7 @@ object Agent {
     req =>
       {
         val baseUrl = Veil
-          .get("LLAMA_SERVER_URL")
+          .getFirst("LLAMA_SERVER_COMPLETION_URL", "LLAMA_SERVER_URL")
           .getOrElse("http://localhost:8080")
 
         val httpRequest = ClientRequest
