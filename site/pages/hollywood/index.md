@@ -22,10 +22,18 @@ compatibility beyond llama-server has not been extensively validated.
 This is an early-stage project that provides core functionality for straightforward agent workflows. As the library
 evolves, the API structure is subject to change — more so than other modules in this project.
 
-Here is what I am using to start llama-server, which allows gpt-oss to completions and embeddings:
+## Configuration
+
+Hollywood uses environment variables for configuration:
+
+- `LLAMA_SERVER_URL` - Base URL for the LLM server (default: `http://localhost:8080`)
+- `LLAMA_SERVER_EMBEDDING_URL` - Base URL for embeddings (default: `http://localhost:8080`)
+- `SEARXNG_URL` - Base URL for SearXNG search (default: `http://localhost:8888`)
+
+Here is what I am using to start llama-server, which allows gpt-oss to handle completions and embeddings:
 
 ```bash
-`llama-server -hf ggml-org/gpt-oss-20b-GGUF --ctx-size 8192 --jinja -ub 2048 -b 2048 --embeddings --pooling mean`
+llama-server -hf ggml-org/gpt-oss-20b-GGUF --ctx-size 8192 --jinja -ub 2048 -b 2048 --embeddings --pooling mean
 ```
 
 ## Agent
@@ -322,7 +330,7 @@ The library includes some built-in tools that can be registered with agents:
 
 #### WebFetch
 
-Fetch a webpage by url.
+Fetch a webpage by URL.
 
 ```scala
 import dev.alteration.branch.hollywood.tools.provided.WebFetch
@@ -337,6 +345,33 @@ val agent = OneShotAgent(
 
 val response = agent.chat("What's on the page at https://branch.alteration.dev?")
 ```
+
+#### SearXNG
+
+Search the web using a SearXNG instance. Requires a running SearXNG server (configure via `SEARXNG_URL` environment variable).
+
+```scala
+import dev.alteration.branch.hollywood.tools.provided.searxng.SearXNGTool
+
+val toolRegistry = ToolRegistry()
+  .register[SearXNGTool]
+
+val agent = OneShotAgent(
+  systemPrompt = "You are a research assistant with web search capabilities.",
+  toolRegistry = Some(toolRegistry)
+)
+
+val response = agent.chat("Search for recent developments in Scala 3")
+```
+
+The SearXNG tool supports:
+- Query filtering by categories (`general`, `news`, `images`, `videos`, `science`)
+- Specific search engines
+- Language preferences
+- Time range filters (`day`, `month`, `year`)
+- Pagination
+- SafeSearch levels
+- Maximum result limits
 
 ## Tests
 
