@@ -57,9 +57,20 @@ object Agent {
 
     // Create the executor - we're ignoring the implementation of AgentChatTool.execute()
     val executor = new ToolExecutor[AgentChatTool] {
-      override def execute(args: Map[String, String]): String = {
-        val message = args("message")
-        agent.chat(message)
+      override def execute(
+          args: dev.alteration.branch.friday.Json
+      ): dev.alteration.branch.friday.Json = {
+        import dev.alteration.branch.friday.Json.*
+        val message = args match {
+          case JsonObject(obj) =>
+            obj.get("message") match {
+              case Some(JsonString(str)) => str
+              case _                     => "No message provided"
+            }
+          case _               => "Invalid arguments"
+        }
+        val result  = agent.chat(message)
+        JsonString(result)
       }
     }
 

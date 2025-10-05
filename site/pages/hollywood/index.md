@@ -201,24 +201,40 @@ case class Calculator(
 
 ### Tool Executor
 
-The `ToolExecutor` trait handles converting string arguments from the LLM into typed parameters and executing the tool:
+The `ToolExecutor` trait handles deserializing JSON arguments from the LLM into typed tool instances and executing them:
 
 ```scala
 trait ToolExecutor[T <: CallableTool[?]] {
-  def execute(args: Map[String, String]): String
+  def execute(args: Json): Json
 }
 ```
 
 Executors are automatically derived at compile time using `ToolExecutor.derived[T]`, which:
 
-1. Extracts parameter names and types from the case class
-2. Summons type converters for each parameter (`Conversion[String, T]`)
-3. Converts string arguments to the correct types
-4. Calls the tool's `execute()` method
-5. Returns the result as a string
+1. Uses `JsonDecoder` to deserialize the JSON arguments into the tool case class
+2. Calls the tool's `execute()` method
+3. Uses match types to extract the result type `A` from `CallableTool[A]`
+4. Requires `JsonEncoder[A]` as a `using` parameter, resolved implicitly by the compiler to encode the result as JSON
 
-Default conversions are currently provided for these types: `String`, `Int`, `Long`, `Double`, `Float`, and `Boolean`.
-You can provide your own `given Conversion[String, YourType]` in scope for other types when deriving.
+The derivation uses Scala 3's match types to extract the return type from the tool definition:
+
+```scala
+type ResultType[T <: CallableTool[?]] <: Any = T match {
+  case CallableTool[a] => a
+}
+```
+
+This means tools automatically support any return type that has a `JsonEncoder` instance. The compiler will verify at compile time that an encoder exists for the tool's return type.
+
+**Supported types** (both for arguments and results):
+
+- Primitives: `String`, `Int`, `Long`, `Double`, `Float`, `Boolean`
+- Collections: `List[T]`, `Option[T]`, `Map[String, T]`
+- Nested case classes
+- Any custom types with `JsonCodec`
+
+Case classes extending `CallableTool` automatically derive `JsonCodec` through Scala 3's derivation mechanism, so no
+explicit `derives` clause is needed. If a required encoder is missing, you'll get a clear compile-time error.
 
 ### Tool Registry
 
@@ -294,6 +310,28 @@ val response = mainAgent.chat("What is 100 divided by 4?")
 ```
 
 This enables agent composition and specialization, where complex tasks can be delegated to domain-specific agents.
+
+### Provided Tools
+
+The library includes some built-in tools that can be registered with agents:
+
+#### WebFetch
+
+Fetch a webpage by url.
+
+```scala
+import dev.alteration.branch.hollywood.tools.provided.WebFetch
+
+val toolRegistry = ToolRegistry()
+  .register[WebFetch]
+
+val agent = OneShotAgent(
+  systemPrompt = "You are a helpful assistant that can fetch web pages.",
+  toolRegistry = Some(toolRegistry)
+)
+
+val response = agent.chat("What's on the page at https://branch.alteration.dev?")
+```
 
 ## Tests
 

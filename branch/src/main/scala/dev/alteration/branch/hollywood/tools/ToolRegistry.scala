@@ -1,6 +1,6 @@
 package dev.alteration.branch.hollywood.tools
 
-import dev.alteration.branch.friday.Json
+import dev.alteration.branch.friday.{Json, JsonEncoder}
 import dev.alteration.branch.hollywood.api.{FunctionDefinition, Tool}
 import dev.alteration.branch.hollywood.tools.schema.{
   ParameterSchema,
@@ -20,7 +20,7 @@ trait ToolRegistry {
   def getFunctionDefinitions: List[FunctionDefinition]
   def getTools: List[Tool]
   def getSchemasJson: String
-  def execute(toolName: String, args: Map[String, String]): Option[String]
+  def execute(toolName: String, args: Json): Option[Json]
   def clear(): Unit
   def getRegisteredToolNames: List[String]
 }
@@ -31,7 +31,8 @@ object ToolRegistry {
   // Extension method to add inline register to any ToolRegistry
   extension (registry: ToolRegistry) {
     inline def register[T <: CallableTool[?]](using
-        m: Mirror.ProductOf[T]
+        m: Mirror.ProductOf[T],
+        encoder: JsonEncoder[ToolExecutor.ResultType[T]]
     ): ToolRegistry = {
       val schema   = ToolSchema.derive[T]
       val executor = ToolExecutor.derived[T]
@@ -40,9 +41,9 @@ object ToolRegistry {
     }
 
     // Method to register with pre-built schema and executor (for agent tools)
-    def register(
+    def register[A](
         schema: ToolSchema,
-        executor: ToolExecutor[? <: CallableTool[?]]
+        executor: ToolExecutor[? <: CallableTool[A]]
     ): ToolRegistry = {
       registry.registerTool(schema, executor)
       registry
@@ -126,7 +127,7 @@ case class MutableToolRegistry() extends ToolRegistry {
     )
   }
 
-  def execute(toolName: String, args: Map[String, String]): Option[String] = {
+  def execute(toolName: String, args: Json): Option[Json] = {
     tools.get(toolName).map { case (_, executor) =>
       executor.execute(args)
     }

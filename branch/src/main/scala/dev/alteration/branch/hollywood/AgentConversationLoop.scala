@@ -71,13 +71,14 @@ private[hollywood] object AgentConversationLoop {
               val toolResults = toolCalls.map { toolCall =>
                 val result =
                   try {
-                    val args = toolCall.function.argumentMap
+                    val args = toolCall.function.argumentsJson
                     toolRegistry.flatMap(
                       _.execute(toolCall.function.name, args)
                     ) match {
-                      case Some(value) =>
-                        s"Tool ${toolCall.function.name} executed successfully. Result: $value"
-                      case None        => s"Tool ${toolCall.function.name} not found"
+                      case Some(jsonResult) =>
+                        // Convert Json result to string for the LLM
+                        s"Tool ${toolCall.function.name} executed successfully. Result: ${jsonResult.toJsonString}"
+                      case None             => s"Tool ${toolCall.function.name} not found"
                     }
                   } catch {
                     case e: Exception =>

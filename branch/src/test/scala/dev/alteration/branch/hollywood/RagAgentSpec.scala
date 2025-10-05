@@ -13,7 +13,7 @@ class RagAgentSpec extends LlamaServerFixture {
   override def munitIgnore: Boolean = true
 
   // Set this to false if llama-server is already running
-  override val shouldStartLlamaServer: Boolean = true
+  override val shouldStartLlamaServer: Boolean = false
 
   test("RagAgent should answer questions using indexed documents") {
     val vectorStore     = new InMemoryVectorStore()

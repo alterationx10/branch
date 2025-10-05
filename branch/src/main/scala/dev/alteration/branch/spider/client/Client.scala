@@ -17,4 +17,7 @@ object Client {
       .foldLeft(builder)((b, s) => s(b))
       .build()
 
+  val defaultClient: HttpClient =
+    builder.build()
+
 }
