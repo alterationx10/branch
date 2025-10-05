@@ -6,6 +6,7 @@ import dev.alteration.branch.spider.client.{Client, ClientRequest}
 import dev.alteration.branch.hollywood.tools.schema
 import dev.alteration.branch.hollywood.tools.schema.Param
 import dev.alteration.branch.spider.client.ClientRequest.uri
+import dev.alteration.branch.veil.Veil
 
 import scala.util.Try
 
@@ -56,8 +57,13 @@ case class SearXNGTool(
         .map(s => s"safesearch=$s")
     ).flatten.mkString("&")
 
+    val baseUrl: String =
+      Veil
+        .get("SEARXNG_URL")
+        .getOrElse("http://localhost:8888")
+
     val httpRequest = ClientRequest
-      .builder(uri"http://localhost:8888/search?$params")
+      .builder(uri"$baseUrl/search?$params")
       .GET()
       .build()
 
