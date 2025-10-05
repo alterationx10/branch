@@ -14,7 +14,8 @@ class ToolExecutorSpec extends FunSuite {
         @Param("an integer parameter") intParam: Int,
         @Param("a boolean parameter") boolParam: Boolean
     ) extends CallableTool[String] {
-      def execute(): scala.util.Try[String] = scala.util.Success(s"$stringParam-$intParam-$boolParam")
+      def execute(): scala.util.Try[String] =
+        scala.util.Success(s"$stringParam-$intParam-$boolParam")
     }
 
     // Create the executor

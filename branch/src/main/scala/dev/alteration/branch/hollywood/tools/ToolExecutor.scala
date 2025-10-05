@@ -28,7 +28,7 @@ object ToolExecutor {
             tool.execute() match {
               case scala.util.Success(result) =>
                 encoder.encode(result.asInstanceOf[ResultType[T]])
-              case scala.util.Failure(e) =>
+              case scala.util.Failure(e)      =>
                 Json.JsonString(s"Error executing tool: ${e.getMessage}")
             }
           case scala.util.Failure(e)    =>

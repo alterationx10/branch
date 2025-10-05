@@ -1,5 +1,6 @@
 package dev.alteration.branch.testkit.fixtures
 
+import dev.alteration.branch.veil.Veil
 import munit.FunSuite
 
 import scala.language.postfixOps
@@ -10,7 +11,11 @@ import java.util.concurrent.{CountDownLatch, TimeUnit}
 
 trait LlamaServerFixture extends FunSuite {
 
-  val shouldStartLlamaServer: Boolean = true
+  // Override if you don't want this ENV controlled
+  override def munitIgnore: Boolean = Veil.get("LLAMA_SERVER_TEST").isDefined
+
+  // Override this in your test if you dont want in ENV controlled
+  val shouldStartLlamaServer: Boolean = Veil.get("LLAMA_SERVER_START").isDefined
 
   val cmd: Array[String] =
     "llama-server -hf ggml-org/gpt-oss-20b-GGUF --ctx-size 8192 --jinja -ub 2048 -b 2048 --embeddings --pooling mean"

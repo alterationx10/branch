@@ -6,12 +6,6 @@ import dev.alteration.branch.testkit.fixtures.LlamaServerFixture
 
 class CallableToolSpec extends LlamaServerFixture {
 
-  // Comment this in/out to run
-  override def munitIgnore: Boolean = true
-
-  // Set this to false if llama-server is already running
-  override val shouldStartLlamaServer: Boolean = false
-
   test("Agent using a simple tool") {
 
     // Define a simple calculator tool
