@@ -12,12 +12,23 @@ import scala.util.Try
 @schema.Tool("Search the web using SearXNG")
 case class SearXNGTool(
     @Param("search query (required)") q: String,
-    @Param("comma-separated list of categories (e.g., 'general', 'news', 'images', 'videos', 'science')") categories: Option[String] = None,
-    @Param("comma-separated list of specific engines") engines: Option[String] = None,
-    @Param("language code (e.g., 'en', 'es', 'fr')") language: Option[String] = Some("en"),
+    @Param(
+      "comma-separated list of categories (e.g., 'general', 'news', 'images', 'videos', 'science')"
+    ) categories: Option[String] = None,
+    @Param("comma-separated list of specific engines") engines: Option[String] =
+      None,
+    @Param("language code (e.g., 'en', 'es', 'fr')") language: Option[String] =
+      Some("en"),
     @Param("search page number (default: 1)") pageno: Option[Int] = None,
-    @Param("time range filter: 'day', 'month', or 'year'") time_range: Option[String] = None,
-    @Param("safesearch level: 0 (off), 1 (moderate), or 2 (strict)") safesearch: Option[Int] = Some(0)
+    @Param("time range filter: 'day', 'month', or 'year'") time_range: Option[
+      String
+    ] = None,
+    @Param(
+      "safesearch level: 0 (off), 1 (moderate), or 2 (strict)"
+    ) safesearch: Option[Int] = Some(0),
+    @Param(
+      "maximum number of search results to return. Defaults to 10"
+    ) max_results: Option[Int] = None
 ) extends CallableTool[SearXNGResponse] {
 
   override def execute(): Try[SearXNGResponse] = {
@@ -54,7 +65,9 @@ case class SearXNGTool(
       Client.defaultClient
         .send(httpRequest, JsonBodyHandler.of[SearXNGResponse])
         .body()
-        .map(res => res.copy(results = res.results.take(10)))
+        .map(res =>
+          res.copy(results = res.results.take(max_results.getOrElse(10)))
+        )
         .get
     }
   }

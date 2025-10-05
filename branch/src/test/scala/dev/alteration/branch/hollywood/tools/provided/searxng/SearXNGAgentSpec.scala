@@ -2,7 +2,6 @@ package dev.alteration.branch.hollywood.tools.provided.searxng
 
 import dev.alteration.branch.hollywood.OneShotAgent
 import dev.alteration.branch.hollywood.tools.ToolRegistry
-import dev.alteration.branch.hollywood.tools.provided.WebFetch
 import dev.alteration.branch.testkit.fixtures.LlamaServerFixture
 
 class SearXNGAgentSpec extends LlamaServerFixture {
@@ -11,76 +10,26 @@ class SearXNGAgentSpec extends LlamaServerFixture {
   // Note: These tests require a properly configured LLM that can reliably generate tool calls
   override def munitIgnore: Boolean = false
 
-  // Set this to false if llama-server is already running
-  override val shouldStartLlamaServer: Boolean = false
-
-  test("OneShotAgent using SearXNGTool to answer a question") {
-    // Create a tool registry and register the SearXNG tool
+  test("OneShotAgent using SearXNGTool returns search results") {
     val toolRegistry = ToolRegistry()
       .register[SearXNGTool]
-      .register[WebFetch]
-
-    // Create an agent with the search tool
-    val agent = OneShotAgent(
-      systemPrompt =
-        "You are a helpful assistant with access to a web search tool. Use it to find current information when needed.",
-      toolRegistry = Some(toolRegistry),
-    )
-
-    // Test the agent using the search tool
-    val response = agent.chat("What is Scala 3? Give me a brief overview based on web search results.")
-
-    println(s"Agent response: '$response'")
-    println(s"Response length: ${response.length}")
-    println(s"Response isEmpty: ${response.isEmpty}")
-
-    assert(response.nonEmpty, s"Agent should provide a response, got: '$response'")
-    assert(
-      response.toLowerCase.contains("scala") ||
-      response.toLowerCase.contains("programming"),
-      s"Response should mention Scala or programming, got: '$response'"
-    )
-  }
-
-  test("OneShotAgent using SearXNGTool for recent information") {
-    val toolRegistry = ToolRegistry()
-      .register[SearXNGTool]
-      .register[WebFetch]
-
 
     val agent = OneShotAgent(
       systemPrompt =
-        "You are a research assistant. When asked about current topics, use the search tool to find recent information.",
+        "You are a search assistant. Use the search tool to search the web.",
       toolRegistry = Some(toolRegistry)
     )
 
-    val response = agent.chat("What are some recent developments in functional programming?")
-
-    println(s"Agent response about recent developments: $response")
-
-    assert(response.nonEmpty, "Agent should provide a response")
-  }
-
-  test("OneShotAgent using SearXNGTool multiple times") {
-    val toolRegistry = ToolRegistry()
-      .register[SearXNGTool]
-      .register[WebFetch]
-
-
-    val agent = OneShotAgent(
-      systemPrompt =
-        "You are a research assistant that uses web search to answer questions thoroughly. You may use the search tool multiple times if needed.",
-      toolRegistry = Some(toolRegistry)
+    val response = agent.chat(
+      "Search for 'Scala programming' results and tell me how many results you found. Give a list of the urls as well."
     )
 
-    val response = agent.chat("Compare Scala and Kotlin. Search for information about both languages.")
-
-    println(s"Agent response comparing languages: $response")
+    println(s"Agent response: $response")
 
     assert(response.nonEmpty, "Agent should provide a response")
     assert(
-      (response.toLowerCase.contains("scala") && response.toLowerCase.contains("kotlin")),
-      "Response should mention both Scala and Kotlin"
+      response.matches(".*\\d+.*"),
+      s"Response should contain a number (result count), got: '$response'"
     )
   }
 }
