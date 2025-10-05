@@ -9,11 +9,7 @@ class SearXNGToolSpec extends FunSuite {
 
   test("SearXNGTool makes a real search request") {
     val tool = SearXNGTool(
-      searchRequest = SearXNGRequest(
-        q = "scala programming language",
-        language = Some("en"),
-        pageno = Some(1)
-      )
+      q = "scala programming language"
     )
 
     val response = tool.execute()
@@ -31,12 +27,10 @@ class SearXNGToolSpec extends FunSuite {
 
   test("SearXNGTool with specific categories") {
     val tool = SearXNGTool(
-      searchRequest = SearXNGRequest(
-        q = "functional programming",
-        categories = Some("general"),
-        engines = Some("duckduckgo"),
-        language = Some("en")
-      )
+      q = "functional programming",
+      categories = "general",
+      engines = "duckduckgo",
+      language = "en"
     )
 
     val response = tool.execute()
@@ -46,13 +40,7 @@ class SearXNGToolSpec extends FunSuite {
   }
 
   test("SearXNGTool with time range filter") {
-    val tool = SearXNGTool(
-      searchRequest = SearXNGRequest(
-        q = "scala 3 news",
-        time_range = Some("month"),
-        language = Some("en")
-      )
-    )
+    val tool = SearXNGTool(q = "scala 3 news", time_range = "month")
 
     val response = tool.execute()
 
