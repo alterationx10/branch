@@ -6,11 +6,8 @@ import dev.alteration.branch.hollywood.api.{
   ChatCompletionsRequest,
   ChatCompletionsResponse
 }
-import dev.alteration.branch.hollywood.tools.schema.{
-  ParameterSchema,
-  PropertySchema,
-  ToolSchema
-}
+import dev.alteration.branch.hollywood.tools.schema.ToolSchema
+import dev.alteration.branch.friday.Schema
 import dev.alteration.branch.hollywood.tools.{
   AgentChatTool,
   CallableTool,
@@ -80,16 +77,14 @@ object Agent {
     val toolSchema = ToolSchema(
       name = toolName,
       description = description,
-      parameters = ParameterSchema(
-        `type` = "object",
+      parameters = Schema.ObjectSchema(
         properties = Map(
-          "message" -> PropertySchema(
-            `type` = "string",
-            description = "The message to send to the agent",
-            enumValues = None
+          "message" -> Schema.StringSchema(
+            description = Some("The message to send to the agent")
           )
         ),
-        required = List("message")
+        required = List("message"),
+        description = None
       )
     )
 
