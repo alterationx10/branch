@@ -94,14 +94,17 @@ private[hollywood] object AgentConversationLoop {
               conversationMessages = conversationMessages ++ toolResults
 
             case None =>
-              finalResponse = assistantMessage.content.getOrElse(
-                "Error: tool_calls finish reason but no tools"
-              ).translateEscapes()
+              finalResponse = assistantMessage.content
+                .getOrElse(
+                  "Error: tool_calls finish reason but no tools"
+                )
+                .translateEscapes()
               continueConversation = false
           }
 
         case Some("stop") =>
-          finalResponse = assistantMessage.content.getOrElse("").translateEscapes()
+          finalResponse =
+            assistantMessage.content.getOrElse("").translateEscapes()
           continueConversation = false
 
         case other =>
@@ -112,7 +115,8 @@ private[hollywood] object AgentConversationLoop {
 
     if (currentTurn >= maxTurns && continueConversation) {
       finalResponse =
-        s"Max turns ($maxTurns) reached. Last response: ${conversationMessages.lastOption.flatMap(_.content).getOrElse("")}".translateEscapes()
+        s"Max turns ($maxTurns) reached. Last response: ${conversationMessages.lastOption.flatMap(_.content).getOrElse("")}"
+          .translateEscapes()
     }
 
     (finalResponse, conversationMessages)

@@ -1,5 +1,6 @@
 package dev.alteration.branch.hollywood.tools.schema
 
+import dev.alteration.branch.friday.{JsonSchema, Schema}
 import dev.alteration.branch.hollywood.tools.*
 
 import scala.quoted.*
@@ -7,7 +8,7 @@ import scala.quoted.*
 case class ToolSchema(
     name: String,
     description: String,
-    parameters: ParameterSchema
+    parameters: Schema
 )
 
 object ToolSchema {
@@ -32,146 +33,131 @@ object ToolSchema {
         )
       )
 
-    val description = toolAnnot match {
+    val toolDescription = toolAnnot match {
       case Apply(_, List(Literal(StringConstant(desc)))) => desc
       case _                                             => ""
     }
 
-    // Get case class constructor parameters
+    // Get parameter descriptions from @Param annotations
     val constructor     = classSymbol.primaryConstructor
     val constructorType = tpe.memberType(constructor)
 
-    val (properties, required) = constructorType match {
-      case MethodType(paramNames, paramTypes, _) =>
-        val props = (paramNames zip paramTypes).map { case (name, tpe) =>
-          // Find @Param annotation on this parameter
+    val paramDescriptions = constructorType match {
+      case MethodType(paramNames, _, _) =>
+        paramNames.map { name =>
           val paramSymbol = constructor.paramSymss.flatten.find(_.name == name)
           val paramAnnot  = paramSymbol.flatMap { sym =>
             sym.annotations.find(_.tpe =:= TypeRepr.of[Param])
           }
 
-          val paramDesc = paramAnnot match {
+          val desc = paramAnnot match {
             case Some(Apply(_, List(Literal(StringConstant(desc))))) => desc
             case _                                                   => ""
           }
-
-          val (jsonType, enumValues) = typeToJsonType(tpe)
-          val isOptional             = isOptionType(tpe)
-
-          (name, jsonType, paramDesc, enumValues, isOptional)
-        }
-
-        val propsMap = props.map { case (name, jsonType, desc, enumVals, _) =>
-          (name, PropertySchema(jsonType, desc, enumVals))
+          name -> desc
         }.toMap
 
-        val requiredList = props.filterNot(_._5).map(_._1)
+      case other =>
+        report.errorAndAbort(
+          s"Invalid constructor type for ${classSymbol.name}: expected MethodType, got ${other.show}"
+        )
+    }
 
-        (propsMap, requiredList)
+    // Use JsonSchema to derive the schema structure
+    // We need to summon the Mirror at compile time for the JsonSchema derivation
+    Expr.summon[scala.deriving.Mirror.Of[T]] match {
+      case Some(mirrorExpr) =>
+        '{
+          val schema =
+            JsonSchema.of[T](using JsonSchema.derived[T](using $mirrorExpr))
+          ToolSchema.fromJsonSchema(
+            ${ Expr(classSymbol.fullName) },
+            ${ Expr(toolDescription) },
+            schema,
+            ${ Expr(paramDescriptions) }
+          )
+        }
+      case None             =>
+        report.errorAndAbort(
+          s"Cannot derive JsonSchema for ${classSymbol.name}: Mirror.Of not found"
+        )
+    }
+  }
+
+  /** Convert a JsonSchema Schema to ToolSchema using parameter descriptions */
+  private def fromJsonSchema(
+      name: String,
+      description: String,
+      schema: Schema,
+      paramDescriptions: Map[String, String]
+  ): ToolSchema = {
+    schema match {
+      case Schema.ObjectSchema(properties, required, _) =>
+        // Add descriptions from @Param annotations to the schema
+        val propsWithDescriptions = properties.map {
+          case (propName, propSchema) =>
+            val desc = paramDescriptions.getOrElse(propName, "")
+            propName -> addDescription(propSchema, desc)
+        }
+        ToolSchema(
+          name,
+          description,
+          Schema.ObjectSchema(propsWithDescriptions, required, None)
+        )
 
       case _ =>
-        report.errorAndAbort(
-          s"Invalid constructor type for ${classSymbol.name}"
+        throw new IllegalArgumentException(
+          s"Expected ObjectSchema for tool parameters, got ${schema.getClass.getSimpleName}"
         )
-    }
-
-    // Generate the expression
-    val propsSeq  = properties.toSeq.map { case (k, v) =>
-      '{
-        (
-          ${ Expr(k) },
-          PropertySchema(
-            ${ Expr(v.`type`) },
-            ${ Expr(v.description) },
-            ${ Expr(v.enumValues) }
-          )
-        )
-      }
-    }
-    val propsExpr = Expr.ofSeq(propsSeq)
-
-    '{
-      ToolSchema(
-        ${ Expr(classSymbol.fullName) },
-        ${ Expr(description) },
-        ParameterSchema(
-          "object",
-          $propsExpr.toMap,
-          ${ Expr(required.toList) }
-        )
-      )
     }
   }
 
-  private def typeToJsonType(using
-      Quotes
-  )(tpe: quotes.reflect.TypeRepr): (String, Option[List[String]]) = {
-    import quotes.reflect.*
+  /** Add a description to a Schema */
+  private def addDescription(schema: Schema, description: String): Schema = {
+    if (description.isEmpty) schema
+    else
+      schema match {
+        case Schema.StringSchema(_) =>
+          Schema.StringSchema(Some(description))
 
-    if (tpe =:= TypeRepr.of[String]) ("string", None)
-    else if (tpe =:= TypeRepr.of[Int] || tpe =:= TypeRepr.of[Long])
-      ("integer", None)
-    else if (tpe =:= TypeRepr.of[Double] || tpe =:= TypeRepr.of[Float])
-      ("number", None)
-    else if (tpe =:= TypeRepr.of[Boolean]) ("boolean", None)
-    else if (isOptionType(tpe)) {
-      // Unwrap Option
-      tpe match {
-        case AppliedType(_, List(innerType)) => typeToJsonType(innerType)
-        case _                               => ("string", None)
+        case Schema.NumberSchema(_) =>
+          Schema.NumberSchema(Some(description))
+
+        case Schema.IntegerSchema(_) =>
+          Schema.IntegerSchema(Some(description))
+
+        case Schema.BooleanSchema(_) =>
+          Schema.BooleanSchema(Some(description))
+
+        case Schema.ArraySchema(items, _) =>
+          Schema.ArraySchema(items, Some(description))
+
+        case Schema.EnumSchema(values, _) =>
+          Schema.EnumSchema(values, Some(description))
+
+        case Schema.ObjectSchema(properties, required, _) =>
+          Schema.ObjectSchema(properties, required, Some(description))
       }
-    } else if (
-      tpe.typeSymbol.flags
-        .is(Flags.Sealed) && tpe.typeSymbol.flags.is(Flags.Trait)
-    ) {
-      // Handle sealed traits as enums
-      val children = tpe.typeSymbol.children.map(_.name)
-      ("string", Some(children))
-    } else ("string", None)
-  }
-
-  private def isOptionType(using
-      Quotes
-  )(tpe: quotes.reflect.TypeRepr): Boolean = {
-    import quotes.reflect.*
-    tpe.baseType(TypeRepr.of[Option[?]].typeSymbol) != TypeRepr.of[Nothing]
   }
 
   def toJson(schema: ToolSchema): String = {
-    val props = schema.parameters.properties
-      .map { case (name, prop) =>
-        val enumPart = prop.enumValues
-          .map(values =>
-            s""", "enum": [${values.map(v => s""""$v"""").mkString(", ")}]"""
+    import dev.alteration.branch.friday.Json
+
+    val parametersJson = JsonSchema.toJson(schema.parameters)
+
+    val toolJson = Json.JsonObject(
+      Map(
+        "type"     -> Json.JsonString("function"),
+        "function" -> Json.JsonObject(
+          Map(
+            "name"        -> Json.JsonString(schema.name),
+            "description" -> Json.JsonString(schema.description),
+            "parameters"  -> parametersJson
           )
-          .getOrElse("")
+        )
+      )
+    )
 
-        s""""$name": {
-           |  "type": "${prop.`type`}",
-           |  "description": "${prop.description}"$enumPart
-           |}""".stripMargin
-      }
-      .mkString(",\n        ")
-
-    val required = if (schema.parameters.required.nonEmpty) {
-      s""",
-         |      "required": [${schema.parameters.required
-          .map(r => s""""$r"""")
-          .mkString(", ")}]""".stripMargin
-    } else ""
-
-    s"""{
-       |  "type": "function",
-       |  "function": {
-       |    "name": "${schema.name}",
-       |    "description": "${schema.description}",
-       |    "parameters": {
-       |      "type": "object",
-       |      "properties": {
-       |        $props
-       |      }$required
-       |    }
-       |  }
-       |}""".stripMargin
+    toolJson.toJsonString
   }
 }

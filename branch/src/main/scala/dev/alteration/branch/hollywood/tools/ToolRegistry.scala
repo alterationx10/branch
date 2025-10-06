@@ -1,11 +1,8 @@
 package dev.alteration.branch.hollywood.tools
 
-import dev.alteration.branch.friday.{Json, JsonEncoder}
+import dev.alteration.branch.friday.{Json, JsonEncoder, JsonSchema}
 import dev.alteration.branch.hollywood.api.{FunctionDefinition, Tool}
-import dev.alteration.branch.hollywood.tools.schema.{
-  ParameterSchema,
-  ToolSchema
-}
+import dev.alteration.branch.hollywood.tools.schema.ToolSchema
 import dev.alteration.branch.hollywood.tools.{CallableTool, ToolExecutor}
 
 import scala.collection.mutable
@@ -88,42 +85,12 @@ case class MutableToolRegistry() extends ToolRegistry {
   private def schemaToFunctionDefinition(
       schema: ToolSchema
   ): FunctionDefinition = {
-    val parametersJson = parametersToJson(schema.parameters)
+    val parametersJson = JsonSchema.toJson(schema.parameters)
     FunctionDefinition(
       name = schema.name,
       description = Some(schema.description),
       parameters = Some(parametersJson),
       strict = None
-    )
-  }
-
-  private def parametersToJson(params: ParameterSchema): Json = {
-    val properties = Json.JsonObject(
-      params.properties.map { case (name, prop) =>
-        val propJson = Json.JsonObject(
-          Map(
-            "type"        -> Json.JsonString(prop.`type`),
-            "description" -> Json.JsonString(prop.description)
-          ) ++ prop.enumValues
-            .map(values =>
-              "enum" -> Json.JsonArray(
-                values.map(Json.JsonString.apply).toIndexedSeq
-              )
-            )
-            .toMap
-        )
-        name -> propJson
-      }
-    )
-
-    Json.JsonObject(
-      Map(
-        "type"       -> Json.JsonString(params.`type`),
-        "properties" -> properties,
-        "required"   -> Json.JsonArray(
-          params.required.map(Json.JsonString.apply).toIndexedSeq
-        )
-      )
     )
   }
 
