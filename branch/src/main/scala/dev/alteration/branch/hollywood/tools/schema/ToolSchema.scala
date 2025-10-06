@@ -69,9 +69,9 @@ object ToolSchema {
 
         (propsMap, requiredList)
 
-      case _ =>
+      case other =>
         report.errorAndAbort(
-          s"Invalid constructor type for ${classSymbol.name}"
+          s"Invalid constructor type for ${classSymbol.name}: expected MethodType, got ${other.show}"
         )
     }
 
@@ -120,13 +120,22 @@ object ToolSchema {
         case AppliedType(_, List(innerType)) => typeToJsonType(innerType)
         case _                               => ("string", None)
       }
+    } else if (isListType(tpe)) {
+      // Handle List/Seq as array
+      ("array", None)
     } else if (
       tpe.typeSymbol.flags
         .is(Flags.Sealed) && tpe.typeSymbol.flags.is(Flags.Trait)
     ) {
-      // Handle sealed traits as enums
-      val children = tpe.typeSymbol.children.map(_.name)
-      ("string", Some(children))
+      // Handle sealed traits as enums - validate children are case objects
+      val children = tpe.typeSymbol.children
+      if (children.forall(c => c.flags.is(Flags.Case) && c.flags.is(Flags.Module))) {
+        ("string", Some(children.map(_.name)))
+      } else {
+        report.errorAndAbort(
+          s"Sealed trait ${tpe.typeSymbol.name} must have only case object children for enum support"
+        )
+      }
     } else ("string", None)
   }
 
@@ -137,18 +146,36 @@ object ToolSchema {
     tpe.baseType(TypeRepr.of[Option[?]].typeSymbol) != TypeRepr.of[Nothing]
   }
 
+  private def isListType(using
+      Quotes
+  )(tpe: quotes.reflect.TypeRepr): Boolean = {
+    import quotes.reflect.*
+    val listBase = tpe.baseType(TypeRepr.of[List[?]].typeSymbol)
+    val seqBase  = tpe.baseType(TypeRepr.of[Seq[?]].typeSymbol)
+    listBase != TypeRepr.of[Nothing] || seqBase != TypeRepr.of[Nothing]
+  }
+
+  private def escapeJson(s: String): String =
+    s.replace("\\", "\\\\")
+      .replace("\"", "\\\"")
+      .replace("\b", "\\b")
+      .replace("\f", "\\f")
+      .replace("\n", "\\n")
+      .replace("\r", "\\r")
+      .replace("\t", "\\t")
+
   def toJson(schema: ToolSchema): String = {
     val props = schema.parameters.properties
       .map { case (name, prop) =>
         val enumPart = prop.enumValues
           .map(values =>
-            s""", "enum": [${values.map(v => s""""$v"""").mkString(", ")}]"""
+            s""", "enum": [${values.map(v => s""""${escapeJson(v)}"""").mkString(", ")}]"""
           )
           .getOrElse("")
 
-        s""""$name": {
-           |  "type": "${prop.`type`}",
-           |  "description": "${prop.description}"$enumPart
+        s""""${escapeJson(name)}": {
+           |  "type": "${escapeJson(prop.`type`)}",
+           |  "description": "${escapeJson(prop.description)}"$enumPart
            |}""".stripMargin
       }
       .mkString(",\n        ")
@@ -156,15 +183,15 @@ object ToolSchema {
     val required = if (schema.parameters.required.nonEmpty) {
       s""",
          |      "required": [${schema.parameters.required
-          .map(r => s""""$r"""")
+          .map(r => s""""${escapeJson(r)}"""")
           .mkString(", ")}]""".stripMargin
     } else ""
 
     s"""{
        |  "type": "function",
        |  "function": {
-       |    "name": "${schema.name}",
-       |    "description": "${schema.description}",
+       |    "name": "${escapeJson(schema.name)}",
+       |    "description": "${escapeJson(schema.description)}",
        |    "parameters": {
        |      "type": "object",
        |      "properties": {
