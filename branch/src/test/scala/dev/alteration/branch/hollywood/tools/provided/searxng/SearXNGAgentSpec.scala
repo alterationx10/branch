@@ -24,8 +24,8 @@ class SearXNGAgentSpec extends LlamaServerFixture {
 
     assert(response.nonEmpty, "Agent should provide a response")
     assert(
-      response.matches(".*\\d+.*"),
-      s"Response should contain a number (result count), got: '$response'"
+      response.sliding(4).count(_ == "http") >= 10,
+      s"Response should contain 'http' at least 10 times (URLs), got: '$response'"
     )
   }
 }
