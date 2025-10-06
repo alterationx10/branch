@@ -19,19 +19,20 @@ class JsonSchemaSpec extends FunSuite {
 
         properties("name") match {
           case Schema.StringSchema(_) => // expected
-          case other => fail(s"Expected StringSchema, got $other")
+          case other                  => fail(s"Expected StringSchema, got $other")
         }
 
         properties("age") match {
           case Schema.IntegerSchema(_) => // expected
-          case other => fail(s"Expected IntegerSchema, got $other")
+          case other                   => fail(s"Expected IntegerSchema, got $other")
         }
-      case other => fail(s"Expected ObjectSchema, got $other")
+      case other                                        => fail(s"Expected ObjectSchema, got $other")
     }
   }
 
   test("derive schema for case class with Option fields") {
-    case class User(name: String, email: Option[String], age: Int) derives JsonSchema
+    case class User(name: String, email: Option[String], age: Int)
+        derives JsonSchema
 
     val schema = JsonSchema.of[User]
 
@@ -42,25 +43,25 @@ class JsonSchemaSpec extends FunSuite {
         // Option fields should unwrap to their inner schema
         properties("email") match {
           case Schema.StringSchema(_) => // expected
-          case other => fail(s"Expected StringSchema for email, got $other")
+          case other                  => fail(s"Expected StringSchema for email, got $other")
         }
 
         // Option fields should NOT be in the required list
         assertEquals(required, List("name", "age"))
         assertEquals(required.contains("email"), false)
-      case other => fail(s"Expected ObjectSchema, got $other")
+      case other                                        => fail(s"Expected ObjectSchema, got $other")
     }
   }
 
   test("derive schema with various primitive types") {
     case class AllTypes(
-      str: String,
-      int: Int,
-      long: Long,
-      double: Double,
-      float: Float,
-      bool: Boolean,
-      bigDec: BigDecimal
+        str: String,
+        int: Int,
+        long: Long,
+        double: Double,
+        float: Float,
+        bool: Boolean,
+        bigDec: BigDecimal
     ) derives JsonSchema
 
     val schema = JsonSchema.of[AllTypes]
@@ -69,48 +70,48 @@ class JsonSchemaSpec extends FunSuite {
       case Schema.ObjectSchema(properties, _, _) =>
         properties("str") match {
           case Schema.StringSchema(_) => // expected
-          case other => fail(s"str: expected StringSchema, got $other")
+          case other                  => fail(s"str: expected StringSchema, got $other")
         }
 
         properties("int") match {
           case Schema.IntegerSchema(_) => // expected
-          case other => fail(s"int: expected IntegerSchema, got $other")
+          case other                   => fail(s"int: expected IntegerSchema, got $other")
         }
 
         properties("long") match {
           case Schema.IntegerSchema(_) => // expected
-          case other => fail(s"long: expected IntegerSchema, got $other")
+          case other                   => fail(s"long: expected IntegerSchema, got $other")
         }
 
         properties("double") match {
           case Schema.NumberSchema(_) => // expected
-          case other => fail(s"double: expected NumberSchema, got $other")
+          case other                  => fail(s"double: expected NumberSchema, got $other")
         }
 
         properties("float") match {
           case Schema.NumberSchema(_) => // expected
-          case other => fail(s"float: expected NumberSchema, got $other")
+          case other                  => fail(s"float: expected NumberSchema, got $other")
         }
 
         properties("bool") match {
           case Schema.BooleanSchema(_) => // expected
-          case other => fail(s"bool: expected BooleanSchema, got $other")
+          case other                   => fail(s"bool: expected BooleanSchema, got $other")
         }
 
         properties("bigDec") match {
           case Schema.NumberSchema(_) => // expected
-          case other => fail(s"bigDec: expected NumberSchema, got $other")
+          case other                  => fail(s"bigDec: expected NumberSchema, got $other")
         }
-      case other => fail(s"Expected ObjectSchema, got $other")
+      case other                                 => fail(s"Expected ObjectSchema, got $other")
     }
   }
 
   test("derive schema for case class with collections") {
     case class CollectionTypes(
-      list: List[String],
-      seq: Seq[Int],
-      vector: Vector[Boolean],
-      set: Set[Double]
+        list: List[String],
+        seq: Seq[Int],
+        vector: Vector[Boolean],
+        set: Set[Double]
     ) derives JsonSchema
 
     val schema = JsonSchema.of[CollectionTypes]
@@ -119,24 +120,25 @@ class JsonSchemaSpec extends FunSuite {
       case Schema.ObjectSchema(properties, _, _) =>
         properties("list") match {
           case Schema.ArraySchema(Schema.StringSchema(_), _) => // expected
-          case other => fail(s"list: expected ArraySchema[String], got $other")
+          case other                                         => fail(s"list: expected ArraySchema[String], got $other")
         }
 
         properties("seq") match {
           case Schema.ArraySchema(Schema.IntegerSchema(_), _) => // expected
-          case other => fail(s"seq: expected ArraySchema[Int], got $other")
+          case other                                          => fail(s"seq: expected ArraySchema[Int], got $other")
         }
 
         properties("vector") match {
           case Schema.ArraySchema(Schema.BooleanSchema(_), _) => // expected
-          case other => fail(s"vector: expected ArraySchema[Boolean], got $other")
+          case other                                          =>
+            fail(s"vector: expected ArraySchema[Boolean], got $other")
         }
 
         properties("set") match {
           case Schema.ArraySchema(Schema.NumberSchema(_), _) => // expected
-          case other => fail(s"set: expected ArraySchema[Double], got $other")
+          case other                                         => fail(s"set: expected ArraySchema[Double], got $other")
         }
-      case other => fail(s"Expected ObjectSchema, got $other")
+      case other                                 => fail(s"Expected ObjectSchema, got $other")
     }
   }
 
@@ -144,7 +146,7 @@ class JsonSchemaSpec extends FunSuite {
     case class Simple(name: String, count: Int) derives JsonSchema
 
     val schema = JsonSchema.of[Simple]
-    val json = JsonSchema.toJson(schema)
+    val json   = JsonSchema.toJson(schema)
 
     json match {
       case JsonObject(fields) =>
@@ -157,23 +159,26 @@ class JsonSchemaSpec extends FunSuite {
             props("name") match {
               case JsonObject(nameFields) =>
                 assertEquals(nameFields("type"), JsonString("string"))
-              case other => fail(s"Expected object for name, got $other")
+              case other                  => fail(s"Expected object for name, got $other")
             }
 
             props("count") match {
               case JsonObject(countFields) =>
                 assertEquals(countFields("type"), JsonString("integer"))
-              case other => fail(s"Expected object for count, got $other")
+              case other                   => fail(s"Expected object for count, got $other")
             }
-          case other => fail(s"Expected properties object, got $other")
+          case other             => fail(s"Expected properties object, got $other")
         }
 
         fields("required") match {
           case JsonArray(req) =>
-            assertEquals(req.toList, List(JsonString("name"), JsonString("count")))
-          case other => fail(s"Expected required array, got $other")
+            assertEquals(
+              req.toList,
+              List(JsonString("name"), JsonString("count"))
+            )
+          case other          => fail(s"Expected required array, got $other")
         }
-      case other => fail(s"Expected JsonObject, got $other")
+      case other              => fail(s"Expected JsonObject, got $other")
     }
   }
 
@@ -210,9 +215,9 @@ class JsonSchemaSpec extends FunSuite {
           case Schema.ObjectSchema(addrProps, _, _) =>
             assert(addrProps.contains("street"))
             assert(addrProps.contains("city"))
-          case other => fail(s"Expected nested ObjectSchema, got $other")
+          case other                                => fail(s"Expected nested ObjectSchema, got $other")
         }
-      case other => fail(s"Expected ObjectSchema, got $other")
+      case other                                 => fail(s"Expected ObjectSchema, got $other")
     }
   }
 
@@ -228,9 +233,9 @@ class JsonSchemaSpec extends FunSuite {
         properties("tags") match {
           case Schema.ArraySchema(Schema.ObjectSchema(tagProps, _, _), _) =>
             assert(tagProps.contains("name"))
-          case other => fail(s"Expected ArraySchema[ObjectSchema], got $other")
+          case other                                                      => fail(s"Expected ArraySchema[ObjectSchema], got $other")
         }
-      case other => fail(s"Expected ObjectSchema, got $other")
+      case other                                 => fail(s"Expected ObjectSchema, got $other")
     }
   }
 }
