@@ -1,10 +1,6 @@
 package dev.alteration.branch.hollywood
 
-import dev.alteration.branch.hollywood.api.{
-  ChatCompletionsRequest,
-  ChatCompletionsResponse,
-  ChatMessage
-}
+import dev.alteration.branch.hollywood.clients.completions.{ChatCompletionsRequest, ChatCompletionsResponse, ChatMessage}
 import dev.alteration.branch.hollywood.tools.ToolRegistry
 
 class ConversationalAgent(

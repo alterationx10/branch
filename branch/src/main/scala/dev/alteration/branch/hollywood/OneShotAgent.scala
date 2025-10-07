@@ -1,6 +1,6 @@
 package dev.alteration.branch.hollywood
 
-import dev.alteration.branch.hollywood.api.*
+import dev.alteration.branch.hollywood.clients.completions.{ChatCompletionsRequest, ChatCompletionsResponse, ChatMessage}
 import dev.alteration.branch.hollywood.tools.ToolRegistry
 
 /** A stateless agent that executes a single request-response cycle with fixed

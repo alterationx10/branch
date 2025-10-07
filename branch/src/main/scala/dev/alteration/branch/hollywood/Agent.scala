@@ -2,12 +2,9 @@ package dev.alteration.branch.hollywood
 
 import dev.alteration.branch.friday.Json
 import dev.alteration.branch.friday.http.{JsonBodyHandler, JsonBodyPublisher}
-import dev.alteration.branch.hollywood.api.{
-  ChatCompletionsRequest,
-  ChatCompletionsResponse
-}
 import dev.alteration.branch.hollywood.tools.schema.ToolSchema
 import dev.alteration.branch.friday.Schema
+import dev.alteration.branch.hollywood.clients.completions.{ChatCompletionsRequest, ChatCompletionsResponse}
 import dev.alteration.branch.hollywood.tools.{
   AgentChatTool,
   CallableTool,

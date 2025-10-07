@@ -1,6 +1,6 @@
 package dev.alteration.branch.hollywood
 
-import dev.alteration.branch.hollywood.api.ChatMessage
+import dev.alteration.branch.hollywood.clients.completions.ChatMessage
 
 trait ConversationState {
   def get: List[ChatMessage]

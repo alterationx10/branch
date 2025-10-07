@@ -1,7 +1,7 @@
 package dev.alteration.branch.hollywood.tools
 
 import dev.alteration.branch.friday.{Json, JsonDecoder, JsonEncoder, JsonSchema}
-import dev.alteration.branch.hollywood.api.{FunctionDefinition, Tool}
+import dev.alteration.branch.hollywood.clients.completions.{FunctionDefinition, Tool}
 import dev.alteration.branch.hollywood.tools.schema.ToolSchema
 import dev.alteration.branch.hollywood.tools.{CallableTool, ToolExecutor}
 

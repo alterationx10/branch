@@ -1,7 +1,7 @@
 package dev.alteration.branch.hollywood
 
-import dev.alteration.branch.hollywood.api.*
-import dev.alteration.branch.hollywood.clients.EmbeddingClient
+import dev.alteration.branch.hollywood.clients.completions.{ChatCompletionsRequest, ChatCompletionsResponse, ChatMessage}
+import dev.alteration.branch.hollywood.clients.embeddings.EmbeddingClient
 import dev.alteration.branch.hollywood.tools.ToolRegistry
 import dev.alteration.branch.hollywood.rag.VectorStore
 
