@@ -1,6 +1,6 @@
 package dev.alteration.branch.hollywood.tools.provided.http
 
-import dev.alteration.branch.hollywood.tools.{CallableTool, schema}
+import dev.alteration.branch.hollywood.tools.{schema, CallableTool}
 import dev.alteration.branch.hollywood.tools.schema.Param
 import dev.alteration.branch.spider.client.ClientRequest.uri
 import dev.alteration.branch.spider.client.{Client, ClientRequest}

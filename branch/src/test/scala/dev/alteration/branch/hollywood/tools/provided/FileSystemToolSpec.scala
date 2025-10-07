@@ -175,7 +175,7 @@ class FileSystemToolSpec extends FileFixtureSuite {
     val args = JsonObject(
       Map(
         "operation" -> JsonString("exists"),
-        "path" -> JsonString(testFile.toString)
+        "path"      -> JsonString(testFile.toString)
       )
     )
 
@@ -187,7 +187,7 @@ class FileSystemToolSpec extends FileFixtureSuite {
     result.foreach {
       case JsonString(value) =>
         assert(value.contains("Yes"), "Should confirm file exists")
-      case _ => fail("Expected JsonString result")
+      case _                 => fail("Expected JsonString result")
     }
   }
 }

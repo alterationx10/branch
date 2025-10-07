@@ -7,32 +7,33 @@ import java.nio.file.Files
 
 class FileSystemPolicySpec extends FileFixtureSuite {
 
-  tmpDir.test("FileSystemPolicy should allow operations within sandbox") { dir =>
-    val policy   = FileSystemPolicy(sandboxPath = Some(dir))
-    val registry = ToolRegistry().registerWithPolicy(policy)
+  tmpDir.test("FileSystemPolicy should allow operations within sandbox") {
+    dir =>
+      val policy   = FileSystemPolicy(sandboxPath = Some(dir))
+      val registry = ToolRegistry().registerWithPolicy(policy)
 
-    // Create a file within sandbox
-    val testFile = dir.resolve("test.txt")
-    Files.writeString(testFile, "Hello")
+      // Create a file within sandbox
+      val testFile = dir.resolve("test.txt")
+      Files.writeString(testFile, "Hello")
 
-    import dev.alteration.branch.friday.Json._
-    val args = JsonObject(
-      Map(
-        "operation" -> JsonString("read"),
-        "path" -> JsonString(testFile.toString)
+      import dev.alteration.branch.friday.Json._
+      val args = JsonObject(
+        Map(
+          "operation" -> JsonString("read"),
+          "path"      -> JsonString(testFile.toString)
+        )
       )
-    )
 
-    val result = registry.execute(
-      "dev.alteration.branch.hollywood.tools.provided.fs.FileSystemTool",
-      args
-    )
+      val result = registry.execute(
+        "dev.alteration.branch.hollywood.tools.provided.fs.FileSystemTool",
+        args
+      )
 
-    result match {
-      case Some(JsonString(content)) =>
-        assertEquals(content, "Hello", "Should read file content")
-      case _                         => fail("Expected successful read")
-    }
+      result match {
+        case Some(JsonString(content)) =>
+          assertEquals(content, "Hello", "Should read file content")
+        case _                         => fail("Expected successful read")
+      }
   }
 
   tmpDir.test("FileSystemPolicy should block operations outside sandbox") {
@@ -44,7 +45,7 @@ class FileSystemPolicySpec extends FileFixtureSuite {
       val args = JsonObject(
         Map(
           "operation" -> JsonString("read"),
-          "path" -> JsonString("/etc/passwd") // Outside sandbox
+          "path"      -> JsonString("/etc/passwd") // Outside sandbox
         )
       )
 
@@ -72,8 +73,8 @@ class FileSystemPolicySpec extends FileFixtureSuite {
       val args = JsonObject(
         Map(
           "operation" -> JsonString("write"),
-          "path" -> JsonString(dir.resolve("test.txt").toString),
-          "content" -> JsonString("test")
+          "path"      -> JsonString(dir.resolve("test.txt").toString),
+          "content"   -> JsonString("test")
         )
       )
 
@@ -94,7 +95,7 @@ class FileSystemPolicySpec extends FileFixtureSuite {
 
   tmpDir.test("FileSystemPolicy should block paths with blocked patterns") {
     dir =>
-      val policy = FileSystemPolicy(
+      val policy   = FileSystemPolicy(
         sandboxPath = Some(dir),
         blockedPatterns = List(".env", ".key")
       )
@@ -104,7 +105,7 @@ class FileSystemPolicySpec extends FileFixtureSuite {
       val args = JsonObject(
         Map(
           "operation" -> JsonString("read"),
-          "path" -> JsonString(dir.resolve(".env").toString)
+          "path"      -> JsonString(dir.resolve(".env").toString)
         )
       )
 
@@ -125,7 +126,7 @@ class FileSystemPolicySpec extends FileFixtureSuite {
 
   tmpDir.test("FileSystemPolicy should enforce max file size on writes") {
     dir =>
-      val policy = FileSystemPolicy(
+      val policy   = FileSystemPolicy(
         sandboxPath = Some(dir),
         maxFileSize = 100 // 100 bytes
       )
@@ -136,8 +137,8 @@ class FileSystemPolicySpec extends FileFixtureSuite {
       val args         = JsonObject(
         Map(
           "operation" -> JsonString("write"),
-          "path" -> JsonString(dir.resolve("large.txt").toString),
-          "content" -> JsonString(largeContent)
+          "path"      -> JsonString(dir.resolve("large.txt").toString),
+          "content"   -> JsonString(largeContent)
         )
       )
 
@@ -158,7 +159,7 @@ class FileSystemPolicySpec extends FileFixtureSuite {
 
   tmpDir.test("FileSystemPolicy.strict should be read-only and sandboxed") {
     dir =>
-      val policy   = FileSystemPolicy.strict(dir)
+      val policy = FileSystemPolicy.strict(dir)
 
       assertEquals(policy.readOnly, true, "Strict policy should be read-only")
       assertEquals(

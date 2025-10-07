@@ -30,7 +30,7 @@ class RestrictedExecutor[T <: CallableTool[?]](
       case Success(tool) =>
         // Validate against policy before executing
         policy.validate(tool) match {
-          case Success(_) =>
+          case Success(_)     =>
             // Policy allows this operation - execute with transformed args
             delegate.execute(transformedArgs)
           case Failure(error) =>

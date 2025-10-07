@@ -1,10 +1,10 @@
 package dev.alteration.branch.hollywood.tools.provided.fs
 
 import dev.alteration.branch.hollywood.tools.schema.Param
-import dev.alteration.branch.hollywood.tools.{CallableTool, schema}
+import dev.alteration.branch.hollywood.tools.{schema, CallableTool}
 
 import java.nio.file.{Files, Path, Paths, StandardOpenOption}
-import scala.collection.JavaConverters.asScalaIteratorConverter
+import scala.jdk.CollectionConverters.*
 import scala.util.Try
 
 @schema.Tool("Read, write, or list files on the filesystem")

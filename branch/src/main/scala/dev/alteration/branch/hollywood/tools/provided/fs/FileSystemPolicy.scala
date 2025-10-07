@@ -110,7 +110,7 @@ object FileSystemPolicy {
     FileSystemPolicy(
       sandboxPath = sandboxPath,
       readOnly = false,
-      maxFileSize = 100 * 1024 * 1024, // 100MB
+      maxFileSize = 100 * 1024 * 1024,               // 100MB
       blockedPatterns = List(".env", ".key", ".pem") // Minimal blocks
     )
 

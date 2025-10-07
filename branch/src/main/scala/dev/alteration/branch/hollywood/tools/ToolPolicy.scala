@@ -39,7 +39,9 @@ object ToolPolicy {
   }
 
   /** A restrictive policy that blocks all operations */
-  def denyAll[T <: CallableTool[?]](reason: String = "All operations blocked by policy"): ToolPolicy[T] =
+  def denyAll[T <: CallableTool[?]](
+      reason: String = "All operations blocked by policy"
+  ): ToolPolicy[T] =
     new ToolPolicy[T] {
       def validate(tool: T): Try[Unit] =
         Failure(new SecurityException(reason))
@@ -57,7 +59,7 @@ object ToolPolicy {
       validator: T => Try[Unit],
       transformer: Json => Json = identity
   ): ToolPolicy[T] = new ToolPolicy[T] {
-    def validate(tool: T): Try[Unit]   = validator(tool)
+    def validate(tool: T): Try[Unit]             = validator(tool)
     override def transformArgs(args: Json): Json = transformer(args)
   }
 }

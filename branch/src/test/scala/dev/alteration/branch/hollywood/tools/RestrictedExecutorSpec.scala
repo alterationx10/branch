@@ -9,7 +9,7 @@ class RestrictedExecutorSpec extends FunSuite {
 
   test("ToolPolicy.allowAll should permit all operations") {
     val policy = ToolPolicy.allowAll[HttpClientTool]
-    val tool = HttpClientTool(
+    val tool   = HttpClientTool(
       url = "https://example.com",
       method = "GET"
     )
@@ -20,7 +20,7 @@ class RestrictedExecutorSpec extends FunSuite {
 
   test("ToolPolicy.denyAll should block all operations") {
     val policy = ToolPolicy.denyAll[HttpClientTool]("Blocked for testing")
-    val tool = HttpClientTool(
+    val tool   = HttpClientTool(
       url = "https://example.com",
       method = "GET"
     )
@@ -67,7 +67,10 @@ class RestrictedExecutorSpec extends FunSuite {
       url = "https://evil.com",
       method = "GET"
     )
-    assert(policy.validate(invalidUrl).isFailure, "Non-example.com should be blocked")
+    assert(
+      policy.validate(invalidUrl).isFailure,
+      "Non-example.com should be blocked"
+    )
   }
 
   test("RestrictedExecutor should enforce policy") {
@@ -88,7 +91,7 @@ class RestrictedExecutorSpec extends FunSuite {
     // Try a POST request (should be blocked)
     val postArgs = JsonObject(
       Map(
-        "url" -> JsonString("https://example.com"),
+        "url"    -> JsonString("https://example.com"),
         "method" -> JsonString("POST")
       )
     )
@@ -101,7 +104,9 @@ class RestrictedExecutorSpec extends FunSuite {
     result match {
       case Some(JsonString(msg)) =>
         assert(
-          msg.contains("Policy violation") && msg.contains("POST requests blocked"),
+          msg.contains("Policy violation") && msg.contains(
+            "POST requests blocked"
+          ),
           s"Should block POST with policy error: $msg"
         )
       case _                     => fail("Expected policy violation error message")
