@@ -74,7 +74,7 @@ class HttpClientToolSpec extends FunSuite {
     val tools = registry.getRegisteredToolNames
     assert(
       tools.contains(
-        "dev.alteration.branch.hollywood.tools.provided.HttpClientTool"
+        "dev.alteration.branch.hollywood.tools.provided.http.HttpClientTool"
       ),
       s"Registry should contain HttpClientTool. Got: $tools"
     )
@@ -94,7 +94,7 @@ class HttpClientToolSpec extends FunSuite {
     )
 
     val result = registry.execute(
-      "dev.alteration.branch.hollywood.tools.provided.HttpClientTool",
+      "dev.alteration.branch.hollywood.tools.provided.http.HttpClientTool",
       args
     )
     assert(result.isDefined, "Execution should return a result")

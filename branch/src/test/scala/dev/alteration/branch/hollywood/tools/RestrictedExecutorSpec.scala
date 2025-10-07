@@ -97,7 +97,7 @@ class RestrictedExecutorSpec extends FunSuite {
     )
 
     val result = restrictedRegistry.execute(
-      "dev.alteration.branch.hollywood.tools.provided.HttpClientTool",
+      "dev.alteration.branch.hollywood.tools.provided.http.HttpClientTool",
       postArgs
     )
 
