@@ -2,25 +2,27 @@ package dev.alteration.branch.hollywood.tools.provided.http
 
 import dev.alteration.branch.hollywood.tools.ToolRegistry
 import dev.alteration.branch.hollywood.tools.provided.http.HttpClientTool
+import dev.alteration.branch.testkit.testcontainers.HttpBinContainerSuite
 import munit.FunSuite
 
-class HttpClientToolSpec extends FunSuite {
+class HttpClientToolSpec extends HttpBinContainerSuite {
 
   test("HttpClientTool should execute a GET request") {
-    val tool   = HttpClientTool(url = "https://httpbin.org/get", method = "GET")
+    val tool   = HttpClientTool(url = s"${getContainerUrl}/get", method = "GET")
     val result = tool.execute()
+    println(result)
     assert(result.isSuccess, "Request should succeed")
     result.foreach { body =>
       assert(
-        body.contains("httpbin.org"),
-        "Response should contain httpbin.org"
+        body.contains(s"$getContainerUrl"),
+        s"Response should contain $getContainerUrl"
       )
     }
   }
 
   test("HttpClientTool should execute a POST request with body") {
     val tool   = HttpClientTool(
-      url = "https://httpbin.org/post",
+      url = s"${getContainerUrl}/post",
       method = "POST",
       body = Some("test data")
     )
@@ -34,7 +36,7 @@ class HttpClientToolSpec extends FunSuite {
   test("HttpClientTool should include custom headers") {
     val headers = """{"X-Custom-Header": "test-value"}"""
     val tool    = HttpClientTool(
-      url = "https://httpbin.org/headers",
+      url = s"${getContainerUrl}/headers",
       method = "GET",
       headers = Some(headers)
     )
@@ -50,7 +52,7 @@ class HttpClientToolSpec extends FunSuite {
 
   test("HttpClientTool should execute a PUT request") {
     val tool   = HttpClientTool(
-      url = "https://httpbin.org/put",
+      url = s"${getContainerUrl}/put",
       method = "PUT",
       body = Some("""{"key": "value"}""")
     )
@@ -60,7 +62,7 @@ class HttpClientToolSpec extends FunSuite {
 
   test("HttpClientTool should execute a DELETE request") {
     val tool   = HttpClientTool(
-      url = "https://httpbin.org/delete",
+      url = s"${getContainerUrl}/delete",
       method = "DELETE"
     )
     val result = tool.execute()
@@ -88,7 +90,7 @@ class HttpClientToolSpec extends FunSuite {
 
     val args = JsonObject(
       Map(
-        "url"    -> JsonString("https://httpbin.org/get"),
+        "url"    -> JsonString(s"${getContainerUrl}/get"),
         "method" -> JsonString("GET")
       )
     )
@@ -101,8 +103,8 @@ class HttpClientToolSpec extends FunSuite {
     result.foreach {
       case JsonString(value) =>
         assert(
-          value.contains("httpbin.org"),
-          "Result should contain httpbin.org"
+          value.contains(s"$getContainerUrl"),
+          s"Result should contain $getContainerUrl"
         )
       case _                 => fail("Expected JsonString result")
     }
@@ -110,7 +112,7 @@ class HttpClientToolSpec extends FunSuite {
 
   test("HttpClientTool should default to GET when method is unknown") {
     val tool   = HttpClientTool(
-      url = "https://httpbin.org/get",
+      url = s"${getContainerUrl}/get",
       method = "INVALID"
     )
     val result = tool.execute()
