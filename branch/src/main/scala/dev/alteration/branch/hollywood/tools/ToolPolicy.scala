@@ -1,7 +1,8 @@
 package dev.alteration.branch.hollywood.tools
 
 import dev.alteration.branch.friday.Json
-import scala.util.Try
+
+import scala.util.{Failure, Success, Try}
 
 /** Generic policy for restricting tool execution
   *
@@ -34,14 +35,14 @@ object ToolPolicy {
 
   /** A permissive policy that allows all operations */
   def allowAll[T <: CallableTool[?]]: ToolPolicy[T] = new ToolPolicy[T] {
-    def validate(tool: T): Try[Unit] = Try(())
+    def validate(tool: T): Try[Unit] = Success(())
   }
 
   /** A restrictive policy that blocks all operations */
   def denyAll[T <: CallableTool[?]](reason: String = "All operations blocked by policy"): ToolPolicy[T] =
     new ToolPolicy[T] {
       def validate(tool: T): Try[Unit] =
-        Try(throw new SecurityException(reason))
+        Failure(new SecurityException(reason))
     }
 
   /** Create a custom policy from a validation function */

@@ -1,6 +1,7 @@
 package dev.alteration.branch.hollywood.tools.provided
 
 import dev.alteration.branch.hollywood.tools.ToolRegistry
+import dev.alteration.branch.hollywood.tools.provided.fs.FileSystemTool
 import dev.alteration.branch.testkit.fixtures.FileFixtureSuite
 
 import java.nio.file.Files
@@ -159,7 +160,7 @@ class FileSystemToolSpec extends FileFixtureSuite {
     val tools = registry.getRegisteredToolNames
     assert(
       tools.contains(
-        "dev.alteration.branch.hollywood.tools.provided.FileSystemTool"
+        "dev.alteration.branch.hollywood.tools.provided.fs.FileSystemTool"
       ),
       s"Registry should contain FileSystemTool. Got: $tools"
     )
@@ -179,7 +180,7 @@ class FileSystemToolSpec extends FileFixtureSuite {
     )
 
     val result = registry.execute(
-      "dev.alteration.branch.hollywood.tools.provided.FileSystemTool",
+      "dev.alteration.branch.hollywood.tools.provided.fs.FileSystemTool",
       args
     )
     assert(result.isDefined, "Execution should return a result")

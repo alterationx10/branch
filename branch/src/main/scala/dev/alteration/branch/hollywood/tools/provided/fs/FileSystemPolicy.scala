@@ -1,6 +1,7 @@
-package dev.alteration.branch.hollywood.tools
+package dev.alteration.branch.hollywood.tools.provided.fs
 
-import dev.alteration.branch.hollywood.tools.provided.FileSystemTool
+import dev.alteration.branch.hollywood.tools.provided.fs.FileSystemTool
+import dev.alteration.branch.hollywood.tools.ToolPolicy
 
 import java.nio.file.{Path, Paths}
 import scala.util.Try

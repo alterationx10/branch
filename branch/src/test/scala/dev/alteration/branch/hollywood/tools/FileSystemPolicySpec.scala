@@ -1,6 +1,8 @@
 package dev.alteration.branch.hollywood.tools
 
+import dev.alteration.branch.hollywood.tools.provided.fs.FileSystemPolicy
 import dev.alteration.branch.testkit.fixtures.FileFixtureSuite
+
 import java.nio.file.Files
 
 class FileSystemPolicySpec extends FileFixtureSuite {
@@ -22,7 +24,7 @@ class FileSystemPolicySpec extends FileFixtureSuite {
     )
 
     val result = registry.execute(
-      "dev.alteration.branch.hollywood.tools.provided.FileSystemTool",
+      "dev.alteration.branch.hollywood.tools.provided.fs.FileSystemTool",
       args
     )
 
@@ -47,7 +49,7 @@ class FileSystemPolicySpec extends FileFixtureSuite {
       )
 
       val result = registry.execute(
-        "dev.alteration.branch.hollywood.tools.provided.FileSystemTool",
+        "dev.alteration.branch.hollywood.tools.provided.fs.FileSystemTool",
         args
       )
 
@@ -76,7 +78,7 @@ class FileSystemPolicySpec extends FileFixtureSuite {
       )
 
       val result = registry.execute(
-        "dev.alteration.branch.hollywood.tools.provided.FileSystemTool",
+        "dev.alteration.branch.hollywood.tools.provided.fs.FileSystemTool",
         args
       )
 
@@ -107,7 +109,7 @@ class FileSystemPolicySpec extends FileFixtureSuite {
       )
 
       val result = registry.execute(
-        "dev.alteration.branch.hollywood.tools.provided.FileSystemTool",
+        "dev.alteration.branch.hollywood.tools.provided.fs.FileSystemTool",
         args
       )
 
@@ -140,7 +142,7 @@ class FileSystemPolicySpec extends FileFixtureSuite {
       )
 
       val result = registry.execute(
-        "dev.alteration.branch.hollywood.tools.provided.FileSystemTool",
+        "dev.alteration.branch.hollywood.tools.provided.fs.FileSystemTool",
         args
       )
 

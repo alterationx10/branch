@@ -1,6 +1,7 @@
 package dev.alteration.branch.hollywood.tools.provided
 
 import dev.alteration.branch.hollywood.tools.ToolRegistry
+import dev.alteration.branch.hollywood.tools.provided.http.HttpClientTool
 import munit.FunSuite
 
 class HttpClientToolSpec extends FunSuite {

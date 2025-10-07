@@ -1,11 +1,10 @@
-package dev.alteration.branch.hollywood.tools.provided
+package dev.alteration.branch.hollywood.tools.provided.fs
 
-import dev.alteration.branch.hollywood.tools.CallableTool
-import dev.alteration.branch.hollywood.tools.schema
 import dev.alteration.branch.hollywood.tools.schema.Param
+import dev.alteration.branch.hollywood.tools.{CallableTool, schema}
 
 import java.nio.file.{Files, Path, Paths, StandardOpenOption}
-import scala.jdk.CollectionConverters.*
+import scala.collection.JavaConverters.asScalaIteratorConverter
 import scala.util.Try
 
 @schema.Tool("Read, write, or list files on the filesystem")
@@ -57,7 +56,11 @@ case class FileSystemTool(
     Files.readString(path)
   }
 
-  private def writeFile(path: Path, content: String, append: Boolean): String = {
+  private def writeFile(
+      path: Path,
+      content: String,
+      append: Boolean
+  ): String = {
     // Create parent directories if they don't exist
     Option(path.getParent).foreach { parent =>
       if (!Files.exists(parent)) {

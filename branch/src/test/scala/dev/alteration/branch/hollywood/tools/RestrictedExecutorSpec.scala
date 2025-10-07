@@ -1,6 +1,6 @@
 package dev.alteration.branch.hollywood.tools
 
-import dev.alteration.branch.hollywood.tools.provided.HttpClientTool
+import dev.alteration.branch.hollywood.tools.provided.http.HttpClientTool
 import munit.FunSuite
 
 import scala.util.Try
