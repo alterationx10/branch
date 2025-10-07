@@ -8,8 +8,11 @@ import scala.util.Try
   *   the type of the value to encode/decode
   */
 trait JsonCodec[A] { self =>
-  given encoder: JsonEncoder[A]
-  given decoder: JsonDecoder[A]
+  def encoder: JsonEncoder[A]
+  def decoder: JsonDecoder[A]
+
+  given JsonEncoder[A] = encoder
+  given JsonDecoder[A] = decoder
 
   def encode(a: A): Json         = encoder.encode(a)
   def decode(json: Json): Try[A] = decoder.decode(json)

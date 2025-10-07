@@ -120,10 +120,11 @@ object JsonEncoder {
     def encode(a: Instant): Json = JsonString(a.toString)
   }
 
-  /** A JsonEncoder for BigDecimals
+  /** A JsonEncoder for BigDecimals Note: Encodes as a string to preserve
+    * precision, as Double cannot represent all BigDecimal values accurately
     */
   given JsonEncoder[BigDecimal] with {
-    def encode(a: BigDecimal): Json = Json.JsonNumber(a.doubleValue)
+    def encode(a: BigDecimal): Json = Json.JsonString(a.toString)
   }
 
   /** Helper method for collection/iterable JsonEncoders

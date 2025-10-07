@@ -33,7 +33,11 @@ trait JsonDecoder[+A] {
     *   a Try containing the decoded value or an exception on failure
     */
   def decode(json: String): Try[A] =
-    decode(Json.parse(json).toOption.get)
+    Json.parse(json) match {
+      case Left(error) =>
+        Failure(new Exception(s"Failed to parse JSON: $error"))
+      case Right(json) => decode(json)
+    }
 
   /** Map the decoder type to a new JsonDecoder
     * @param f
@@ -145,8 +149,18 @@ object JsonDecoder {
   )(using decoder: JsonDecoder[A]): JsonDecoder[F[A]] =
     (json: Json) =>
       Try {
+        var idx = 0
         json.arrVal.foldLeft(builder)((b, j) => {
-          b.addOne(decoder.decode(j).get)
+          decoder.decode(j) match {
+            case Success(value) =>
+              idx += 1
+              b.addOne(value)
+            case Failure(ex)    =>
+              throw new Exception(
+                s"Failed to decode array element at index $idx: ${ex.getMessage}",
+                ex
+              )
+          }
         })
         builder.result()
       }
@@ -217,7 +231,14 @@ object JsonDecoder {
           .zip(decoders)
           .map { case (label, decoder) =>
             val jsonValue = underlying.getOrElse(label, Json.JsonNull)
-            decoder.decode(jsonValue).get
+            decoder.decode(jsonValue) match {
+              case Success(value) => value
+              case Failure(ex)    =>
+                throw new Exception(
+                  s"Failed to decode field '$label': ${ex.getMessage}",
+                  ex
+                )
+            }
           }
           .toArray
 

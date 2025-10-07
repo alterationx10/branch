@@ -1,7 +1,8 @@
 package dev.alteration.branch.macaroni.parsers
 
 case class Location(input: String, offset: Int = 0) {
-  private lazy val prefix = input.substring(0, math.min(offset + 1, input.length))
+  private lazy val prefix =
+    input.substring(0, math.min(offset + 1, input.length))
 
   lazy val line: Int = prefix.count(_ == '\n') + 1
 

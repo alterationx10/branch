@@ -23,9 +23,10 @@ object Reference extends Parsers[Reference.Parser] {
     val i = firstNonmatchingIndex(l.input, s, l.offset)
     if i == -1 then Success(s, s.length)
     else {
-      val found = if l.offset + i < l.input.length then
-        s"found '${l.input.charAt(l.offset + i)}'"
-      else "found end of input"
+      val found =
+        if l.offset + i < l.input.length then
+          s"found '${l.input.charAt(l.offset + i)}'"
+        else "found end of input"
       Failure(l.advanceBy(i).toError(s"expected '$s', $found"), i != 0)
     }
   }
@@ -34,9 +35,9 @@ object Reference extends Parsers[Reference.Parser] {
     if l.offset < l.input.length && l.input.charAt(l.offset) == c then
       Success(c, 1)
     else {
-      val found = if l.offset < l.input.length then
-        s"found '${l.input.charAt(l.offset)}'"
-      else "found end of input"
+      val found =
+        if l.offset < l.input.length then s"found '${l.input.charAt(l.offset)}'"
+        else "found end of input"
       Failure(l.toError(s"expected '$c', $found"), false)
     }
   }
