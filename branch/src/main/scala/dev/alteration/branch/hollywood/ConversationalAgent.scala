@@ -1,10 +1,13 @@
 package dev.alteration.branch.hollywood
 
-import dev.alteration.branch.hollywood.clients.completions.{ChatMessage, CompletionClient}
+import dev.alteration.branch.hollywood.clients.completions.{
+  ChatCompletionClient,
+  ChatMessage
+}
 import dev.alteration.branch.hollywood.tools.ToolRegistry
 
 class ConversationalAgent(
-    completionClient: CompletionClient = CompletionClient(),
+    completionClient: ChatCompletionClient = ChatCompletionClient(),
     toolRegistry: Option[ToolRegistry] = None,
     maxTurns: Int = 50,
     model: String = "gpt-oss",

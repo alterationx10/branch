@@ -1,9 +1,9 @@
 package dev.alteration.branch.hollywood
 
 import dev.alteration.branch.hollywood.clients.completions.{
+  ChatCompletionClient,
   ChatCompletionsRequest,
-  ChatMessage,
-  CompletionClient
+  ChatMessage
 }
 import dev.alteration.branch.hollywood.tools.ToolRegistry
 
@@ -28,7 +28,7 @@ private[hollywood] object AgentConversationLoop {
     */
   def run(
       messages: List[ChatMessage],
-      completionClient: CompletionClient,
+      completionClient: ChatCompletionClient,
       toolRegistry: Option[ToolRegistry],
       maxTurns: Int,
       model: String,

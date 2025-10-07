@@ -1,15 +1,15 @@
 package dev.alteration.branch.hollywood
 
 import dev.alteration.branch.hollywood.clients.completions.{
-  ChatMessage,
-  CompletionClient
+  ChatCompletionClient,
+  ChatMessage
 }
 import dev.alteration.branch.hollywood.clients.embeddings.EmbeddingClient
 import dev.alteration.branch.hollywood.tools.ToolRegistry
 import dev.alteration.branch.hollywood.rag.VectorStore
 
 class RagAgent(
-    completionClient: CompletionClient = CompletionClient(),
+    completionClient: ChatCompletionClient = ChatCompletionClient(),
     embeddingClient: EmbeddingClient,
     toolRegistry: Option[ToolRegistry] = None,
     vectorStore: VectorStore,

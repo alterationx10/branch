@@ -9,9 +9,9 @@ import ChatCompletionsRequest.given
 
 import java.net.URI
 
-class CompletionClient(
+class ChatCompletionClient(
     completionHandler: ChatCompletionsRequest => ChatCompletionsResponse =
-      CompletionClient.defaultCompletionHandler
+      ChatCompletionClient.defaultCompletionHandler
 ) {
 
   def getCompletion(
@@ -21,7 +21,7 @@ class CompletionClient(
   }
 }
 
-object CompletionClient {
+object ChatCompletionClient {
 
   val baseUrl: String = Veil
     .getFirst("LLAMA_SERVER_COMPLETION_URL", "LLAMA_SERVER_URL")

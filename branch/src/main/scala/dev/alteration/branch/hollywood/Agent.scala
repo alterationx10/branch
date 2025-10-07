@@ -2,7 +2,11 @@ package dev.alteration.branch.hollywood
 
 import dev.alteration.branch.friday.{Json, Schema}
 import dev.alteration.branch.hollywood.tools.schema.ToolSchema
-import dev.alteration.branch.hollywood.tools.{AgentChatTool, CallableTool, ToolExecutor}
+import dev.alteration.branch.hollywood.tools.{
+  AgentChatTool,
+  CallableTool,
+  ToolExecutor
+}
 
 import scala.util.*
 

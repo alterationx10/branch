@@ -1,6 +1,9 @@
 package dev.alteration.branch.hollywood
 
-import dev.alteration.branch.hollywood.clients.completions.{ChatMessage, CompletionClient}
+import dev.alteration.branch.hollywood.clients.completions.{
+  ChatCompletionClient,
+  ChatMessage
+}
 import dev.alteration.branch.hollywood.tools.ToolRegistry
 
 /** A stateless agent that executes a single request-response cycle with fixed
@@ -22,7 +25,7 @@ import dev.alteration.branch.hollywood.tools.ToolRegistry
   */
 class OneShotAgent(
     systemPrompt: String,
-    completionClient: CompletionClient = CompletionClient(),
+    completionClient: ChatCompletionClient = ChatCompletionClient(),
     toolRegistry: Option[ToolRegistry] = None,
     maxTurns: Int = 10,
     model: String = "gpt-oss",
@@ -104,7 +107,7 @@ object OneShotAgent {
       taskDescription: String,
       inputFormat: Option[String] = None,
       outputFormat: Option[String] = None,
-      completionClient: CompletionClient = CompletionClient(),
+      completionClient: ChatCompletionClient = ChatCompletionClient(),
       toolRegistry: Option[ToolRegistry] = None,
       maxTurns: Int = 10,
       model: String = "gpt-oss"
