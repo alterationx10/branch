@@ -443,7 +443,114 @@ This enables agent composition and specialization, where complex tasks can be de
 
 ### Provided Tools
 
-The library includes some built-in tools that can be registered with agents:
+The library includes built-in tools that can be registered with agents:
+
+#### HttpClientTool
+
+Make HTTP requests to any API endpoint with full control over method, headers, and body.
+
+```scala
+import dev.alteration.branch.hollywood.tools.provided.http.HttpClientTool
+
+val toolRegistry = ToolRegistry()
+  .register[HttpClientTool]
+
+val agent = OneShotAgent(
+  systemPrompt = "You are a helpful assistant that can make HTTP requests.",
+  toolRegistry = Some(toolRegistry)
+)
+
+val response = agent.chat("Make a GET request to https://api.github.com/users/octocat")
+```
+
+**Tool parameters:**
+
+```scala
+@schema.Tool("Make HTTP requests to any API endpoint")
+case class HttpClientTool(
+  @Param("The URL to request") url: String,
+  @Param("HTTP method (GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS)")
+  method: String = "GET",
+  @Param("Optional request headers as JSON object")
+  headers: Option[String] = None,
+  @Param("Optional request body as string")
+  body: Option[String] = None
+)
+```
+
+Supports all standard HTTP methods and allows custom headers and request bodies. Headers should be provided as a JSON object string (e.g., `"{\"Content-Type\": \"application/json\"}"`).
+
+#### FileSystemTool
+
+Read, write, list, or check existence of files on the filesystem.
+
+```scala
+import dev.alteration.branch.hollywood.tools.provided.fs.FileSystemTool
+
+val toolRegistry = ToolRegistry()
+  .register[FileSystemTool]
+
+val agent = OneShotAgent(
+  systemPrompt = "You are a helpful assistant with filesystem access.",
+  toolRegistry = Some(toolRegistry)
+)
+
+val response = agent.chat("List the files in the /tmp directory")
+```
+
+**Tool parameters:**
+
+```scala
+@schema.Tool("Read, write, or list files on the filesystem")
+case class FileSystemTool(
+  @Param("Operation to perform: 'read', 'write', 'list', or 'exists'")
+  operation: String,
+  @Param("File or directory path")
+  path: String,
+  @Param("Content to write (required for 'write' operation)")
+  content: Option[String] = None,
+  @Param("Whether to append to file instead of overwriting (for 'write' operation)")
+  append: Option[Boolean] = None
+)
+```
+
+**Operations:**
+
+- `read`: Read contents of a file
+- `write`: Write or append content to a file (creates parent directories if needed)
+- `list`: List contents of a directory with file types and sizes
+- `exists`: Check if a file or directory exists
+
+**Security note:** When using `FileSystemTool` in production, use `RestrictedExecutor` with the provided `FileSystemPolicy` to restrict access to specific directories and prevent dangerous operations:
+
+```scala
+import dev.alteration.branch.hollywood.tools.provided.fs.{FileSystemTool, FileSystemPolicy}
+import dev.alteration.branch.hollywood.tools.{ToolExecutor, RestrictedExecutor}
+import java.nio.file.Paths
+
+// Create a sandboxed filesystem policy
+val policy = FileSystemPolicy.strict(Paths.get("/tmp"))
+// or FileSystemPolicy.default(Paths.get("/allowed/path"))
+// or FileSystemPolicy.permissive(Some(Paths.get("/path")))
+
+val executor = ToolExecutor.derived[FileSystemTool]
+val restricted = RestrictedExecutor(executor, policy)
+
+val toolRegistry = ToolRegistry()
+  .register(ToolSchema.derive[FileSystemTool], restricted)
+// or .registerWithPolicy(policy)
+```
+
+`FileSystemPolicy` provides:
+- **Sandboxing**: Restrict operations to a specific directory tree
+- **Read-only mode**: Block write operations entirely
+- **File size limits**: Prevent writing excessively large files (default 10MB)
+- **Blocked patterns**: Automatically block sensitive files (`.env`, `.key`, `.pem`, `.ssh`, credentials, passwords, etc.)
+
+Three preset policies are available:
+- `FileSystemPolicy.strict(path)`: Read-only, sandboxed with default blocked patterns
+- `FileSystemPolicy.default(path)`: Sandboxed with write access and default restrictions
+- `FileSystemPolicy.permissive(path)`: Larger file size limit (100MB), minimal blocked patterns
 
 #### WebFetch
 
