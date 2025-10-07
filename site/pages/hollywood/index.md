@@ -283,6 +283,115 @@ The registry:
 - Executes tools by name with string arguments
 - Supports chaining registrations
 
+### Tool Policies and Security
+
+Hollywood provides `ToolPolicy` and `RestrictedExecutor` for validating and restricting tool execution based on custom rules.
+
+#### ToolPolicy
+
+A `ToolPolicy[T]` defines validation and transformation rules for tools:
+
+```scala
+trait ToolPolicy[T <: CallableTool[?]] {
+  def validate(tool: T): Try[Unit]
+
+  def transformArgs(args: Json): Json = args
+}
+```
+
+**Built-in policies:**
+
+```scala
+// Allow all operations
+val permissive = ToolPolicy.allowAll[Calculator]
+
+// Block all operations
+val restrictive = ToolPolicy.denyAll[Calculator](
+  reason = "Calculator operations disabled"
+)
+
+// Custom validation
+val policy = ToolPolicy.fromValidator[Calculator] { calc =>
+  if (calc.a < 0 || calc.b < 0) {
+    Failure(new SecurityException("Negative numbers not allowed"))
+  } else {
+    Success(())
+  }
+}
+
+// Custom validation with argument transformation
+val sanitizingPolicy = ToolPolicy.custom[Calculator](
+  validator = calc => Success(()),
+  transformer = args => {
+    // Modify args before validation/execution
+    args
+  }
+)
+```
+
+**Use cases for policies:**
+
+- Restrict tool operations based on input values
+- Prevent access to sensitive resources
+- Enforce rules
+- Sanitize or transform inputs before execution
+
+#### RestrictedExecutor
+
+`RestrictedExecutor` wraps a `ToolExecutor` to enforce a policy:
+
+```scala
+val baseExecutor = ToolExecutor.derived[Calculator]
+val policy = ToolPolicy.fromValidator[Calculator] { calc =>
+  if (calc.a > 1000 || calc.b > 1000) {
+    Failure(new SecurityException("Numbers too large"))
+  } else {
+    Success(())
+  }
+}
+
+val restrictedExecutor = RestrictedExecutor(baseExecutor, policy)
+```
+
+When executing tools, the `RestrictedExecutor`:
+
+1. Applies the policy's `transformArgs` to the JSON input
+2. Decodes the transformed arguments into the tool instance
+3. Validates the tool against the policy
+4. If validation passes, executes the tool with the delegate executor
+5. If validation fails, returns a policy violation error
+
+**Example with ToolRegistry:**
+
+```scala
+val calculator = ToolExecutor.derived[Calculator]
+val policy = ToolPolicy.fromValidator[Calculator] { calc =>
+  if (calc.a < 0 || calc.b < 0) {
+    Failure(new SecurityException("Negative numbers not allowed"))
+  } else {
+    Success(())
+  }
+}
+
+val restricted = RestrictedExecutor(calculator, policy)
+
+val toolRegistry = ToolRegistry()
+  .register(ToolSchema.derive[Calculator], restricted)
+
+val agent = OneShotAgent(
+  systemPrompt = "You are a math assistant.",
+  toolRegistry = Some(toolRegistry)
+)
+
+// This will succeed
+agent.chat("What is 5 plus 3?")
+
+// This will fail with policy violation
+agent.chat("What is -5 plus 3?")
+```
+
+This approach allows you to add security and validation layers without modifying the tool implementation itself.
+
 #### Tool Schema
 
 Tool schemas are derived at compile time from annotated case classes using macros. The `ToolSchema.derive[T]` macro:
