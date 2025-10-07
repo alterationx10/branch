@@ -1,4 +1,4 @@
-package dev.alteration.branch.hollywood.tools.provided
+package dev.alteration.branch.hollywood.tools.provided.http
 
 import dev.alteration.branch.hollywood.tools.ToolRegistry
 import dev.alteration.branch.hollywood.tools.provided.http.HttpClientTool
@@ -81,7 +81,7 @@ class HttpClientToolSpec extends FunSuite {
   }
 
   test("HttpClientTool should execute via ToolRegistry") {
-    import dev.alteration.branch.friday.Json._
+    import dev.alteration.branch.friday.Json.*
 
     val registry = ToolRegistry()
     registry.register[HttpClientTool]

@@ -1,4 +1,4 @@
-package dev.alteration.branch.hollywood.tools.provided
+package dev.alteration.branch.hollywood.tools.provided.fs
 
 import dev.alteration.branch.hollywood.tools.ToolRegistry
 import dev.alteration.branch.hollywood.tools.provided.fs.FileSystemTool
@@ -167,7 +167,7 @@ class FileSystemToolSpec extends FileFixtureSuite {
   }
 
   files.test("FileSystemTool should execute via ToolRegistry") { testFile =>
-    import dev.alteration.branch.friday.Json._
+    import dev.alteration.branch.friday.Json.*
 
     val registry = ToolRegistry()
     registry.register[FileSystemTool]

@@ -552,6 +552,89 @@ Three preset policies are available:
 - `FileSystemPolicy.default(path)`: Sandboxed with write access and default restrictions
 - `FileSystemPolicy.permissive(path)`: Larger file size limit (100MB), minimal blocked patterns
 
+#### RegexTool
+
+Extract text, find patterns, and perform regex operations on text.
+
+```scala
+import dev.alteration.branch.hollywood.tools.provided.regex.RegexTool
+
+val toolRegistry = ToolRegistry()
+  .register[RegexTool]
+
+val agent = OneShotAgent(
+  systemPrompt = "You are a helpful assistant with text processing capabilities.",
+  toolRegistry = Some(toolRegistry)
+)
+
+val response = agent.chat("Extract all email addresses from this text: Contact us at info@example.com or support@test.org")
+```
+
+**Tool parameters:**
+
+```scala
+@schema.Tool("Extract text, find patterns, and perform regex operations")
+case class RegexTool(
+  @Param("Operation to perform: 'match', 'find_all', 'replace', 'extract', or 'split'")
+  operation: String,
+  @Param("Regular expression pattern")
+  pattern: String,
+  @Param("Input text to process")
+  text: String,
+  @Param("Replacement text (required for 'replace' operation)")
+  replacement: Option[String] = None,
+  @Param("Whether to use case-insensitive matching")
+  caseInsensitive: Option[Boolean] = None,
+  @Param("Whether to use multiline mode (^ and $ match line boundaries)")
+  multiline: Option[Boolean] = None,
+  @Param("Whether to use dotall mode (. matches newlines)")
+  dotall: Option[Boolean] = None
+)
+```
+
+**Operations:**
+
+- `match`: Check if pattern matches the entire text (returns "true" or "false")
+- `find_all`: Find all occurrences of pattern in text
+- `replace`: Replace all occurrences with replacement text
+- `extract`: Extract numbered groups from pattern matches
+- `split`: Split text by pattern delimiter
+
+**Pattern flags:**
+
+- `caseInsensitive`: Ignore case when matching (default: false)
+- `multiline`: Make `^` and `$` match line boundaries instead of just start/end of text (default: false)
+- `dotall`: Make `.` match newline characters (default: false)
+
+**Examples:**
+
+```scala
+// Find all numbers
+RegexTool("find_all", "\\d+", "I have 3 apples and 42 oranges")
+// Output: Found 2 match(es):
+// 1. 3
+// 2. 42
+
+// Extract email parts
+RegexTool("extract", "(\\w+)@(\\w+\\.\\w+)", "Contact: user@example.com")
+// Output: Found 1 match(es) with groups:
+// Match 1: [Group 0: user@example.com, Group 1: user, Group 2: example.com]
+
+// Replace URLs with placeholders
+RegexTool("replace", "https?://[^\\s]+", "Visit https://example.com", replacement = Some("[LINK]"))
+// Output: Replaced 1 occurrence(s):
+// Visit [LINK]
+
+// Split by commas
+RegexTool("split", ",\\s*", "apple, banana, cherry")
+// Output: Split into 3 part(s):
+// 1. apple
+// 2. banana
+// 3. cherry
+```
+
+Uses `java.util.regex.Pattern` from the JVM standard library with zero external dependencies.
+
 #### WebFetch
 
 Fetch a webpage by URL.
