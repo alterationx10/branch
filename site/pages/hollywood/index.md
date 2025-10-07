@@ -283,6 +283,115 @@ The registry:
 - Executes tools by name with string arguments
 - Supports chaining registrations
 
+### Tool Policies and Security
+
+Hollywood provides `ToolPolicy` and `RestrictedExecutor` for validating and restricting tool execution based on custom rules.
+
+#### ToolPolicy
+
+A `ToolPolicy[T]` defines validation and transformation rules for tools:
+
+```scala
+trait ToolPolicy[T <: CallableTool[?]] {
+  def validate(tool: T): Try[Unit]
+
+  def transformArgs(args: Json): Json = args
+}
+```
+
+**Built-in policies:**
+
+```scala
+// Allow all operations
+val permissive = ToolPolicy.allowAll[Calculator]
+
+// Block all operations
+val restrictive = ToolPolicy.denyAll[Calculator](
+  reason = "Calculator operations disabled"
+)
+
+// Custom validation
+val policy = ToolPolicy.fromValidator[Calculator] { calc =>
+  if (calc.a < 0 || calc.b < 0) {
+    Failure(new SecurityException("Negative numbers not allowed"))
+  } else {
+    Success(())
+  }
+}
+
+// Custom validation with argument transformation
+val sanitizingPolicy = ToolPolicy.custom[Calculator](
+  validator = calc => Success(()),
+  transformer = args => {
+    // Modify args before validation/execution
+    args
+  }
+)
+```
+
+**Use cases for policies:**
+
+- Restrict tool operations based on input values
+- Prevent access to sensitive resources
+- Enforce rules
+- Sanitize or transform inputs before execution
+
+#### RestrictedExecutor
+
+`RestrictedExecutor` wraps a `ToolExecutor` to enforce a policy:
+
+```scala
+val baseExecutor = ToolExecutor.derived[Calculator]
+val policy = ToolPolicy.fromValidator[Calculator] { calc =>
+  if (calc.a > 1000 || calc.b > 1000) {
+    Failure(new SecurityException("Numbers too large"))
+  } else {
+    Success(())
+  }
+}
+
+val restrictedExecutor = RestrictedExecutor(baseExecutor, policy)
+```
+
+When executing tools, the `RestrictedExecutor`:
+
+1. Applies the policy's `transformArgs` to the JSON input
+2. Decodes the transformed arguments into the tool instance
+3. Validates the tool against the policy
+4. If validation passes, executes the tool with the delegate executor
+5. If validation fails, returns a policy violation error
+
+**Example with ToolRegistry:**
+
+```scala
+val calculator = ToolExecutor.derived[Calculator]
+val policy = ToolPolicy.fromValidator[Calculator] { calc =>
+  if (calc.a < 0 || calc.b < 0) {
+    Failure(new SecurityException("Negative numbers not allowed"))
+  } else {
+    Success(())
+  }
+}
+
+val restricted = RestrictedExecutor(calculator, policy)
+
+val toolRegistry = ToolRegistry()
+  .register(ToolSchema.derive[Calculator], restricted)
+
+val agent = OneShotAgent(
+  systemPrompt = "You are a math assistant.",
+  toolRegistry = Some(toolRegistry)
+)
+
+// This will succeed
+agent.chat("What is 5 plus 3?")
+
+// This will fail with policy violation
+agent.chat("What is -5 plus 3?")
+```
+
+This approach allows you to add security and validation layers without modifying the tool implementation itself.
+
 #### Tool Schema
 
 Tool schemas are derived at compile time from annotated case classes using macros. The `ToolSchema.derive[T]` macro:
@@ -334,7 +443,274 @@ This enables agent composition and specialization, where complex tasks can be de
 
 ### Provided Tools
 
-The library includes some built-in tools that can be registered with agents:
+The library includes built-in tools that can be registered with agents:
+
+#### HttpClientTool
+
+Make HTTP requests to any API endpoint with full control over method, headers, and body.
+
+```scala
+import dev.alteration.branch.hollywood.tools.provided.http.HttpClientTool
+
+val toolRegistry = ToolRegistry()
+  .register[HttpClientTool]
+
+val agent = OneShotAgent(
+  systemPrompt = "You are a helpful assistant that can make HTTP requests.",
+  toolRegistry = Some(toolRegistry)
+)
+
+val response = agent.chat("Make a GET request to https://api.github.com/users/octocat")
+```
+
+**Tool parameters:**
+
+```scala
+@schema.Tool("Make HTTP requests to any API endpoint")
+case class HttpClientTool(
+  @Param("The URL to request") url: String,
+  @Param("HTTP method (GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS)")
+  method: String = "GET",
+  @Param("Optional request headers as JSON object")
+  headers: Option[String] = None,
+  @Param("Optional request body as string")
+  body: Option[String] = None
+)
+```
+
+Supports all standard HTTP methods and allows custom headers and request bodies. Headers should be provided as a JSON object string (e.g., `"{\"Content-Type\": \"application/json\"}"`).
+
+#### FileSystemTool
+
+Read, write, list, or check existence of files on the filesystem.
+
+```scala
+import dev.alteration.branch.hollywood.tools.provided.fs.FileSystemTool
+
+val toolRegistry = ToolRegistry()
+  .register[FileSystemTool]
+
+val agent = OneShotAgent(
+  systemPrompt = "You are a helpful assistant with filesystem access.",
+  toolRegistry = Some(toolRegistry)
+)
+
+val response = agent.chat("List the files in the /tmp directory")
+```
+
+**Tool parameters:**
+
+```scala
+@schema.Tool("Read, write, or list files on the filesystem")
+case class FileSystemTool(
+  @Param("Operation to perform: 'read', 'write', 'list', or 'exists'")
+  operation: String,
+  @Param("File or directory path")
+  path: String,
+  @Param("Content to write (required for 'write' operation)")
+  content: Option[String] = None,
+  @Param("Whether to append to file instead of overwriting (for 'write' operation)")
+  append: Option[Boolean] = None
+)
+```
+
+**Operations:**
+
+- `read`: Read contents of a file
+- `write`: Write or append content to a file (creates parent directories if needed)
+- `list`: List contents of a directory with file types and sizes
+- `exists`: Check if a file or directory exists
+
+**Security note:** When using `FileSystemTool` in production, use `RestrictedExecutor` with the provided `FileSystemPolicy` to restrict access to specific directories and prevent dangerous operations:
+
+```scala
+import dev.alteration.branch.hollywood.tools.provided.fs.{FileSystemTool, FileSystemPolicy}
+import dev.alteration.branch.hollywood.tools.{ToolExecutor, RestrictedExecutor}
+import java.nio.file.Paths
+
+// Create a sandboxed filesystem policy
+val policy = FileSystemPolicy.strict(Paths.get("/tmp"))
+// or FileSystemPolicy.default(Paths.get("/allowed/path"))
+// or FileSystemPolicy.permissive(Some(Paths.get("/path")))
+
+val executor = ToolExecutor.derived[FileSystemTool]
+val restricted = RestrictedExecutor(executor, policy)
+
+val toolRegistry = ToolRegistry()
+  .register(ToolSchema.derive[FileSystemTool], restricted)
+// or .registerWithPolicy(policy)
+```
+
+`FileSystemPolicy` provides:
+- **Sandboxing**: Restrict operations to a specific directory tree
+- **Read-only mode**: Block write operations entirely
+- **File size limits**: Prevent writing excessively large files (default 10MB)
+- **Blocked patterns**: Automatically block sensitive files (`.env`, `.key`, `.pem`, `.ssh`, credentials, passwords, etc.)
+
+Three preset policies are available:
+- `FileSystemPolicy.strict(path)`: Read-only, sandboxed with default blocked patterns
+- `FileSystemPolicy.default(path)`: Sandboxed with write access and default restrictions
+- `FileSystemPolicy.permissive(path)`: Larger file size limit (100MB), minimal blocked patterns
+
+#### RegexTool
+
+Extract text, find patterns, and perform regex operations on text.
+
+```scala
+import dev.alteration.branch.hollywood.tools.provided.regex.RegexTool
+
+val toolRegistry = ToolRegistry()
+  .register[RegexTool]
+
+val agent = OneShotAgent(
+  systemPrompt = "You are a helpful assistant with text processing capabilities.",
+  toolRegistry = Some(toolRegistry)
+)
+
+val response = agent.chat("Extract all email addresses from this text: Contact us at info@example.com or support@test.org")
+```
+
+**Tool parameters:**
+
+```scala
+@schema.Tool("Extract text, find patterns, and perform regex operations")
+case class RegexTool(
+  @Param("Operation to perform: 'match', 'find_all', 'replace', 'extract', or 'split'")
+  operation: String,
+  @Param("Regular expression pattern")
+  pattern: String,
+  @Param("Input text to process")
+  text: String,
+  @Param("Replacement text (required for 'replace' operation)")
+  replacement: Option[String] = None,
+  @Param("Whether to use case-insensitive matching")
+  caseInsensitive: Option[Boolean] = None,
+  @Param("Whether to use multiline mode (^ and $ match line boundaries)")
+  multiline: Option[Boolean] = None,
+  @Param("Whether to use dotall mode (. matches newlines)")
+  dotall: Option[Boolean] = None
+)
+```
+
+**Operations:**
+
+- `match`: Check if pattern matches the entire text (returns "true" or "false")
+- `find_all`: Find all occurrences of pattern in text
+- `replace`: Replace all occurrences with replacement text
+- `extract`: Extract numbered groups from pattern matches
+- `split`: Split text by pattern delimiter
+
+**Pattern flags:**
+
+- `caseInsensitive`: Ignore case when matching (default: false)
+- `multiline`: Make `^` and `$` match line boundaries instead of just start/end of text (default: false)
+- `dotall`: Make `.` match newline characters (default: false)
+
+**Examples:**
+
+```scala
+// Find all numbers
+RegexTool("find_all", "\\d+", "I have 3 apples and 42 oranges")
+// Output: Found 2 match(es):
+// 1. 3
+// 2. 42
+
+// Extract email parts
+RegexTool("extract", "(\\w+)@(\\w+\\.\\w+)", "Contact: user@example.com")
+// Output: Found 1 match(es) with groups:
+// Match 1: [Group 0: user@example.com, Group 1: user, Group 2: example.com]
+
+// Replace URLs with placeholders
+RegexTool("replace", "https?://[^\\s]+", "Visit https://example.com", replacement = Some("[LINK]"))
+// Output: Replaced 1 occurrence(s):
+// Visit [LINK]
+
+// Split by commas
+RegexTool("split", ",\\s*", "apple, banana, cherry")
+// Output: Split into 3 part(s):
+// 1. apple
+// 2. banana
+// 3. cherry
+```
+
+Uses `java.util.regex.Pattern` from the JVM standard library with zero external dependencies.
+
+#### JsonQueryTool
+
+Query, filter, and transform JSON data with path expressions.
+
+```scala
+import dev.alteration.branch.hollywood.tools.provided.json.JsonQueryTool
+
+val toolRegistry = ToolRegistry()
+  .register[JsonQueryTool]
+
+val agent = OneShotAgent(
+  systemPrompt = "You are a helpful assistant that can process JSON data.",
+  toolRegistry = Some(toolRegistry)
+)
+
+val response = agent.chat("Extract all user names from this JSON: {\"users\": [{\"name\": \"Alice\", \"age\": 30}, {\"name\": \"Bob\", \"age\": 25}]}")
+```
+
+**Tool parameters:**
+
+```scala
+@schema.Tool("Query, filter, and transform JSON data with path expressions")
+case class JsonQueryTool(
+  @Param("JSON string to query") json: String,
+  @Param("Operation to perform: 'get', 'filter', 'map', 'keys', 'values', 'exists', 'validate'")
+  operation: String,
+  @Param("JSONPath query (e.g., 'users.0.name', 'items.*.id', 'data.results')")
+  path: Option[String] = None,
+  @Param("Field name to extract for 'map' operation")
+  field: Option[String] = None,
+  @Param("Expected type for 'validate' operation: 'object', 'array', 'string', 'number', 'boolean', 'null'")
+  expectedType: Option[String] = None
+)
+```
+
+**Operations:**
+
+- `get`: Extract value at path (supports wildcards like `users.*.name`)
+- `map`: Extract specific field from all array elements
+- `filter`: Filter array elements by field existence
+- `keys`: List all keys in a JSON object
+- `values`: List all values in a JSON object
+- `exists`: Check if a path exists in the JSON
+- `validate`: Verify JSON type matches expected type
+
+**Path syntax:**
+
+- Dot notation for objects: `metadata.total`
+- Numeric index for arrays: `users.0.name`
+- Wildcard for all array elements: `items.*.id`
+
+**Examples:**
+
+```scala
+// Extract nested value
+JsonQueryTool(json, "get", path = Some("users.0.email"))
+// Output: "alice@example.com"
+
+// Get all names from array
+JsonQueryTool(json, "get", path = Some("users.*.name"))
+// Output: ["Alice", "Bob", "Charlie"]
+
+// Map array to extract specific field
+JsonQueryTool(json, "map", path = Some("users"), field = Some("name"))
+// Output: Extracted 3 values for field 'name':
+// ["Alice", "Bob", "Charlie"]
+
+// Filter array by field existence
+JsonQueryTool(json, "filter", path = Some("users"), field = Some("email"))
+// Output: Filtered 3 items to 2 items with field 'email':
+// [users with email field only]
+
+// Validate type
+JsonQueryTool(json, "validate", path = Some("users"), expectedType = Some("array"))
+// Output: true - Value is of type 'array'
+```
 
 #### WebFetch
 

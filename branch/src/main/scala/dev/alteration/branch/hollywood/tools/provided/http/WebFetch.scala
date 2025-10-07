@@ -1,10 +1,9 @@
-package dev.alteration.branch.hollywood.tools.provided
+package dev.alteration.branch.hollywood.tools.provided.http
 
-import dev.alteration.branch.hollywood.tools.CallableTool
+import dev.alteration.branch.hollywood.tools.{schema, CallableTool}
+import dev.alteration.branch.hollywood.tools.schema.Param
 import dev.alteration.branch.spider.client.ClientRequest.uri
 import dev.alteration.branch.spider.client.{Client, ClientRequest}
-import dev.alteration.branch.hollywood.tools.schema
-import dev.alteration.branch.hollywood.tools.schema.Param
 
 import java.net.http.HttpResponse.BodyHandlers
 import scala.util.Try

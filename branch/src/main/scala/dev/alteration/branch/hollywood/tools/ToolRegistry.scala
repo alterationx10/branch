@@ -1,6 +1,6 @@
 package dev.alteration.branch.hollywood.tools
 
-import dev.alteration.branch.friday.{Json, JsonEncoder, JsonSchema}
+import dev.alteration.branch.friday.{Json, JsonDecoder, JsonEncoder, JsonSchema}
 import dev.alteration.branch.hollywood.api.{FunctionDefinition, Tool}
 import dev.alteration.branch.hollywood.tools.schema.ToolSchema
 import dev.alteration.branch.hollywood.tools.{CallableTool, ToolExecutor}
@@ -53,6 +53,25 @@ object ToolRegistry {
       registry.registerTool(tool._1, tool._2)
       registry
     }
+
+    // Generic method to register any tool with a policy
+    inline def registerWithPolicy[T <: CallableTool[?]](
+        policy: ToolPolicy[T]
+    )(using
+        m: Mirror.ProductOf[T],
+        encoder: JsonEncoder[ToolExecutor.ResultType[T]]
+    ): ToolRegistry = {
+      // Create decoder first to avoid forward reference
+      given JsonDecoder[T] = JsonDecoder.derived[T]
+
+      val schema             = ToolSchema.derive[T]
+      val baseExecutor       = ToolExecutor.derived[T]
+      val restrictedExecutor = new RestrictedExecutor[T](baseExecutor, policy)
+
+      registry.registerTool(schema, restrictedExecutor)
+      registry
+    }
+
   }
 }
 

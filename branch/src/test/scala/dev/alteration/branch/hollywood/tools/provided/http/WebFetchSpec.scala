@@ -1,7 +1,8 @@
-package dev.alteration.branch.hollywood.tools.provided
+package dev.alteration.branch.hollywood.tools.provided.http
 
 import dev.alteration.branch.hollywood.OneShotAgent
 import dev.alteration.branch.hollywood.tools.ToolRegistry
+import dev.alteration.branch.hollywood.tools.provided.http.WebFetch
 import dev.alteration.branch.testkit.fixtures.LlamaServerFixture
 import munit.FunSuite
 
