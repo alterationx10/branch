@@ -27,7 +27,7 @@ case class RegexTool(
 ) extends CallableTool[String] {
 
   override def execute(): Try[String] = Try {
-    val flags   = buildFlags()
+    val flags    = buildFlags()
     val jPattern = createRegex(flags)
 
     operation.toLowerCase match {
@@ -72,7 +72,9 @@ case class RegexTool(
     if (matches.isEmpty) {
       "No matches found"
     } else {
-      s"Found ${matches.size} match(es):\n${matches.zipWithIndex.map { case (m, i) => s"${i + 1}. $m" }.mkString("\n")}"
+      s"Found ${matches.size} match(es):\n${matches.zipWithIndex
+          .map { case (m, i) => s"${i + 1}. $m" }
+          .mkString("\n")}"
     }
   }
 
@@ -125,7 +127,9 @@ case class RegexTool(
     if (parts.length == 1 && parts(0) == text) {
       "No split occurred (pattern not found)"
     } else {
-      s"Split into ${parts.length} part(s):\n${parts.zipWithIndex.map { case (p, i) => s"${i + 1}. $p" }.mkString("\n")}"
+      s"Split into ${parts.length} part(s):\n${parts.zipWithIndex
+          .map { case (p, i) => s"${i + 1}. $p" }
+          .mkString("\n")}"
     }
   }
 }

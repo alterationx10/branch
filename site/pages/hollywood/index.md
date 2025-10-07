@@ -635,6 +635,83 @@ RegexTool("split", ",\\s*", "apple, banana, cherry")
 
 Uses `java.util.regex.Pattern` from the JVM standard library with zero external dependencies.
 
+#### JsonQueryTool
+
+Query, filter, and transform JSON data with path expressions.
+
+```scala
+import dev.alteration.branch.hollywood.tools.provided.json.JsonQueryTool
+
+val toolRegistry = ToolRegistry()
+  .register[JsonQueryTool]
+
+val agent = OneShotAgent(
+  systemPrompt = "You are a helpful assistant that can process JSON data.",
+  toolRegistry = Some(toolRegistry)
+)
+
+val response = agent.chat("Extract all user names from this JSON: {\"users\": [{\"name\": \"Alice\", \"age\": 30}, {\"name\": \"Bob\", \"age\": 25}]}")
+```
+
+**Tool parameters:**
+
+```scala
+@schema.Tool("Query, filter, and transform JSON data with path expressions")
+case class JsonQueryTool(
+  @Param("JSON string to query") json: String,
+  @Param("Operation to perform: 'get', 'filter', 'map', 'keys', 'values', 'exists', 'validate'")
+  operation: String,
+  @Param("JSONPath query (e.g., 'users.0.name', 'items.*.id', 'data.results')")
+  path: Option[String] = None,
+  @Param("Field name to extract for 'map' operation")
+  field: Option[String] = None,
+  @Param("Expected type for 'validate' operation: 'object', 'array', 'string', 'number', 'boolean', 'null'")
+  expectedType: Option[String] = None
+)
+```
+
+**Operations:**
+
+- `get`: Extract value at path (supports wildcards like `users.*.name`)
+- `map`: Extract specific field from all array elements
+- `filter`: Filter array elements by field existence
+- `keys`: List all keys in a JSON object
+- `values`: List all values in a JSON object
+- `exists`: Check if a path exists in the JSON
+- `validate`: Verify JSON type matches expected type
+
+**Path syntax:**
+
+- Dot notation for objects: `metadata.total`
+- Numeric index for arrays: `users.0.name`
+- Wildcard for all array elements: `items.*.id`
+
+**Examples:**
+
+```scala
+// Extract nested value
+JsonQueryTool(json, "get", path = Some("users.0.email"))
+// Output: "alice@example.com"
+
+// Get all names from array
+JsonQueryTool(json, "get", path = Some("users.*.name"))
+// Output: ["Alice", "Bob", "Charlie"]
+
+// Map array to extract specific field
+JsonQueryTool(json, "map", path = Some("users"), field = Some("name"))
+// Output: Extracted 3 values for field 'name':
+// ["Alice", "Bob", "Charlie"]
+
+// Filter array by field existence
+JsonQueryTool(json, "filter", path = Some("users"), field = Some("email"))
+// Output: Filtered 3 items to 2 items with field 'email':
+// [users with email field only]
+
+// Validate type
+JsonQueryTool(json, "validate", path = Some("users"), expectedType = Some("array"))
+// Output: true - Value is of type 'array'
+```
+
 #### WebFetch
 
 Fetch a webpage by URL.

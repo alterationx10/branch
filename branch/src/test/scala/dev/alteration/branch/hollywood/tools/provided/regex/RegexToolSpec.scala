@@ -59,7 +59,10 @@ class RegexToolSpec extends FunSuite {
 
     assert(result.isSuccess, "Replace operation should succeed")
     result.foreach { content =>
-      assert(content.contains("I have X apples"), "Should replace number with X")
+      assert(
+        content.contains("I have X apples"),
+        "Should replace number with X"
+      )
     }
   }
 
@@ -78,7 +81,10 @@ class RegexToolSpec extends FunSuite {
     assert(result.isSuccess, "Extract operation should succeed")
     result.foreach { content =>
       assert(content.contains("Found 1 match(es)"), "Should find 1 match")
-      assert(content.contains("Group 0: user@example.com"), "Should extract full match")
+      assert(
+        content.contains("Group 0: user@example.com"),
+        "Should extract full match"
+      )
       assert(content.contains("Group 1: user"), "Should extract username")
       assert(content.contains("Group 2: example.com"), "Should extract domain")
     }
@@ -106,7 +112,10 @@ class RegexToolSpec extends FunSuite {
 
     assert(result.isSuccess, "Split operation should succeed")
     result.foreach { content =>
-      assert(content.contains("Split into 3 part(s)"), "Should split into 3 parts")
+      assert(
+        content.contains("Split into 3 part(s)"),
+        "Should split into 3 parts"
+      )
       assert(content.contains("1. apple"), "Should have 'apple'")
       assert(content.contains("2. banana"), "Should have 'banana'")
       assert(content.contains("3. cherry"), "Should have 'cherry'")

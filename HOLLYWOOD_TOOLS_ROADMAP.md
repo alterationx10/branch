@@ -157,8 +157,8 @@ This document outlines planned tools to expand the Hollywood LLM agent toolkit.
 1. **HTTP Client Tool** ✅ **COMPLETED** - Generic REST API client (extends WebFetch)
 2. **File System Tool** ✅ **COMPLETED** - Read/write/list files with safety
 3. **Regex Tool** ✅ **COMPLETED** - Text extraction and pattern matching
-4. **Math/Calculator Tool** - Calculations and formula evaluation
-5. **JSON Query Tool** - Enhance existing JSON capabilities
+4. **JSON Query Tool** ✅ **COMPLETED** - Query and transform JSON data
+5. **Math/Calculator Tool** - Calculations and formula evaluation
 
 ### Phase 2: External Integrations
 6. **GitHub Tool** - Repository and issue management via API
