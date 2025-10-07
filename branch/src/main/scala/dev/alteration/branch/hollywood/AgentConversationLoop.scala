@@ -1,6 +1,10 @@
 package dev.alteration.branch.hollywood
 
-import dev.alteration.branch.hollywood.clients.completions.{ChatCompletionsRequest, ChatCompletionsResponse, ChatMessage}
+import dev.alteration.branch.hollywood.clients.completions.{
+  ChatCompletionsRequest,
+  ChatMessage,
+  CompletionClient
+}
 import dev.alteration.branch.hollywood.tools.ToolRegistry
 
 /** Shared conversation loop logic used by agent implementations */
@@ -24,7 +28,7 @@ private[hollywood] object AgentConversationLoop {
     */
   def run(
       messages: List[ChatMessage],
-      requestHandler: ChatCompletionsRequest => ChatCompletionsResponse,
+      completionClient: CompletionClient,
       toolRegistry: Option[ToolRegistry],
       maxTurns: Int,
       model: String,
@@ -45,7 +49,7 @@ private[hollywood] object AgentConversationLoop {
         model = model
       )
 
-      val response = requestHandler(request)
+      val response = completionClient.getCompletion(request)
       val choice   = response.choices.head
 
       // Get assistant's message

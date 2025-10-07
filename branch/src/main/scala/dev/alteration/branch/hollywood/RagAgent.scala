@@ -1,13 +1,15 @@
 package dev.alteration.branch.hollywood
 
-import dev.alteration.branch.hollywood.clients.completions.{ChatCompletionsRequest, ChatCompletionsResponse, ChatMessage}
+import dev.alteration.branch.hollywood.clients.completions.{
+  ChatMessage,
+  CompletionClient
+}
 import dev.alteration.branch.hollywood.clients.embeddings.EmbeddingClient
 import dev.alteration.branch.hollywood.tools.ToolRegistry
 import dev.alteration.branch.hollywood.rag.VectorStore
 
 class RagAgent(
-    requestHandler: ChatCompletionsRequest => ChatCompletionsResponse =
-      Agent.defaultHandler,
+    completionClient: CompletionClient = CompletionClient(),
     embeddingClient: EmbeddingClient,
     toolRegistry: Option[ToolRegistry] = None,
     vectorStore: VectorStore,
@@ -49,7 +51,7 @@ Based on the above context, please answer the following question:"""
     // Run shared conversation loop
     val (response, _) = AgentConversationLoop.run(
       messages,
-      requestHandler,
+      completionClient,
       toolRegistry,
       maxTurns,
       model,
