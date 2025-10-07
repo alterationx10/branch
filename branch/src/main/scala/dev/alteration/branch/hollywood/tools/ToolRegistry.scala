@@ -64,26 +64,14 @@ object ToolRegistry {
       // Create decoder first to avoid forward reference
       given JsonDecoder[T] = JsonDecoder.derived[T]
 
-      val schema           = ToolSchema.derive[T]
-      val baseExecutor     = ToolExecutor.derived[T]
+      val schema             = ToolSchema.derive[T]
+      val baseExecutor       = ToolExecutor.derived[T]
       val restrictedExecutor = new RestrictedExecutor[T](baseExecutor, policy)
 
       registry.registerTool(schema, restrictedExecutor)
       registry
     }
 
-    // Convenience method to register FileSystemTool with safety policy
-    def registerFileSystem(policy: FileSystemPolicy): ToolRegistry = {
-      // Create decoder first to avoid forward reference
-      given JsonDecoder[provided.FileSystemTool] = JsonDecoder.derived[provided.FileSystemTool]
-
-      val schema       = ToolSchema.derive[provided.FileSystemTool]
-      val baseExecutor = ToolExecutor.derived[provided.FileSystemTool]
-      val safeExecutor = new SafeFileSystemExecutor(baseExecutor, policy)
-
-      registry.registerTool(schema, safeExecutor)
-      registry
-    }
   }
 }
 

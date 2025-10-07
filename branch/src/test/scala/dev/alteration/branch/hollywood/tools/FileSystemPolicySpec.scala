@@ -3,11 +3,11 @@ package dev.alteration.branch.hollywood.tools
 import dev.alteration.branch.testkit.fixtures.FileFixtureSuite
 import java.nio.file.Files
 
-class SafeFileSystemExecutorSpec extends FileFixtureSuite {
+class FileSystemPolicySpec extends FileFixtureSuite {
 
   tmpDir.test("FileSystemPolicy should allow operations within sandbox") { dir =>
     val policy   = FileSystemPolicy(sandboxPath = Some(dir))
-    val registry = ToolRegistry().registerFileSystem(policy)
+    val registry = ToolRegistry().registerWithPolicy(policy)
 
     // Create a file within sandbox
     val testFile = dir.resolve("test.txt")
@@ -36,7 +36,7 @@ class SafeFileSystemExecutorSpec extends FileFixtureSuite {
   tmpDir.test("FileSystemPolicy should block operations outside sandbox") {
     dir =>
       val policy   = FileSystemPolicy(sandboxPath = Some(dir))
-      val registry = ToolRegistry().registerFileSystem(policy)
+      val registry = ToolRegistry().registerWithPolicy(policy)
 
       import dev.alteration.branch.friday.Json._
       val args = JsonObject(
@@ -64,7 +64,7 @@ class SafeFileSystemExecutorSpec extends FileFixtureSuite {
   tmpDir.test("FileSystemPolicy should block write operations when read-only") {
     dir =>
       val policy   = FileSystemPolicy(sandboxPath = Some(dir), readOnly = true)
-      val registry = ToolRegistry().registerFileSystem(policy)
+      val registry = ToolRegistry().registerWithPolicy(policy)
 
       import dev.alteration.branch.friday.Json._
       val args = JsonObject(
@@ -96,7 +96,7 @@ class SafeFileSystemExecutorSpec extends FileFixtureSuite {
         sandboxPath = Some(dir),
         blockedPatterns = List(".env", ".key")
       )
-      val registry = ToolRegistry().registerFileSystem(policy)
+      val registry = ToolRegistry().registerWithPolicy(policy)
 
       import dev.alteration.branch.friday.Json._
       val args = JsonObject(
@@ -127,7 +127,7 @@ class SafeFileSystemExecutorSpec extends FileFixtureSuite {
         sandboxPath = Some(dir),
         maxFileSize = 100 // 100 bytes
       )
-      val registry = ToolRegistry().registerFileSystem(policy)
+      val registry = ToolRegistry().registerWithPolicy(policy)
 
       import dev.alteration.branch.friday.Json._
       val largeContent = "x" * 200 // 200 bytes
@@ -157,7 +157,6 @@ class SafeFileSystemExecutorSpec extends FileFixtureSuite {
   tmpDir.test("FileSystemPolicy.strict should be read-only and sandboxed") {
     dir =>
       val policy   = FileSystemPolicy.strict(dir)
-      val registry = ToolRegistry().registerFileSystem(policy)
 
       assertEquals(policy.readOnly, true, "Strict policy should be read-only")
       assertEquals(
