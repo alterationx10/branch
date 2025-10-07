@@ -155,7 +155,7 @@ This document outlines planned tools to expand the Hollywood LLM agent toolkit.
 
 ### Phase 1: Core Utilities (Quick Wins)
 1. **HTTP Client Tool** ✅ **COMPLETED** - Generic REST API client (extends WebFetch)
-2. **File System Tool** - Read/write/list files with safety
+2. **File System Tool** ✅ **COMPLETED** - Read/write/list files with safety
 3. **Regex Tool** - Text extraction and pattern matching
 4. **Math/Calculator Tool** - Calculations and formula evaluation
 5. **JSON Query Tool** - Enhance existing JSON capabilities
