@@ -8,19 +8,38 @@ object Reference extends Parsers[Reference.Parser] {
   type Parser[+A] = Location => Result[A]
 
   def firstNonmatchingIndex(s1: String, s2: String, offset: Int): Int = {
-    var i = 0
-    while i + offset < s1.length && i < s2.length do {
-      if s1.charAt(i + offset) != s2.charAt(i) then return i
-      i += 1
-    }
-    if s1.length - offset >= s2.length then -1
-    else s1.length - offset
+    @scala.annotation.tailrec
+    def loop(i: Int): Int =
+      if i + offset >= s1.length || i >= s2.length then
+        if s1.length - offset >= s2.length then -1
+        else s1.length - offset
+      else if s1.charAt(i + offset) != s2.charAt(i) then i
+      else loop(i + 1)
+
+    loop(0)
   }
 
   override def string(s: String): Parser[String] = { l =>
     val i = firstNonmatchingIndex(l.input, s, l.offset)
     if i == -1 then Success(s, s.length)
-    else Failure(l.advanceBy(i).toError(s"'$s'"), i != 0)
+    else {
+      val found =
+        if l.offset + i < l.input.length then
+          s"found '${l.input.charAt(l.offset + i)}'"
+        else "found end of input"
+      Failure(l.advanceBy(i).toError(s"expected '$s', $found"), i != 0)
+    }
+  }
+
+  override def char(c: Char): Parser[Char] = { l =>
+    if l.offset < l.input.length && l.input.charAt(l.offset) == c then
+      Success(c, 1)
+    else {
+      val found =
+        if l.offset < l.input.length then s"found '${l.input.charAt(l.offset)}'"
+        else "found end of input"
+      Failure(l.toError(s"expected '$c', $found"), false)
+    }
   }
 
   override def succeed[A](a: A): Parser[A] =

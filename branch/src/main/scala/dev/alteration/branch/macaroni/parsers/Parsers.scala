@@ -9,11 +9,7 @@ trait Parsers[Parser[+_]] {
 
   def string(s: String): Parser[String]
 
-  def char(c: Char): Parser[Char] =
-    string(c.toString).map(_.charAt(0))
-
-  def defaultSucceed[A](a: A): Parser[A] =
-    string("").map(_ => a)
+  def char(c: Char): Parser[Char]
 
   def succeed[A](a: A): Parser[A]
 
@@ -54,6 +50,18 @@ trait Parsers[Parser[+_]] {
 
     def many1: Parser[List[A]] =
       p.map2(p.many)(_ :: _)
+
+    def skipMany: Parser[Unit] =
+      p.slice.many.as(())
+
+    def optional: Parser[Option[A]] =
+      p.map(Some(_)) | succeed(None)
+
+    def between[L, R](left: Parser[L], right: Parser[R]): Parser[A] =
+      left *> p <* right
+
+    def surround(delimiter: Parser[Any]): Parser[A] =
+      delimiter *> p <* delimiter
 
     def map[B](f: A => B): Parser[B] =
       p.flatMap(a => succeed(f(a)))

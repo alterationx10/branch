@@ -49,12 +49,14 @@ enum Json {
     case JsonNull           => "null"
     case JsonBool(value)    => value.toString
     case JsonNumber(value)  =>
-      if (value % 1 == 0) value.toInt.toString else value.toString
+      // Check if value is a whole number within safe integer range
+      if value.isWhole && value >= Int.MinValue && value <= Int.MaxValue then
+        value.toInt.toString
+      else if value.isWhole && value >= Long.MinValue && value <= Long.MaxValue
+      then value.toLong.toString
+      else value.toString
     case JsonString(value)  =>
-      value match {
-        case null => "null"
-        case _    => s""""${escapeString(value)}""""
-      }
+      s""""${escapeString(value)}""""
     case JsonArray(values)  => values.map(_.toJsonString).mkString("[", ",", "]")
     case JsonObject(values) =>
       values
@@ -63,17 +65,20 @@ enum Json {
   }
 
   private def escapeString(s: String): String = {
-    s.flatMap {
-      case '"'          => "\\\""
-      case '\\'         => "\\\\"
-      case '\b'         => "\\b"
-      case '\f'         => "\\f"
-      case '\n'         => "\\n"
-      case '\r'         => "\\r"
-      case '\t'         => "\\t"
-      case c if c < ' ' => f"\\u${c.toInt}%04x"
-      case c            => c.toString
+    if s == null then return "null"
+    val sb = new StringBuilder(s.length)
+    s.foreach {
+      case '"'          => sb.append("\\\"")
+      case '\\'         => sb.append("\\\\")
+      case '\b'         => sb.append("\\b")
+      case '\f'         => sb.append("\\f")
+      case '\n'         => sb.append("\\n")
+      case '\r'         => sb.append("\\r")
+      case '\t'         => sb.append("\\t")
+      case c if c < ' ' => sb.append(f"\\u${c.toInt}%04x")
+      case c            => sb.append(c)
     }
+    sb.toString
   }
 }
 
@@ -138,18 +143,31 @@ object Json {
     *   the encoded JSON object representing the throwable or [[JsonNull]] on
     *   failure
     */
-  def throwable[E <: Throwable](e: E): Json = Try {
-    Json.obj(
-      "message"    -> jsonOrNull(e.getMessage),
-      "cause"      -> Json.throwable(e.getCause),
-      "suppressed" -> JsonArray(
-        e.getSuppressed.toIndexedSeq.map(e => Json.throwable(e))
-      ),
-      "stackTrace" -> JsonArray(
-        e.getStackTrace.toIndexedSeq.map(e => Json.stackTraceElement(e))
-      )
-    )
-  }.getOrElse(JsonNull)
+  def throwable[E <: Throwable](e: E): Json = {
+    def throwableWithVisited(t: Throwable, visited: Set[Throwable]): Json = {
+      if t == null || visited.contains(t) then JsonNull
+      else
+        Try {
+          val newVisited = visited + t
+          Json.obj(
+            "message"    -> jsonOrNull(t.getMessage),
+            "cause"      -> throwableWithVisited(t.getCause, newVisited),
+            "suppressed" -> JsonArray(
+              t.getSuppressed.toIndexedSeq.map(ex =>
+                throwableWithVisited(ex, newVisited)
+              )
+            ),
+            "stackTrace" -> JsonArray(
+              t.getStackTrace.toIndexedSeq.map(ste =>
+                Json.stackTraceElement(ste)
+              )
+            )
+          )
+        }.getOrElse(JsonNull)
+    }
+
+    throwableWithVisited(e, Set.empty)
+  }
 
   extension (j: Json) {
 
