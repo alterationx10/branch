@@ -1,4 +1,4 @@
-package dev.alteration.branch.hollywood.api
+package dev.alteration.branch.hollywood.clients.completions
 
 import dev.alteration.branch.friday.{Json, JsonCodec, JsonDecoder, JsonEncoder}
 

@@ -1,6 +1,6 @@
 package dev.alteration.branch.hollywood.rag
 
-import dev.alteration.branch.hollywood.clients.EmbeddingClient
+import dev.alteration.branch.hollywood.clients.embeddings.EmbeddingClient
 import dev.alteration.branch.hollywood.rag.VectorStore
 
 class DocumentIndexer(

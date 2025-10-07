@@ -1,6 +1,9 @@
 package dev.alteration.branch.hollywood
 
-import dev.alteration.branch.hollywood.api.*
+import dev.alteration.branch.hollywood.clients.completions.{
+  ChatCompletionClient,
+  ChatMessage
+}
 import dev.alteration.branch.hollywood.tools.ToolRegistry
 
 /** A stateless agent that executes a single request-response cycle with fixed
@@ -22,8 +25,7 @@ import dev.alteration.branch.hollywood.tools.ToolRegistry
   */
 class OneShotAgent(
     systemPrompt: String,
-    requestHandler: ChatCompletionsRequest => ChatCompletionsResponse =
-      Agent.defaultHandler,
+    completionClient: ChatCompletionClient = ChatCompletionClient(),
     toolRegistry: Option[ToolRegistry] = None,
     maxTurns: Int = 10,
     model: String = "gpt-oss",
@@ -45,7 +47,7 @@ class OneShotAgent(
 
     val (response, _) = AgentConversationLoop.run(
       messages,
-      requestHandler,
+      completionClient,
       toolRegistry,
       maxTurns,
       model,
@@ -105,8 +107,7 @@ object OneShotAgent {
       taskDescription: String,
       inputFormat: Option[String] = None,
       outputFormat: Option[String] = None,
-      requestHandler: ChatCompletionsRequest => ChatCompletionsResponse =
-        Agent.defaultHandler,
+      completionClient: ChatCompletionClient = ChatCompletionClient(),
       toolRegistry: Option[ToolRegistry] = None,
       maxTurns: Int = 10,
       model: String = "gpt-oss"
@@ -117,7 +118,7 @@ object OneShotAgent {
       inputFormat,
       outputFormat
     )
-    OneShotAgent(systemPrompt, requestHandler, toolRegistry, maxTurns, model)
+    OneShotAgent(systemPrompt, completionClient, toolRegistry, maxTurns, model)
   }
 
   private def buildTaskSystemPrompt(

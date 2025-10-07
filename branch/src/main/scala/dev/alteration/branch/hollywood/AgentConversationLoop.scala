@@ -1,8 +1,8 @@
 package dev.alteration.branch.hollywood
 
-import dev.alteration.branch.hollywood.api.{
+import dev.alteration.branch.hollywood.clients.completions.{
+  ChatCompletionClient,
   ChatCompletionsRequest,
-  ChatCompletionsResponse,
   ChatMessage
 }
 import dev.alteration.branch.hollywood.tools.ToolRegistry
@@ -28,7 +28,7 @@ private[hollywood] object AgentConversationLoop {
     */
   def run(
       messages: List[ChatMessage],
-      requestHandler: ChatCompletionsRequest => ChatCompletionsResponse,
+      completionClient: ChatCompletionClient,
       toolRegistry: Option[ToolRegistry],
       maxTurns: Int,
       model: String,
@@ -49,7 +49,7 @@ private[hollywood] object AgentConversationLoop {
         model = model
       )
 
-      val response = requestHandler(request)
+      val response = completionClient.getCompletion(request)
       val choice   = response.choices.head
 
       // Get assistant's message

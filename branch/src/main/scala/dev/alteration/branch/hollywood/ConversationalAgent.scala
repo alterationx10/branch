@@ -1,15 +1,13 @@
 package dev.alteration.branch.hollywood
 
-import dev.alteration.branch.hollywood.api.{
-  ChatCompletionsRequest,
-  ChatCompletionsResponse,
+import dev.alteration.branch.hollywood.clients.completions.{
+  ChatCompletionClient,
   ChatMessage
 }
 import dev.alteration.branch.hollywood.tools.ToolRegistry
 
 class ConversationalAgent(
-    requestHandler: ChatCompletionsRequest => ChatCompletionsResponse =
-      Agent.defaultHandler,
+    completionClient: ChatCompletionClient = ChatCompletionClient(),
     toolRegistry: Option[ToolRegistry] = None,
     maxTurns: Int = 50,
     model: String = "gpt-oss",
@@ -25,7 +23,7 @@ class ConversationalAgent(
     // Run shared conversation loop
     val (response, updatedMessages) = AgentConversationLoop.run(
       currentMessages,
-      requestHandler,
+      completionClient,
       toolRegistry,
       maxTurns,
       model,
