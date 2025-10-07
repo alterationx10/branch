@@ -15,7 +15,10 @@ The docs (so far ™️) are on: https://branch.alteration.dev
 It's a fairly standard `sbt` project; download and open in IntelliJ IDEA, or Visual Studio Code/Your editor with Metals.
 
 Some tests use `testcontainers` to run tests, so you will need Docker running to be able to run those tests
-successfully.
+successfully. Test fixtures are available:
+
+- `HttpBinContainerSuite` - spins up an httpbin container for HTTP testing
+- `PGContainerSuite` - spins up a PostgreSQL container with configurable per-test or per-suite lifecycle
 
 The hollywood tests have a fixture to spin up llama-server, and are being tested against:
 `llama-server -hf ggml-org/gpt-oss-20b-GGUF --ctx-size 8192 --jinja -ub 2048 -b 2048 --embeddings --pooling mean`

@@ -61,11 +61,14 @@ as a tool within other agents.
 
 ```scala
 val agent = OneShotAgent(
-  systemPrompt = "You are a helpful assistant. Respond concisely."
+  systemPrompt = "You are a helpful assistant. Respond concisely.",
+  completionClient = ChatCompletionClient()
 )
 
 val response = agent.chat("What is 2+2?")
 ```
+
+The `completionClient` parameter defaults to `ChatCompletionClient()`, so it can be omitted for standard usage.
 
 #### Creating Task-Specific Agents
 
@@ -115,6 +118,7 @@ documentIndexer.indexDocuments(documents)
 
 // Create RAG agent
 val ragAgent = new RagAgent(
+  completionClient = ChatCompletionClient(),
   embeddingClient = embeddingClient,
   vectorStore = vectorStore,
   topK = 3,
