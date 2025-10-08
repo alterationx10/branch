@@ -10,6 +10,22 @@ It's a pretty early stage project and very much an evolving work-in-progress at 
 
 The docs (so far ™️) are on: https://branch.alteration.dev
 
+_Branch_ is made up of a collection of modules, each focusing on different parts:
+
+- **[Lzy](https://branch.alteration.dev/lzy)** - Lazy Futures or Tiny Effects?
+- **[Spider](https://branch.alteration.dev/spider)** - A wrapper/framework around the Java HttpServer, as well as
+  HttpClient helpers
+- **[Piggy](https://branch.alteration.dev/piggy)** - A SQL framework around java.sql
+- **[Friday](https://branch.alteration.dev/friday)** - A JSON library, because Scala doesn't already have enough
+- **[Macaroni](https://branch.alteration.dev/macaroni)** - Some reusable helpers and meta-programming utilities
+- **[Veil](https://branch.alteration.dev/veil)** - `.env` / (JSON based) Config utilities
+- **[Blammo](https://branch.alteration.dev/blammo)** - It's better than bad, it's (JSON) logging!
+- **[Keanu](https://branch.alteration.dev/keanu)** - A simple _typed_ EventBus implementation, and a mediocre _untyped_
+  ActorSystem
+- **[Ursula](https://branch.alteration.dev/ursula)** - A slim CLI framework
+- **[Mustachio](https://branch.alteration.dev/mustachio)** - A Mustache template engine, great for HTML templating
+- **[Holywood](https://branch.alteration.dev/hollywood)** - A library for LLM Agents, with local LLMs in mind
+
 ## Development
 
 It's a fairly standard `sbt` project; download and open in IntelliJ IDEA, or Visual Studio Code/Your editor with Metals.
