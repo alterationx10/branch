@@ -391,7 +391,7 @@ object Json {
 
     def value: Parser[Json] = literal | obj | array
 
-    (whitespace *> (obj | array)).root
+    (whitespace *> value).root
   }
 
   private val defaultParser: Reference.Parser[Json] =

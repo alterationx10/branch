@@ -19,7 +19,7 @@ trait Parsers[Parser[+_]] {
 
   def parseThruEscaped(s: String): Parser[String]
 
-  def whitespace: Parser[String] = regex("\\s*".r)
+  def whitespace: Parser[String] = regex("[ \\t\\r\\n]*".r)
 
   def digits: Parser[String] = regex("\\d+".r)
 
@@ -31,7 +31,7 @@ trait Parsers[Parser[+_]] {
     (string("\"") *> parseThruEscaped("\"").map(_.dropRight(1))).token
 
   def doubleString: Parser[String] =
-    regex("[-+]?([0-9]*\\.)?[0-9]+([eE][-+]?[0-9]+)?".r).token
+    regex("-?(0|[1-9][0-9]*)(\\.[0-9]+)?([eE][-+]?[0-9]+)?".r).token
 
   def double: Parser[Double] =
     doubleString.map(_.toDouble).label("double literal")

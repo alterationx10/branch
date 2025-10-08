@@ -142,7 +142,9 @@ class PiggyPostgresqlSpec extends PGContainerSuite {
   test("ResultSetParser - Instant") {
     given pool: PgConnectionPool = pgPool
 
-    val now  = Instant.now()
+    val now = Instant
+      .now()
+      .minusSeconds(1) // Help to avoid a race condition on fast tests
     val uuid = Sql.statement("SELECT now()", _.parsed[Instant]).executePool
     assert(uuid.isSuccess)
     assert(uuid.get.nonEmpty)

@@ -56,20 +56,43 @@ object Reference extends Parsers[Reference.Parser] {
   }
 
   override def parseThruEscaped(s: String): Parser[String] = { l =>
-    val remainingIterator = l.remaining.iterator
-    val sb: StringBuilder = new StringBuilder
-    var found             = false
-    while !found && remainingIterator.hasNext do {
+    val remainingIterator     = l.remaining.iterator
+    val sb: StringBuilder     = new StringBuilder
+    var found                 = false
+    var error: Option[String] = None
+
+    while !found && remainingIterator.hasNext && error.isEmpty do {
       remainingIterator.next() match {
-        case '\\' =>
+        case '\\'         =>
           sb.append('\\')
-          remainingIterator.nextOption().foreach(sb.append)
-        case c    =>
+          remainingIterator.nextOption() match {
+            case Some(c @ ('"' | '\\' | '/' | 'b' | 'f' | 'n' | 'r' | 't')) =>
+              sb.append(c)
+            case Some('u')                                                  =>
+              sb.append('u')
+              // Must be followed by exactly 4 hex digits
+              val hexChars =
+                (1 to 4).flatMap(_ => remainingIterator.nextOption())
+              if hexChars.length == 4 && hexChars.forall(c =>
+                  c.isDigit || "abcdefABCDEF".contains(c)
+                )
+              then hexChars.foreach(sb.append)
+              else error = Some("invalid unicode escape sequence")
+            case Some(c)                                                    =>
+              error = Some(s"invalid escape sequence: \\$c")
+            case None                                                       =>
+              error = Some("incomplete escape sequence")
+          }
+        case c if c < ' ' => // Control characters (0x00-0x1F) must be escaped
+          error = Some(s"unescaped control character in string")
+        case c            =>
           sb.append(c)
           found = sb.endsWith(s)
       }
     }
-    if found then Success(sb.result(), sb.length)
+
+    if error.isDefined then Failure(l.toError(error.get), false)
+    else if found then Success(sb.result(), sb.length)
     else Failure(l.toError(s"parseThruEscaped $s"), false)
   }
 
