@@ -2,8 +2,8 @@ package dev.alteration.branch.mustachio
 
 /** AST representation of a mustache template
   *
-  * This represents the parsed structure of a mustache template,
-  * separating parsing concerns from rendering.
+  * This represents the parsed structure of a mustache template, separating
+  * parsing concerns from rendering.
   */
 private[mustachio] enum MustachioAST {
 
@@ -36,10 +36,11 @@ private[mustachio] object MustachioAST {
 
   /** Flatten nested sequences for cleaner AST */
   def flatten(ast: MustachioAST): List[MustachioAST] = ast match {
-    case Sequence(elements) => elements.flatMap(flatten)
-    case Section(name, content) => List(Section(name, content.flatMap(flatten)))
-    case InvertedSection(name, content) => List(InvertedSection(name, content.flatMap(flatten)))
-    case other => List(other)
+    case Sequence(elements)             => elements.flatMap(flatten)
+    case Section(name, content)         => List(Section(name, content.flatMap(flatten)))
+    case InvertedSection(name, content) =>
+      List(InvertedSection(name, content.flatMap(flatten)))
+    case other                          => List(other)
   }
 
 }

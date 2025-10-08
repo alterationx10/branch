@@ -4,15 +4,18 @@ import MustachioAST.*
 
 /** Parser for mustache templates using a tokenize-then-build-AST approach
   *
-  * This provides a cleaner separation between lexical analysis (tokenizing)
-  * and syntax analysis (building the AST).
+  * This provides a cleaner separation between lexical analysis (tokenizing) and
+  * syntax analysis (building the AST).
   */
 private[mustachio] object MustachioParser {
 
   /** Parse a mustache template into an AST */
-  def parse(template: String, delimiter: Delimiter = Delimiter.default): List[MustachioAST] = {
+  def parse(
+      template: String,
+      delimiter: Delimiter = Delimiter.default
+  ): List[MustachioAST] = {
     val tokens = tokenize(template, delimiter)
-    val ast = buildAST(tokens)
+    val ast    = buildAST(tokens)
     ast
   }
 
@@ -27,12 +30,12 @@ private[mustachio] object MustachioParser {
     case DelimiterChange(open: String, close: String, lineInfo: LineInfo)
 
     def getLineInfo: LineInfo = this match {
-      case TextToken(_, li) => li
-      case VariableToken(_, _, li) => li
-      case SectionOpen(_, _, li) => li
-      case SectionClose(_, li) => li
-      case CommentToken(_, li) => li
-      case PartialToken(_, li) => li
+      case TextToken(_, li)          => li
+      case VariableToken(_, _, li)   => li
+      case SectionOpen(_, _, li)     => li
+      case SectionClose(_, li)       => li
+      case CommentToken(_, li)       => li
+      case PartialToken(_, li)       => li
       case DelimiterChange(_, _, li) => li
     }
   }
@@ -53,10 +56,17 @@ private[mustachio] object MustachioParser {
   import Token.*
 
   /** Tokenize a template into a list of tokens with line information */
-  private def tokenize(template: String, startDelimiter: Delimiter): List[Token] = {
+  private def tokenize(
+      template: String,
+      startDelimiter: Delimiter
+  ): List[Token] = {
     val tokens = scala.collection.mutable.ListBuffer[Token]()
 
-    def loop(remaining: String, delimiter: Delimiter, lineStart: Boolean): Unit = {
+    def loop(
+        remaining: String,
+        delimiter: Delimiter,
+        lineStart: Boolean
+    ): Unit = {
       if remaining.isEmpty then return
 
       val openIdx = remaining.indexOf(delimiter.open)
@@ -64,24 +74,36 @@ private[mustachio] object MustachioParser {
       if openIdx == -1 then {
         // No more tags
         if remaining.nonEmpty then
-          tokens += TextToken(remaining, LineInfo("", "", false, lineStart, true, true))
+          tokens += TextToken(
+            remaining,
+            LineInfo("", "", false, lineStart, true, true)
+          )
         return
       }
 
       // Capture text before tag
-      val precedingText = remaining.substring(0, openIdx)
-      val precedingLines = precedingText.reverse.takeWhile(_ != '\n').reverse
-      val hasNewlineInPreceding = precedingText.contains('\n') || precedingText.contains('\r')
-      val isTagFirstOnLine = (lineStart || hasNewlineInPreceding) && precedingLines.forall(_.isWhitespace)
+      val precedingText         = remaining.substring(0, openIdx)
+      val precedingLines        = precedingText.reverse.takeWhile(_ != '\n').reverse
+      val hasNewlineInPreceding =
+        precedingText.contains('\n') || precedingText.contains('\r')
+      val isTagFirstOnLine      =
+        (lineStart || hasNewlineInPreceding) && precedingLines.forall(
+          _.isWhitespace
+        )
 
       // We'll add the preceding text token later, after we know if this tag is standalone
       var precedingTextToken: Option[Token] = None
       if precedingText.nonEmpty then
-        precedingTextToken = Some(TextToken(precedingText, LineInfo("", "", false, lineStart, false, false)))
+        precedingTextToken = Some(
+          TextToken(
+            precedingText,
+            LineInfo("", "", false, lineStart, false, false)
+          )
+        )
 
       // Find closing delimiter
       val afterOpen = remaining.substring(openIdx + delimiter.open.length)
-      val closeIdx = afterOpen.indexOf(delimiter.close)
+      val closeIdx  = afterOpen.indexOf(delimiter.close)
 
       if closeIdx == -1 then
         throw new Exception(s"Unclosed tag at: ${remaining.take(50)}...")
@@ -91,7 +113,9 @@ private[mustachio] object MustachioParser {
 
       // Handle triple stache special case
       var skipExtraBrace = false
-      if delimiter.open == "{{" && tagContent.startsWith("{") && afterClose.startsWith("}") then {
+      if delimiter.open == "{{" && tagContent.startsWith("{") && afterClose
+          .startsWith("}")
+      then {
         skipExtraBrace = true
         afterClose = afterClose.substring(1)
       }
@@ -101,11 +125,12 @@ private[mustachio] object MustachioParser {
       val isTagLastOnLine = followingOnLine.forall(_.isWhitespace)
 
       var hasNewlineAfter = false
-      var newlineLength = 0
+      var newlineLength   = 0
       if afterClose.startsWith("\r\n") then {
         hasNewlineAfter = true
         newlineLength = 2
-      } else if afterClose.startsWith("\n") || afterClose.startsWith("\r") then {
+      } else if afterClose.startsWith("\n") || afterClose.startsWith("\r")
+      then {
         hasNewlineAfter = true
         newlineLength = 1
       }
@@ -130,8 +155,8 @@ private[mustachio] object MustachioParser {
               val withoutLastLine = content.dropRight(precedingLines.length)
               if withoutLastLine.nonEmpty then
                 tokens += TextToken(withoutLastLine, info)
-            case Some(token) => tokens += token
-            case None => ()
+            case Some(token)                    => tokens += token
+            case None                           => ()
           }
         } else {
           precedingTextToken.foreach(tokens += _)
@@ -139,7 +164,7 @@ private[mustachio] object MustachioParser {
       }
 
       // Parse tag content and create token
-      var skipNewline = false  // For standalone tags
+      var skipNewline = false // For standalone tags
 
       if tagContent.isEmpty then {
         // Skip empty tag - add preceding text as-is
@@ -153,14 +178,21 @@ private[mustachio] object MustachioParser {
 
           case '=' =>
             val delimContent = tagContent.tail.stripSuffix("=").trim
-            val parts = delimContent.split("\\s+")
+            val parts        = delimContent.split("\\s+")
             if parts.length == 2 then {
               addPrecedingText(lineInfo.isStandalone)
               // Don't add DelimiterChange token - it's handled during tokenization only
               skipNewline = lineInfo.isStandalone
               // Continue with new delimiter and skip newline if standalone
-              val nextPos = if skipNewline && newlineLength > 0 then afterClose.substring(newlineLength) else afterClose
-              loop(nextPos, Delimiter(parts(0), parts(1)), skipNewline || hasNewlineAfter)
+              val nextPos =
+                if skipNewline && newlineLength > 0 then
+                  afterClose.substring(newlineLength)
+                else afterClose
+              loop(
+                nextPos,
+                Delimiter(parts(0), parts(1)),
+                skipNewline || hasNewlineAfter
+              )
               return
             } else {
               throw new Exception(s"Invalid delimiter syntax: $tagContent")
@@ -192,7 +224,11 @@ private[mustachio] object MustachioParser {
 
           case '{' if delimiter.open == "{{" && skipExtraBrace =>
             precedingTextToken.foreach(tokens += _)
-            tokens += VariableToken(tagContent.tail.stripSuffix("}").trim, false, lineInfo)
+            tokens += VariableToken(
+              tagContent.tail.stripSuffix("}").trim,
+              false,
+              lineInfo
+            )
 
           case _ =>
             precedingTextToken.foreach(tokens += _)
@@ -201,7 +237,10 @@ private[mustachio] object MustachioParser {
       }
 
       // Skip newline for standalone tags
-      val nextPos = if skipNewline && newlineLength > 0 then afterClose.substring(newlineLength) else afterClose
+      val nextPos =
+        if skipNewline && newlineLength > 0 then
+          afterClose.substring(newlineLength)
+        else afterClose
       loop(nextPos, delimiter, skipNewline || hasNewlineAfter)
     }
 
@@ -216,7 +255,7 @@ private[mustachio] object MustachioParser {
         tokens: List[Token],
         inSection: Boolean = false
     ): (List[MustachioAST], List[Token]) = {
-      val result = scala.collection.mutable.ListBuffer[MustachioAST]()
+      val result    = scala.collection.mutable.ListBuffer[MustachioAST]()
       var remaining = tokens
 
       while remaining.nonEmpty do {
@@ -226,14 +265,13 @@ private[mustachio] object MustachioParser {
             remaining = remaining.tail
 
           case VariableToken(name, escape, _) =>
-            if escape then
-              result += Variable(name)
-            else
-              result += UnescapedVariable(name)
+            if escape then result += Variable(name)
+            else result += UnescapedVariable(name)
             remaining = remaining.tail
 
           case SectionOpen(name, inverted, openInfo) =>
-            val (sectionTokens, rest) = extractSectionTokens(name, remaining.tail)
+            val (sectionTokens, rest) =
+              extractSectionTokens(name, remaining.tail)
 
             // Check if closing tag exists
             val closeInfo = rest.headOption.collect {
@@ -249,10 +287,8 @@ private[mustachio] object MustachioParser {
 
             val (innerAST, _) = processTokens(cleanedTokens, inSection = true)
 
-            if inverted then
-              result += InvertedSection(name, innerAST)
-            else
-              result += Section(name, innerAST)
+            if inverted then result += InvertedSection(name, innerAST)
+            else result += Section(name, innerAST)
 
             remaining = rest.tail // Skip the closing tag
 
@@ -262,12 +298,12 @@ private[mustachio] object MustachioParser {
 
           case CommentToken(content, info) =>
             // Comments might need to be kept for standalone processing
-            if !info.isStandalone then
-              result += Comment(content)
+            if !info.isStandalone then result += Comment(content)
             remaining = remaining.tail
 
           case PartialToken(name, info) =>
-            val indentation = if info.isStandalone then info.precedingWhitespace else ""
+            val indentation =
+              if info.isStandalone then info.precedingWhitespace else ""
             result += Partial(name, indentation)
             remaining = remaining.tail
 
@@ -285,9 +321,9 @@ private[mustachio] object MustachioParser {
         name: String,
         tokens: List[Token]
     ): (List[Token], List[Token]) = {
-      val result = scala.collection.mutable.ListBuffer[Token]()
+      val result    = scala.collection.mutable.ListBuffer[Token]()
       var remaining = tokens
-      var depth = 0
+      var depth     = 0
 
       while remaining.nonEmpty do {
         remaining.head match {
@@ -297,8 +333,7 @@ private[mustachio] object MustachioParser {
             depth += 1
 
           case SectionClose(n, _) if n == name =>
-            if depth == 0 then
-              return (result.toList, remaining)
+            if depth == 0 then return (result.toList, remaining)
             else {
               result += remaining.head
               remaining = remaining.tail
@@ -316,15 +351,16 @@ private[mustachio] object MustachioParser {
 
     /** Handle standalone tag whitespace removal
       *
-      * Note: Newlines after standalone tags are already skipped during tokenization.
-      * This function only needs to handle whitespace before the closing tag.
+      * Note: Newlines after standalone tags are already skipped during
+      * tokenization. This function only needs to handle whitespace before the
+      * closing tag.
       */
     def handleStandaloneTags(
         tokens: List[Token],
         openInfo: LineInfo,
         closeInfo: Option[LineInfo]
     ): (List[Token], String) = {
-      var cleaned = tokens
+      var cleaned     = tokens
       var indentation = ""
 
       // Store indentation from opening tag for partials
@@ -334,7 +370,8 @@ private[mustachio] object MustachioParser {
 
       // Handle standalone closing tag - remove whitespace before the tag
       closeInfo match {
-        case Some(info) if info.isStandalone && info.precedingWhitespace.nonEmpty =>
+        case Some(info)
+            if info.isStandalone && info.precedingWhitespace.nonEmpty =>
           cleaned = cleaned.lastOption match {
             case Some(TextToken(content, tInfo)) =>
               // Remove trailing whitespace on the last line (before closing tag)
@@ -343,7 +380,7 @@ private[mustachio] object MustachioParser {
               if trimmed.isEmpty && cleaned.length == 1 then List.empty
               else if trimmed.isEmpty then cleaned.init
               else cleaned.init :+ TextToken(trimmed, tInfo)
-            case _ => cleaned
+            case _                               => cleaned
           }
         case _ => ()
       }

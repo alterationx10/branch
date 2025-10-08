@@ -4,18 +4,23 @@ import MustachioAST.*
 
 /** Renderer for Mustache AST
   *
-  * Takes a parsed AST and renders it with the given context,
-  * cleanly separating rendering logic from parsing.
+  * Takes a parsed AST and renders it with the given context, cleanly separating
+  * rendering logic from parsing.
   */
 private[mustachio] object MustachioRenderer {
 
   /** Render an AST to a string
     *
-    * @param ast The parsed AST elements
-    * @param context The root data context
-    * @param sectionContexts Stack of section contexts for nested lookups
-    * @param partials Available partial templates
-    * @return Rendered output string
+    * @param ast
+    *   The parsed AST elements
+    * @param context
+    *   The root data context
+    * @param sectionContexts
+    *   Stack of section contexts for nested lookups
+    * @param partials
+    *   Available partial templates
+    * @return
+    *   Rendered output string
     */
   def render(
       ast: List[MustachioAST],
@@ -49,10 +54,24 @@ private[mustachio] object MustachioRenderer {
       lookupField(name, context, sectionContexts, escape = false)
 
     case Section(name, content) =>
-      renderSection(name, content, inverted = false, context, sectionContexts, partials)
+      renderSection(
+        name,
+        content,
+        inverted = false,
+        context,
+        sectionContexts,
+        partials
+      )
 
     case InvertedSection(name, content) =>
-      renderSection(name, content, inverted = true, context, sectionContexts, partials)
+      renderSection(
+        name,
+        content,
+        inverted = true,
+        context,
+        sectionContexts,
+        partials
+      )
 
     case Comment(_) =>
       "" // Comments are not rendered
@@ -97,7 +116,7 @@ private[mustachio] object MustachioRenderer {
       .replace("&", "&amp;")
       .replace("<", "&lt;")
       .replace(">", "&gt;")
-      .replace("\"", "&quot;")
+      .replace("\\\"", "&quot;")
       .replace("'", "&#39;")
 
   /** Render a section (normal or inverted) */
@@ -115,7 +134,8 @@ private[mustachio] object MustachioRenderer {
         else render(content, context, ctx +: sectionContexts, partials)
 
       case Some(ctx @ Stache.Str("true")) =>
-        if !inverted then render(content, context, ctx +: sectionContexts, partials)
+        if !inverted then
+          render(content, context, ctx +: sectionContexts, partials)
         else ""
 
       case Some(Stache.Null) =>
@@ -150,7 +170,9 @@ private[mustachio] object MustachioRenderer {
             render(
               content,
               context,
-              sectionContexts.headOption.flatMap(_ ? name).get +: sectionContexts,
+              sectionContexts.headOption
+                .flatMap(_ ? name)
+                .get +: sectionContexts,
               partials
             )
           else ""
@@ -172,9 +194,10 @@ private[mustachio] object MustachioRenderer {
       case Some(Stache.Str(partialTemplate)) =>
         // Apply indentation to the template before parsing/rendering
         val indentedTemplate = if indentation.nonEmpty then {
-          partialTemplate.split("\n", -1).map(line =>
-            if line.isEmpty then line else indentation + line
-          ).mkString("\n")
+          partialTemplate
+            .split("\n", -1)
+            .map(line => if line.isEmpty then line else indentation + line)
+            .mkString("\n")
         } else {
           partialTemplate
         }
