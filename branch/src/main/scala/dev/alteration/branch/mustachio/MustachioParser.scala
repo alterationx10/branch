@@ -2,10 +2,7 @@ package dev.alteration.branch.mustachio
 
 import MustachioAST.*
 
-/** Parser for mustache templates using a tokenize-then-build-AST approach
-  *
-  * This provides a cleaner separation between lexical analysis (tokenizing) and
-  * syntax analysis (building the AST).
+/** Parser which tokenizes the template, and then builds a renderable AST
   */
 private[mustachio] object MustachioParser {
 
@@ -91,15 +88,14 @@ private[mustachio] object MustachioParser {
           _.isWhitespace
         )
 
-      // We'll add the preceding text token later, after we know if this tag is standalone
-      var precedingTextToken: Option[Token] = None
-      if precedingText.nonEmpty then
-        precedingTextToken = Some(
+      // We'll add the preceding text token later, if we know if this tag is standalone
+      val precedingTextToken: Option[Token] =
+        Some(
           TextToken(
             precedingText,
             LineInfo("", "", false, lineStart, false, false)
           )
-        )
+        ).filter(_ => precedingText.nonEmpty)
 
       // Find closing delimiter
       val afterOpen = remaining.substring(openIdx + delimiter.open.length)
