@@ -7,11 +7,8 @@ import MustachioAST.*
 private[mustachio] object MustachioParser {
 
   /** Parse a mustache template into an AST */
-  def parse(
-      template: String,
-      delimiter: Delimiter = Delimiter.default
-  ): List[MustachioAST] = {
-    val tokens = tokenize(template, delimiter)
+  def parse(template: String): List[MustachioAST] = {
+    val tokens = tokenize(template, Delimiter.default)
     val ast    = buildAST(tokens)
     ast
   }
