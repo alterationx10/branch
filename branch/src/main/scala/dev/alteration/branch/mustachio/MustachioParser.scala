@@ -248,8 +248,7 @@ private[mustachio] object MustachioParser {
   private def buildAST(tokens: List[Token]): List[MustachioAST] = {
 
     def processTokens(
-        tokens: List[Token],
-        inSection: Boolean = false
+        tokens: List[Token]
     ): (List[MustachioAST], List[Token]) = {
       val result    = scala.collection.mutable.ListBuffer[MustachioAST]()
       var remaining = tokens
@@ -275,13 +274,13 @@ private[mustachio] object MustachioParser {
             }
 
             // Handle standalone tags
-            val (cleanedTokens, indentation) = handleStandaloneTags(
+            val (cleanedTokens, _) = handleStandaloneTags(
               sectionTokens,
               openInfo,
               closeInfo
             )
 
-            val (innerAST, _) = processTokens(cleanedTokens, inSection = true)
+            val (innerAST, _) = processTokens(cleanedTokens)
 
             if inverted then result += InvertedSection(name, innerAST)
             else result += Section(name, innerAST)
