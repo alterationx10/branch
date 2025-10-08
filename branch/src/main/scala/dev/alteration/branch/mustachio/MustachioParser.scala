@@ -88,14 +88,13 @@ private[mustachio] object MustachioParser {
           _.isWhitespace
         )
 
-      // We'll add the preceding text token later, if we know if this tag is standalone
       val precedingTextToken: Option[Token] =
         Some(
           TextToken(
             precedingText,
             LineInfo("", "", false, lineStart, false, false)
           )
-        ).filter(_ => precedingText.nonEmpty)
+        ).filter(_ => precedingText.nonEmpty) // Only if non-empty
 
       // Find closing delimiter
       val afterOpen = remaining.substring(openIdx + delimiter.open.length)
