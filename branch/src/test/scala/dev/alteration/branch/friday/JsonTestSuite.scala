@@ -24,13 +24,16 @@ trait JsonTestSuite extends FunSuite {
     */
   def testForPrefix(
       prefix: String,
-      assertion: Either[ParseError, Json] => Boolean
+      assertion: Either[ParseError, Json] => Boolean,
+      ignoreFile: String => Boolean = _ => false
   ): Unit = {
     jsonResources.filter(_.startsWith(prefix)).foreach { j =>
-      val json = loadJson(j)
-      test(j) {
-        val parsed = Json.parse(json)
-        assert(assertion(parsed), parsed.toString)
+      if (!ignoreFile(j)) {
+        val json = loadJson(j)
+        test(j) {
+          val parsed = Json.parse(json)
+          assert(assertion(parsed), parsed.toString)
+        }
       }
     }
   }
