@@ -2,6 +2,9 @@ package dev.alteration.branch.hollywood
 
 import dev.alteration.branch.hollywood.clients.embeddings.EmbeddingClient
 import dev.alteration.branch.hollywood.rag.{
+  ChunkConfig,
+  ChunkStrategy,
+  DocumentChunker,
   DocumentIndexer,
   InMemoryVectorStore
 }
@@ -126,5 +129,69 @@ class RagAgentSpec extends LlamaServerFixture {
     val results = vectorStore.search(queryEmbedding, topK = 2)
     assert(results.size <= 2)
     assert(results.nonEmpty)
+  }
+
+  test("DocumentChunker should integrate with RAG pipeline for long documents") {
+    val vectorStore     = new InMemoryVectorStore()
+    val embeddingClient = new EmbeddingClient()
+
+    val ragAgent = new RagAgent(
+      embeddingClient = embeddingClient,
+      vectorStore = vectorStore,
+      topK = 3,
+      maxTurns = 10
+    )
+
+    // Long document about different topics
+    val longDocument = """Scala is a powerful programming language that combines object-oriented
+      |and functional programming paradigms. It was designed by Martin Odersky and first
+      |released in 2003. Scala runs on the Java Virtual Machine and provides seamless
+      |interoperability with Java libraries.
+      |
+      |The functional programming features in Scala include immutable data structures,
+      |higher-order functions, pattern matching, and algebraic data types. These features
+      |enable developers to write concise, maintainable code that is less prone to bugs.
+      |
+      |Scala's type system is one of its strongest features. It includes type inference,
+      |generics, variance annotations, and implicit conversions. The compiler performs
+      |sophisticated type checking at compile time, catching many errors before runtime.""".stripMargin
+
+    // Configure chunker for paragraph-based chunking
+    val chunkConfig = ChunkConfig(
+      strategy = ChunkStrategy.Paragraph,
+      chunkSize = 1,
+      overlap = 0,
+      minChunkSize = 50
+    )
+
+    // Chunk the document
+    val chunkResult = DocumentChunker.chunk(longDocument, chunkConfig)
+
+    assert(chunkResult.isRight, "Chunking should succeed")
+
+    chunkResult.foreach { result =>
+      // Index each chunk separately with unique IDs
+      result.chunks.foreach { chunk =>
+        val embedding = embeddingClient.getEmbedding(chunk.content)
+        vectorStore.add(
+          s"scala-doc-chunk-${chunk.index}",
+          chunk.content,
+          embedding
+        )
+      }
+
+      // Verify chunks were created
+      assert(result.totalChunks == 3, s"Expected 3 chunks, got ${result.totalChunks}")
+    }
+
+    // Query for specific information from different chunks
+    val answer = ragAgent.chat("What are Scala's functional programming features?")
+    println(answer)
+    assert(answer.nonEmpty)
+
+    // Verify the chunked document can be retrieved
+    val chunk0 = vectorStore.get("scala-doc-chunk-0")
+    assert(chunk0.isDefined)
+    assert(chunk0.get.content.contains("Scala"))
   }
 }
