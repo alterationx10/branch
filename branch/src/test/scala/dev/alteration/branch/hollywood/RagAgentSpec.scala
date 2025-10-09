@@ -167,21 +167,26 @@ class RagAgentSpec extends LlamaServerFixture {
     // Chunk the document
     val chunkResult = DocumentChunker.chunk(longDocument, chunkConfig)
 
-    // Index each chunk separately with unique IDs
-    chunkResult.chunks.foreach { chunk =>
-      val embedding = embeddingClient.getEmbedding(chunk.content)
-      vectorStore.add(
-        s"scala-doc-chunk-${chunk.index}",
-        chunk.content,
-        embedding
-      )
-    }
+    assert(chunkResult.isRight, "Chunking should succeed")
 
-    // Verify chunks were created
-    assert(chunkResult.totalChunks == 3, s"Expected 3 chunks, got ${chunkResult.totalChunks}")
+    chunkResult.foreach { result =>
+      // Index each chunk separately with unique IDs
+      result.chunks.foreach { chunk =>
+        val embedding = embeddingClient.getEmbedding(chunk.content)
+        vectorStore.add(
+          s"scala-doc-chunk-${chunk.index}",
+          chunk.content,
+          embedding
+        )
+      }
+
+      // Verify chunks were created
+      assert(result.totalChunks == 3, s"Expected 3 chunks, got ${result.totalChunks}")
+    }
 
     // Query for specific information from different chunks
     val answer = ragAgent.chat("What are Scala's functional programming features?")
+    println(answer)
     assert(answer.nonEmpty)
 
     // Verify the chunked document can be retrieved

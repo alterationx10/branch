@@ -23,8 +23,11 @@ Final thoughts go here. The end."""
     )
     val result = DocumentChunker.chunk(sampleText, config)
 
-    assert(result.totalChunks > 0, "Should create chunks")
-    assert(result.chunks.forall(_.content.nonEmpty), "All chunks should have content")
+    assert(result.isRight, "Should succeed")
+    result.foreach { r =>
+      assert(r.totalChunks > 0, "Should create chunks")
+      assert(r.chunks.forall(_.content.nonEmpty), "All chunks should have content")
+    }
   }
 
   test("DocumentChunker should chunk by sentence with overlap") {
@@ -35,7 +38,10 @@ Final thoughts go here. The end."""
     )
     val result = DocumentChunker.chunk(sampleText, config)
 
-    assert(result.totalChunks > 0, "Should create chunks with overlap")
+    assert(result.isRight, "Should succeed")
+    result.foreach { r =>
+      assert(r.totalChunks > 0, "Should create chunks with overlap")
+    }
   }
 
   test("DocumentChunker should chunk by paragraph") {
@@ -45,7 +51,10 @@ Final thoughts go here. The end."""
     )
     val result = DocumentChunker.chunk(sampleParagraphs, config)
 
-    assertEquals(result.totalChunks, 3, "Should create 3 paragraph chunks")
+    assert(result.isRight, "Should succeed")
+    result.foreach { r =>
+      assertEquals(r.totalChunks, 3, "Should create 3 paragraph chunks")
+    }
   }
 
   test("DocumentChunker should chunk by paragraph with overlap") {
@@ -56,7 +65,10 @@ Final thoughts go here. The end."""
     )
     val result = DocumentChunker.chunk(sampleParagraphs, config)
 
-    assert(result.totalChunks > 0, "Should create chunks with overlap")
+    assert(result.isRight, "Should succeed")
+    result.foreach { r =>
+      assert(r.totalChunks > 0, "Should create chunks with overlap")
+    }
   }
 
   test("DocumentChunker should chunk by character count") {
@@ -66,8 +78,11 @@ Final thoughts go here. The end."""
     )
     val result = DocumentChunker.chunk("A" * 1000, config)
 
-    assert(result.totalChunks > 0, "Should create character-based chunks")
-    assert(result.maxSize <= 100, "Chunks should respect size limit")
+    assert(result.isRight, "Should succeed")
+    result.foreach { r =>
+      assert(r.totalChunks > 0, "Should create character-based chunks")
+      assert(r.maxSize <= 100, "Chunks should respect size limit")
+    }
   }
 
   test("DocumentChunker should chunk by character count with overlap") {
@@ -78,7 +93,10 @@ Final thoughts go here. The end."""
     )
     val result = DocumentChunker.chunk("A" * 500, config)
 
-    assert(result.totalChunks > 0, "Should create chunks with overlap")
+    assert(result.isRight, "Should succeed")
+    result.foreach { r =>
+      assert(r.totalChunks > 0, "Should create chunks with overlap")
+    }
   }
 
   test("DocumentChunker should chunk by token count") {
@@ -88,7 +106,10 @@ Final thoughts go here. The end."""
     )
     val result = DocumentChunker.chunk(sampleText, config)
 
-    assert(result.totalChunks > 0, "Should create token-based chunks")
+    assert(result.isRight, "Should succeed")
+    result.foreach { r =>
+      assert(r.totalChunks > 0, "Should create token-based chunks")
+    }
   }
 
   test("DocumentChunker should chunk by token count with overlap") {
@@ -99,7 +120,10 @@ Final thoughts go here. The end."""
     )
     val result = DocumentChunker.chunk(sampleText, config)
 
-    assert(result.totalChunks > 0, "Should create chunks with overlap")
+    assert(result.isRight, "Should succeed")
+    result.foreach { r =>
+      assert(r.totalChunks > 0, "Should create chunks with overlap")
+    }
   }
 
   test("DocumentChunker should respect minimum chunk size") {
@@ -110,7 +134,10 @@ Final thoughts go here. The end."""
     )
     val result = DocumentChunker.chunk("Short. Text. Here.", config)
 
-    assert(result.chunks.forall(_.size >= 20), "All chunks should meet minimum size")
+    assert(result.isRight, "Should succeed")
+    result.foreach { r =>
+      assert(r.chunks.forall(_.size >= 20), "All chunks should meet minimum size")
+    }
   }
 
   test("DocumentChunker should handle empty text") {
@@ -120,7 +147,10 @@ Final thoughts go here. The end."""
     )
     val result = DocumentChunker.chunk("", config)
 
-    assertEquals(result.totalChunks, 0, "Should produce no chunks for empty text")
+    assert(result.isRight, "Should succeed")
+    result.foreach { r =>
+      assertEquals(r.totalChunks, 0, "Should produce no chunks for empty text")
+    }
   }
 
   test("DocumentChunker should handle whitespace-only text") {
@@ -130,44 +160,63 @@ Final thoughts go here. The end."""
     )
     val result = DocumentChunker.chunk("   \n\n   \t  ", config)
 
-    assertEquals(result.totalChunks, 0, "Should produce no chunks for whitespace")
-  }
-
-  test("ChunkConfig should fail with negative chunk size") {
-    intercept[IllegalArgumentException] {
-      ChunkConfig(
-        strategy = ChunkStrategy.Sentence,
-        chunkSize = -1
-      )
+    assert(result.isRight, "Should succeed")
+    result.foreach { r =>
+      assertEquals(r.totalChunks, 0, "Should produce no chunks for whitespace")
     }
   }
 
-  test("ChunkConfig should fail with zero chunk size") {
-    intercept[IllegalArgumentException] {
-      ChunkConfig(
-        strategy = ChunkStrategy.Sentence,
-        chunkSize = 0
-      )
+  test("DocumentChunker should fail with negative chunk size") {
+    val config = ChunkConfig(
+      strategy = ChunkStrategy.Sentence,
+      chunkSize = -1
+    )
+    val result = DocumentChunker.chunk("test", config)
+
+    assert(result.isLeft, "Should fail validation")
+    result.left.foreach { error =>
+      assert(error.contains("chunkSize must be positive"), s"Got error: $error")
     }
   }
 
-  test("ChunkConfig should fail with negative overlap") {
-    intercept[IllegalArgumentException] {
-      ChunkConfig(
-        strategy = ChunkStrategy.Sentence,
-        chunkSize = 5,
-        overlap = -1
-      )
+  test("DocumentChunker should fail with zero chunk size") {
+    val config = ChunkConfig(
+      strategy = ChunkStrategy.Sentence,
+      chunkSize = 0
+    )
+    val result = DocumentChunker.chunk("test", config)
+
+    assert(result.isLeft, "Should fail validation")
+    result.left.foreach { error =>
+      assert(error.contains("chunkSize must be positive"), s"Got error: $error")
     }
   }
 
-  test("ChunkConfig should fail with overlap >= chunk size") {
-    intercept[IllegalArgumentException] {
-      ChunkConfig(
-        strategy = ChunkStrategy.Sentence,
-        chunkSize = 5,
-        overlap = 5
-      )
+  test("DocumentChunker should fail with negative overlap") {
+    val config = ChunkConfig(
+      strategy = ChunkStrategy.Sentence,
+      chunkSize = 5,
+      overlap = -1
+    )
+    val result = DocumentChunker.chunk("test", config)
+
+    assert(result.isLeft, "Should fail validation")
+    result.left.foreach { error =>
+      assert(error.contains("overlap must be non-negative"), s"Got error: $error")
+    }
+  }
+
+  test("DocumentChunker should fail with overlap >= chunk size") {
+    val config = ChunkConfig(
+      strategy = ChunkStrategy.Sentence,
+      chunkSize = 5,
+      overlap = 5
+    )
+    val result = DocumentChunker.chunk("test", config)
+
+    assert(result.isLeft, "Should fail validation")
+    result.left.foreach { error =>
+      assert(error.contains("overlap must be less than chunkSize"), s"Got error: $error")
     }
   }
 
@@ -178,7 +227,10 @@ Final thoughts go here. The end."""
     )
     val result = DocumentChunker.chunk("This is a single sentence.", config)
 
-    assertEquals(result.totalChunks, 1, "Should create 1 chunk")
+    assert(result.isRight, "Should succeed")
+    result.foreach { r =>
+      assertEquals(r.totalChunks, 1, "Should create 1 chunk")
+    }
   }
 
   test("DocumentChunker should handle text without sentence terminators") {
@@ -188,7 +240,10 @@ Final thoughts go here. The end."""
     )
     val result = DocumentChunker.chunk("This is text without proper punctuation", config)
 
-    assert(result.totalChunks >= 0, "Should handle text without terminators")
+    assert(result.isRight, "Should succeed")
+    result.foreach { r =>
+      assert(r.totalChunks >= 0, "Should handle text without terminators")
+    }
   }
 
   test("DocumentChunker should detect multiple sentence types") {
@@ -199,7 +254,10 @@ Final thoughts go here. The end."""
     )
     val result = DocumentChunker.chunk(mixedText, config)
 
-    assert(result.totalChunks >= 3, "Should detect all sentence types")
+    assert(result.isRight, "Should succeed")
+    result.foreach { r =>
+      assert(r.totalChunks >= 3, "Should detect all sentence types")
+    }
   }
 
   test("DocumentChunker should provide chunk statistics") {
@@ -209,11 +267,14 @@ Final thoughts go here. The end."""
     )
     val result = DocumentChunker.chunk(sampleText, config)
 
-    assert(result.avgSize > 0, "Should calculate average size")
-    assert(result.minSize > 0, "Should calculate min size")
-    assert(result.maxSize > 0, "Should calculate max size")
-    assert(result.minSize <= result.avgSize, "Min should be <= avg")
-    assert(result.avgSize <= result.maxSize, "Avg should be <= max")
+    assert(result.isRight, "Should succeed")
+    result.foreach { r =>
+      assert(r.avgSize > 0, "Should calculate average size")
+      assert(r.minSize > 0, "Should calculate min size")
+      assert(r.maxSize > 0, "Should calculate max size")
+      assert(r.minSize <= r.avgSize, "Min should be <= avg")
+      assert(r.avgSize <= r.maxSize, "Avg should be <= max")
+    }
   }
 
   test("DocumentChunker should index chunks sequentially") {
@@ -223,8 +284,11 @@ Final thoughts go here. The end."""
     )
     val result = DocumentChunker.chunk(sampleText, config)
 
-    val indices = result.chunks.map(_.index)
-    assertEquals(indices, (0 until result.totalChunks).toList, "Chunks should be indexed 0, 1, 2, ...")
+    assert(result.isRight, "Should succeed")
+    result.foreach { r =>
+      val indices = r.chunks.map(_.index)
+      assertEquals(indices, (0 until r.totalChunks).toList, "Chunks should be indexed 0, 1, 2, ...")
+    }
   }
 
   test("DocumentChunker should handle real-world document") {
@@ -252,7 +316,10 @@ can be trained on large amounts of data to recognize patterns and make predictio
     )
     val result = DocumentChunker.chunk(document, config)
 
-    assertEquals(result.totalChunks, 3, "Should create 3 paragraph chunks")
+    assert(result.isRight, "Should succeed")
+    result.foreach { r =>
+      assertEquals(r.totalChunks, 3, "Should create 3 paragraph chunks")
+    }
   }
 
   test("DocumentChunker should handle document with varied sentence lengths") {
@@ -266,7 +333,10 @@ how the chunker handles sentences of varying lengths and complexities."""
     )
     val result = DocumentChunker.chunk(variedText, config)
 
-    assert(result.maxSize > result.minSize, "Should show size variation")
+    assert(result.isRight, "Should succeed")
+    result.foreach { r =>
+      assert(r.maxSize > r.minSize, "Should show size variation")
+    }
   }
 
   test("DocumentChunker chunks should have correct size property") {
@@ -276,8 +346,11 @@ how the chunker handles sentences of varying lengths and complexities."""
     )
     val result = DocumentChunker.chunk(sampleText, config)
 
-    result.chunks.foreach { chunk =>
-      assertEquals(chunk.size, chunk.content.length, "Chunk size should match content length")
+    assert(result.isRight, "Should succeed")
+    result.foreach { r =>
+      r.chunks.foreach { chunk =>
+        assertEquals(chunk.size, chunk.content.length, "Chunk size should match content length")
+      }
     }
   }
 
@@ -289,13 +362,16 @@ how the chunker handles sentences of varying lengths and complexities."""
     )
     val result = DocumentChunker.chunk(sampleParagraphs, config)
 
-    // Each chunk could be indexed separately
-    val documentsToIndex = result.chunks.map { chunk =>
-      (s"doc-${chunk.index}", chunk.content)
-    }
+    assert(result.isRight, "Should succeed")
+    result.foreach { r =>
+      // Each chunk could be indexed separately
+      val documentsToIndex = r.chunks.map { chunk =>
+        (s"doc-${chunk.index}", chunk.content)
+      }
 
-    assertEquals(documentsToIndex.size, result.totalChunks, "Should create indexable documents")
-    assert(documentsToIndex.forall(_._2.nonEmpty), "All documents should have content")
+      assertEquals(documentsToIndex.size, r.totalChunks, "Should create indexable documents")
+      assert(documentsToIndex.forall(_._2.nonEmpty), "All documents should have content")
+    }
   }
 
   test("ChunkResult statistics should be zero for empty result") {
