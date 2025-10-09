@@ -26,6 +26,16 @@ sealed trait Lazy[+A] {
   final def flatten[B](using ev: A <:< Lazy[B]): Lazy[B] =
     this.flatMap(a => ev(a))
 
+  /** Zip two Lazy values into a tuple.
+    */
+  final def zip[B](that: Lazy[B]): Lazy[(A, B)] =
+    this.flatMap(a => that.map(b => (a, b)))
+
+  /** Zip two Lazy values and apply a function to the results.
+    */
+  final def zipWith[B, C](that: Lazy[B])(f: (A, B) => C): Lazy[C] =
+    this.zip(that).map { case (a, b) => f(a, b) }
+
   /** If the Lazy fails, attempt to recover with the provided function.
     */
   final def recover[B >: A](f: Throwable => Lazy[B]): Lazy[B] =

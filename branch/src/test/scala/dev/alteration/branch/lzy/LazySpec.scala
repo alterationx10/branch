@@ -50,6 +50,38 @@ class LazySpec extends LoggerFixtureSuite {
     } yield assertEquals(l, "abc")
   }
 
+  test("Lazy.zip") {
+    for {
+      l <- Lazy.fn(42).zip(Lazy.fn("abc"))
+    } yield assertEquals(l, (42, "abc"))
+  }
+
+  test("Lazy.zipWith") {
+    for {
+      l <- Lazy.fn(40).zipWith(Lazy.fn(2))(_ + _)
+    } yield assertEquals(l, 42)
+  }
+
+  test("Lazy.zip with error in first") {
+    val result = Lazy
+      .fail[Int](new Exception("error"))
+      .zip(Lazy.fn("abc"))
+      .runSync()
+
+    assert(result.isFailure)
+    assertEquals(result.failed.get.getMessage, "error")
+  }
+
+  test("Lazy.zip with error in second") {
+    val result = Lazy
+      .fn(42)
+      .zip(Lazy.fail[String](new Exception("error")))
+      .runSync()
+
+    assert(result.isFailure)
+    assertEquals(result.failed.get.getMessage, "error")
+  }
+
   test("Lazy.recover") {
     for {
       l <- Lazy.fail(new Exception("error")).recover(_ => Lazy.fn("abc"))

@@ -285,6 +285,12 @@ for {
 Lazy.fn(40)
   .flatMap(a => Lazy.fn(2).map(b => a + b))
   .tap(sum => Lazy.logInfo(s"Sum is $sum"))
+
+// Zip two Lazy values together
+Lazy.fn(40).zip(Lazy.fn(2)) // Lazy[(Int, Int)]
+
+// Zip with a combining function
+Lazy.fn(40).zipWith(Lazy.fn(2))(_ + _) // Lazy[Int]
 ```
 
 ## Running Lazy Values
