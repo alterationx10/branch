@@ -289,8 +289,18 @@ Work with collections efficiently:
 // Iterate over collections
 Lazy.iterate(Iterator(1, 2, 3))(List.newBuilder[Int])(_ => Lazy.fn(1))
 
-// Process each element
+// Process each element (traverse)
 Lazy.forEach(List(1, 2, 3))(n => Lazy.fn(n * 2))
+// or use the traverse alias
+Lazy.traverse(List(1, 2, 3))(n => Lazy.fn(n * 2))
+
+// Sequence a collection of Lazy values
+val lazyList: List[Lazy[Int]] = List(Lazy.fn(1), Lazy.fn(2), Lazy.fn(3))
+Lazy.sequence(lazyList) // Lazy[List[Int]]
+
+// Works with various collection types
+Lazy.sequence(Vector(Lazy.fn("a"), Lazy.fn("b"))) // Lazy[Vector[String]]
+Lazy.traverse(Set(1, 2, 3))(x => Lazy.fn(x.toString)) // Lazy[Set[String]]
 ```
 
 ### Composing Operations

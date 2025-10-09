@@ -234,6 +234,69 @@ class LazySpec extends LoggerFixtureSuite {
     } yield assertEquals(l.sum, 15)
   }
 
+  test("Lazy.sequence - List") {
+    for {
+      result <- Lazy.sequence(List(Lazy.fn(1), Lazy.fn(2), Lazy.fn(3)))
+    } yield assertEquals(result, List(1, 2, 3))
+  }
+
+  test("Lazy.sequence - Vector") {
+    for {
+      result <- Lazy.sequence(Vector(Lazy.fn("a"), Lazy.fn("b"), Lazy.fn("c")))
+    } yield assertEquals(result, Vector("a", "b", "c"))
+  }
+
+  test("Lazy.sequence - Set") {
+    for {
+      result <- Lazy.sequence(Set(Lazy.fn(1), Lazy.fn(2), Lazy.fn(3)))
+    } yield assertEquals(result, Set(1, 2, 3))
+  }
+
+  test("Lazy.sequence - Array") {
+    for {
+      result <- Lazy.sequence(Array(Lazy.fn(1), Lazy.fn(2), Lazy.fn(3)))
+    } yield assertEquals(result.toList, List(1, 2, 3))
+  }
+
+  test("Lazy.sequence - empty List") {
+    for {
+      result <- Lazy.sequence(List.empty[Lazy[Int]])
+    } yield assertEquals(result, List.empty[Int])
+  }
+
+  test("Lazy.sequence - with error") {
+    val result = Lazy
+      .sequence(List(Lazy.fn(1), Lazy.fail[Int](new Exception("error")), Lazy.fn(3)))
+      .runSync()
+
+    assert(result.isFailure)
+    assertEquals(result.failed.get.getMessage, "error")
+  }
+
+  test("Lazy.traverse - List") {
+    for {
+      result <- Lazy.traverse(List(1, 2, 3))(x => Lazy.fn(x * 2))
+    } yield assertEquals(result, List(2, 4, 6))
+  }
+
+  test("Lazy.traverse - Vector") {
+    for {
+      result <- Lazy.traverse(Vector("a", "b", "c"))(s => Lazy.fn(s.toUpperCase))
+    } yield assertEquals(result, Vector("A", "B", "C"))
+  }
+
+  test("Lazy.traverse - Set") {
+    for {
+      result <- Lazy.traverse(Set(1, 2, 3))(x => Lazy.fn(x.toString))
+    } yield assertEquals(result, Set("1", "2", "3"))
+  }
+
+  test("Lazy.traverse - Array") {
+    for {
+      result <- Lazy.traverse(Array(1, 2, 3))(x => Lazy.fn(x * 2))
+    } yield assertEquals(result.toList, List(2, 4, 6))
+  }
+
   test("Lazy.now") {
     for {
       l <- Lazy.now()

@@ -301,6 +301,70 @@ object Lazy {
   def forEach[A, B: ClassTag](arr: Array[A])(f: A => Lazy[B]): Lazy[Array[B]] =
     iterate(arr.iterator)(Array.newBuilder[B])(f)
 
+  /** Sequence a List of Lazy values into a Lazy List of values.
+    *
+    * Executes all Lazy computations sequentially, collecting results.
+    */
+  def sequence[A](list: List[Lazy[A]]): Lazy[List[A]] =
+    iterate(list.iterator)(List.newBuilder[A])(identity)
+
+  /** Sequence a Vector of Lazy values into a Lazy Vector of values.
+    */
+  def sequence[A](vec: Vector[Lazy[A]]): Lazy[Vector[A]] =
+    iterate(vec.iterator)(Vector.newBuilder[A])(identity)
+
+  /** Sequence a Seq of Lazy values into a Lazy Seq of values.
+    */
+  def sequence[A](seq: Seq[Lazy[A]]): Lazy[Seq[A]] =
+    iterate(seq.iterator)(Seq.newBuilder[A])(identity)
+
+  /** Sequence an IndexedSeq of Lazy values into a Lazy IndexedSeq of values.
+    */
+  def sequence[A](seq: IndexedSeq[Lazy[A]]): Lazy[IndexedSeq[A]] =
+    iterate(seq.iterator)(IndexedSeq.newBuilder[A])(identity)
+
+  /** Sequence a Set of Lazy values into a Lazy Set of values.
+    */
+  def sequence[A](set: Set[Lazy[A]]): Lazy[Set[A]] =
+    iterate(set.iterator)(Set.newBuilder[A])(identity)
+
+  /** Sequence an Array of Lazy values into a Lazy Array of values.
+    */
+  def sequence[A: ClassTag](arr: Array[Lazy[A]]): Lazy[Array[A]] =
+    iterate(arr.iterator)(Array.newBuilder[A])(identity)
+
+  /** Traverse a List with a function that returns Lazy values.
+    *
+    * Alias for forEach that follows standard functional programming naming.
+    */
+  def traverse[A, B](list: List[A])(f: A => Lazy[B]): Lazy[List[B]] =
+    forEach(list)(f)
+
+  /** Traverse a Vector with a function that returns Lazy values.
+    */
+  def traverse[A, B](vec: Vector[A])(f: A => Lazy[B]): Lazy[Vector[B]] =
+    forEach(vec)(f)
+
+  /** Traverse a Seq with a function that returns Lazy values.
+    */
+  def traverse[A, B](seq: Seq[A])(f: A => Lazy[B]): Lazy[Seq[B]] =
+    forEach(seq)(f)
+
+  /** Traverse an IndexedSeq with a function that returns Lazy values.
+    */
+  def traverse[A, B](seq: IndexedSeq[A])(f: A => Lazy[B]): Lazy[IndexedSeq[B]] =
+    forEach(seq)(f)
+
+  /** Traverse a Set with a function that returns Lazy values.
+    */
+  def traverse[A, B](set: Set[A])(f: A => Lazy[B]): Lazy[Set[B]] =
+    forEach(set)(f)
+
+  /** Traverse an Array with a function that returns Lazy values.
+    */
+  def traverse[A, B: ClassTag](arr: Array[A])(f: A => Lazy[B]): Lazy[Array[B]] =
+    forEach(arr)(f)
+
   /** A Lazy value that prints the provided string.
     */
   def println(str: String): Lazy[Unit] =
