@@ -16,3 +16,5 @@ build
 project/.bloop/
 project/metals.sbt
 project/project/
+
+.planning
