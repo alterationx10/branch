@@ -36,6 +36,24 @@ sealed trait Lazy[+A] {
   final def zipWith[B, C](that: Lazy[B])(f: (A, B) => C): Lazy[C] =
     this.zip(that).map { case (a, b) => f(a, b) }
 
+  /** Race this Lazy against another, returning whichever completes first.
+    *
+    * Both computations are started concurrently. The result is a union type
+    * A | B - you can pattern match on the type to determine which completed
+    * first. If both fail, the first failure is returned.
+    *
+    * Example:
+    * {{{
+    *   val result: Int | String = Lazy.fn(42).race(Lazy.fn("hello")).runSync.get
+    *   result match {
+    *     case i: Int    => println(s"Left won: $i")
+    *     case s: String => println(s"Right won: $s")
+    *   }
+    * }}}
+    */
+  final def race[B](that: Lazy[B]): Lazy[A | B] =
+    Lazy.Race(this, that)
+
   /** If the Lazy fails, attempt to recover with the provided function.
     */
   final def recover[B >: A](f: Throwable => Lazy[B]): Lazy[B] =
@@ -217,6 +235,9 @@ object Lazy {
       extends Lazy[A]
 
   private[lzy] final case class FromFuture[A](f: Future[A]) extends Lazy[A]
+
+  private[lzy] final case class Race[A, B](left: Lazy[A], right: Lazy[B])
+      extends Lazy[A | B]
 
   /** A Lazy value that evaluates the provided expression.
     */

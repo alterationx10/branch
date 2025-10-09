@@ -316,6 +316,27 @@ Lazy.fn(40).zip(Lazy.fn(2)) // Lazy[(Int, Int)]
 
 // Zip with a combining function
 Lazy.fn(40).zipWith(Lazy.fn(2))(_ + _) // Lazy[Int]
+
+// Race two computations - return whichever succeeds first
+val fast = Lazy.fn(42)
+val slow = Lazy.sleep(1.second).as("slow")
+fast.race(slow) // Lazy[Int | String]
+
+// Pattern match on the union type to determine winner
+fast.race(slow).map { result =>
+  result match {
+    case i: Int    => s"Left won: $i"
+    case s: String => s"Right won: $s"
+  }
+}
+
+// If one fails, the success is returned
+Lazy.fail[Int](new Exception("error")).race(Lazy.fn("success"))
+  // -> "success"
+
+// If both fail, first failure is returned
+Lazy.fail[Int](new Exception("err1")).race(Lazy.fail[String](new Exception("err2")))
+  // -> Failure(err1 or err2)
 ```
 
 ## Running Lazy Values

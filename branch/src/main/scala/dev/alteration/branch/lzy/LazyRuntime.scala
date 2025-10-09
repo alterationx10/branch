@@ -4,7 +4,7 @@ import java.util.concurrent.{Executors, ScheduledExecutorService, TimeUnit, Time
 import scala.annotation.tailrec
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future, Promise}
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 private[lzy] trait LazyRuntime {
   def runSync[A](lzy: Lazy[A], d: Duration)(using
@@ -48,6 +48,7 @@ object LazyRuntime extends LazyRuntime {
       case Lazy.Sleep(d)         => Future(Thread.sleep(d.toMillis))
       case Lazy.Timeout(lzy, d)  => evalTimeout(lzy, d)
       case Lazy.FromFuture(f)    => f
+      case Lazy.Race(left, right) => evalRace(left, right)
       case Lazy.FlatMap(lzy, f) =>
         lzy match {
           case Lazy.FlatMap(l, g)   => eval(l.flatMap(g(_).flatMap(f)))
@@ -57,6 +58,7 @@ object LazyRuntime extends LazyRuntime {
           case Lazy.Sleep(d)        => evalFlatMapSleep(d, f)
           case Lazy.Timeout(l, d)   => evalFlatMapTimeout(l, d, f)
           case Lazy.FromFuture(fut) => evalFlatMapFromFuture(fut, f)
+          case Lazy.Race(left, right) => evalFlatMapRace(left, right, f)
         }
     }
   }
@@ -126,5 +128,44 @@ object LazyRuntime extends LazyRuntime {
     }
 
     promise.future
+  }
+
+  private final def evalRace[A, B](
+      left: Lazy[A],
+      right: Lazy[B]
+  )(using executionContext: ExecutionContext): Future[A | B] = {
+    val promise = Promise[A | B]()
+    val leftFuture = eval(left)
+    val rightFuture = eval(right)
+
+    leftFuture.onComplete {
+      case Success(a) => promise.trySuccess(a)
+      case Failure(e) =>
+        // If left fails, wait for right
+        rightFuture.onComplete {
+          case Success(b) => promise.trySuccess(b)
+          case Failure(_) => promise.tryFailure(e) // Both failed
+        }
+    }
+
+    rightFuture.onComplete {
+      case Success(b) => promise.trySuccess(b)
+      case Failure(e) =>
+        // If right fails, wait for left
+        leftFuture.onComplete {
+          case Success(a) => promise.trySuccess(a)
+          case Failure(_) => promise.tryFailure(e) // Both failed
+        }
+    }
+
+    promise.future
+  }
+
+  private final def evalFlatMapRace[A, B, C](
+      left: Lazy[A],
+      right: Lazy[B],
+      f: (A | B) => Lazy[C]
+  )(using executionContext: ExecutionContext): Future[C] = {
+    evalRace(left, right).flatMap(result => eval(f(result)))
   }
 }

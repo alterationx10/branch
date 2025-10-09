@@ -82,6 +82,66 @@ class LazySpec extends LoggerFixtureSuite {
     assertEquals(result.failed.get.getMessage, "error")
   }
 
+  test("Lazy.race - left completes first") {
+    for {
+      result <- Lazy.fn(42).race(Lazy.sleep(1.second).as("slow"))
+    } yield {
+      result match {
+        case i: Int    => assertEquals(i, 42)
+        case s: String => fail(s"Expected Int but got String: $s")
+      }
+    }
+  }
+
+  test("Lazy.race - right completes first") {
+    for {
+      result <- Lazy.sleep(1.second).as(42).race(Lazy.fn("fast"))
+    } yield {
+      result match {
+        case i: Int    => fail(s"Expected String but got Int: $i")
+        case s: String => assertEquals(s, "fast")
+      }
+    }
+  }
+
+  test("Lazy.race - left fails, right succeeds") {
+    for {
+      result <- Lazy
+                  .fail[Int](new Exception("left error"))
+                  .race(Lazy.fn("success"))
+    } yield {
+      result match {
+        case i: Int    => fail(s"Expected String but got Int: $i")
+        case s: String => assertEquals(s, "success")
+      }
+    }
+  }
+
+  test("Lazy.race - left succeeds, right fails") {
+    for {
+      result <- Lazy.fn(42).race(Lazy.fail[String](new Exception("right error")))
+    } yield {
+      result match {
+        case i: Int    => assertEquals(i, 42)
+        case s: String => fail(s"Expected Int but got String: $s")
+      }
+    }
+  }
+
+  test("Lazy.race - both fail") {
+    val result = Lazy
+      .fail[Int](new Exception("left error"))
+      .race(Lazy.fail[String](new Exception("right error")))
+      .runSync()
+
+    assert(result.isFailure)
+    // First failure should be returned
+    assert(
+      result.failed.get.getMessage == "left error" ||
+        result.failed.get.getMessage == "right error"
+    )
+  }
+
   test("Lazy.recover") {
     for {
       l <- Lazy.fail(new Exception("error")).recover(_ => Lazy.fn("abc"))
