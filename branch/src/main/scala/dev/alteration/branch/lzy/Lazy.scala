@@ -276,7 +276,7 @@ object Lazy {
     * a new Array
     */
   def forEach[A, B: ClassTag](arr: Array[A])(f: A => Lazy[B]): Lazy[Array[B]] =
-    iterate(arr.iterator)(Array.newBuilder[B])(f).map(_.toArray)
+    iterate(arr.iterator)(Array.newBuilder[B])(f)
 
   /** A Lazy value that prints the provided string.
     */

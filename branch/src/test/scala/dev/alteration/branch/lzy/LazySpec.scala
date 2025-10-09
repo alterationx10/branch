@@ -168,6 +168,12 @@ class LazySpec extends LoggerFixtureSuite {
     } yield assertEquals(l.sum, 15)
   }
 
+  test("Lazy.forEach - Array") {
+    for {
+      l <- Lazy.forEach(Array(1, 2, 3, 4, 5))(Lazy.fn)
+    } yield assertEquals(l.sum, 15)
+  }
+
   test("Lazy.now") {
     for {
       l <- Lazy.now()
