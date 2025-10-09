@@ -180,6 +180,48 @@ for {
 myLazyOp(0).retryN(3) // Retry up to 3 times
 ```
 
+### Repetition and Looping
+
+Lzy provides multiple methods to repeat computations based on conditions:
+
+```scala
+import scala.util.Random
+
+// Repeat until the result satisfies a condition
+val rollDice = Lazy.fn(Random.nextInt(6) + 1)
+rollDice.until(_ == 6) // Keep rolling until we get a 6
+
+// Run forever (careful!)
+Lazy.fn(processNextItem()).forever
+
+// Repeat based on external condition - UNTIL true
+var attempts = 0
+Lazy.fn {
+  attempts += 1
+  fetchDataFromAPI()
+}.repeatUntil(attempts >= 3) // Keep going UNTIL attempts >= 3
+
+// Repeat based on external condition - WHILE true
+var retries = 5
+Lazy.fn {
+  retries -= 1
+  tryOperation()
+}.repeatWhile(retries > 0) // Keep going WHILE retries > 0
+
+// Combine with other operations
+val result = for {
+  data <- fetchData()
+    .until(_.isValid) // Retry until valid
+    .timeout(5.seconds) // But don't wait forever
+} yield data
+```
+
+**Key differences:**
+- `until(cond: A => Boolean)` - checks the **result value** and stops when the condition is true
+- `repeatUntil(cond: => Boolean)` - checks an **external condition** after each iteration, stops when true
+- `repeatWhile(cond: => Boolean)` - checks an **external condition** after each iteration, continues while true
+- `forever` - runs indefinitely (use with caution!)
+
 ### Timing Control
 
 You can add delays, pauses, and timeouts to your Lazy computations:

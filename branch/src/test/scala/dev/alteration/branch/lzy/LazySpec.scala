@@ -728,7 +728,7 @@ class LazySpec extends LoggerFixtureSuite {
     }
   }
 
-  test("Lazy.until any conditional") {
+  test("Lazy.repeatUntil - external condition") {
 
     @volatile
     var counter = 10
@@ -739,9 +739,27 @@ class LazySpec extends LoggerFixtureSuite {
                     counter -= 1
                     counter + 1
                   }
-                  .until(counter == 0)
+                  .repeatUntil(counter == 0)
     } yield {
       assert(result == 1)
+    }
+  }
+
+  test("Lazy.repeatWhile - external condition") {
+
+    @volatile
+    var retries = 5
+
+    for {
+      result <- Lazy
+                  .fn {
+                    retries -= 1
+                    retries
+                  }
+                  .repeatWhile(retries > 0)
+    } yield {
+      assertEquals(result, 0)
+      assertEquals(retries, 0)
     }
   }
 

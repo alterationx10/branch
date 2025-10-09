@@ -81,8 +81,19 @@ sealed trait Lazy[+A] {
     loop
   }
 
-  /** Run the Lazy value until the result matches the provided condition is
-    * true.
+  /** Repeatedly run this Lazy computation until the result satisfies the given
+    * condition. Returns the first result that satisfies the condition.
+    *
+    * Example:
+    * {{{
+    *   // Keep generating random numbers until we get a 5
+    *   Lazy.fn(Random.nextInt(10)).until(_ == 5)
+    * }}}
+    *
+    * @param cond
+    *   A predicate that checks the result value
+    * @return
+    *   The first result where cond(result) is true
     */
   final def until(cond: A => Boolean): Lazy[A] = {
     lazy val loop: Lazy[A] = this.flatMap { a =>
@@ -92,15 +103,48 @@ sealed trait Lazy[+A] {
     loop
   }
 
-  /** Run the Lazy value until the provided condition is true
+  /** Repeatedly run this Lazy computation until an external condition becomes
+    * true. Returns the last computed result.
+    *
+    * Example:
+    * {{{
+    *   var attempts = 0
+    *   Lazy.fn { attempts += 1; processData() }
+    *     .repeatUntil(attempts >= 3)  // Run until we've tried 3 times
+    * }}}
+    *
+    * @param cond
+    *   A by-name boolean expression evaluated after each iteration
+    * @return
+    *   The result from when the condition became true
     */
-  final def until(cond: => Boolean): Lazy[A] = {
+  final def repeatUntil(cond: => Boolean): Lazy[A] = {
     lazy val loop: Lazy[A] = this.flatMap { a =>
       if (cond) Lazy.fn(a)
       else loop
     }
     loop
   }
+
+  /** Repeatedly run this Lazy computation while an external condition remains
+    * true. Returns the last computed result.
+    *
+    * Example:
+    * {{{
+    *   var retries = 3
+    *   Lazy.fn {
+    *     retries -= 1
+    *     tryFetch()
+    *   }.repeatWhile(retries > 0)  // Keep trying while retries remain
+    * }}}
+    *
+    * @param cond
+    *   A by-name boolean expression evaluated after each iteration
+    * @return
+    *   The result from when the condition became false
+    */
+  final def repeatWhile(cond: => Boolean): Lazy[A] =
+    repeatUntil(!cond)
 
   /** Map the result of a Lazy to Unit */
   final def unit: Lazy[Unit] =
