@@ -317,6 +317,24 @@ class LazySpec extends LoggerFixtureSuite {
 
   }
 
+  test("Lazy.either - success") {
+    for {
+      result <- Lazy.fn(42).either
+    } yield {
+      assert(result.isRight)
+      assertEquals(result.toOption.get, 42)
+    }
+  }
+
+  test("Lazy.either - failure") {
+    for {
+      result <- Lazy.fail[Int](new Exception("test error")).either
+    } yield {
+      assert(result.isLeft)
+      assertEquals(result.left.toOption.get.getMessage, "test error")
+    }
+  }
+
   test("Lazy.fromTry - captured") {
     // If the Try is not previously evaluated, it will be evaluated on each run
     @volatile

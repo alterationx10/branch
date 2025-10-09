@@ -160,6 +160,19 @@ myLazyOp(0)
   .mapError(e => new Exception(s"Failed with: ${e.getMessage}"))
   .tapError(e => println(s"Error occurred: ${e.getMessage}"))
 
+// Convert errors to values with Either
+myLazyOp(0).either // Lazy[Either[Throwable, Int]]
+  // Success becomes Right(value), failure becomes Left(throwable)
+
+// Use Either for error handling
+for {
+  result <- myLazyOp(0).either
+  processed <- result match {
+    case Right(value) => Lazy.fn(s"Success: $value")
+    case Left(error)  => Lazy.fn(s"Error: ${error.getMessage}")
+  }
+} yield processed
+
 // Retry on failure
 myLazyOp(0).retryN(3) // Retry up to 3 times
 ```

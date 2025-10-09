@@ -156,6 +156,12 @@ sealed trait Lazy[+A] {
   final def logError(using logger: Logger): Lazy[A] =
     this.tapError(e => logger.log(Level.SEVERE, e.getMessage, e))
 
+  /** Convert errors to values, returning Either[Throwable, A]. Success becomes
+    * Right(a), failure becomes Left(throwable).
+    */
+  final def either: Lazy[Either[Throwable, A]] =
+    this.map(a => Right(a)).recover(e => Lazy.fn(Left(e)))
+
   /** Wraps this Lazy in [[Lazy.when]]
     */
   final def when(cond: => Boolean): Lazy[Option[A]] =
