@@ -45,7 +45,7 @@ object LazyRuntime extends LazyRuntime {
       case Lazy.Fn(a)            => Future(a())
       case Lazy.Fail(e)          => Future.failed(e)
       case Lazy.Recover(lzy, f)  => evalRecover(lzy, f)
-      case Lazy.Sleep(d)         => Future(Thread.sleep(d.toMillis))
+      case Lazy.Sleep(d)         => evalSleep(d)
       case Lazy.Timeout(lzy, d)  => evalTimeout(lzy, d)
       case Lazy.FromFuture(f)    => f
       case Lazy.Race(left, right) => evalRace(left, right)
@@ -66,9 +66,7 @@ object LazyRuntime extends LazyRuntime {
   private final def evalFlatMapSleep[A](d: Duration, f: Unit => Lazy[A])(using
       executionContext: ExecutionContext
   ): Future[A] = {
-    Future {
-      Thread.sleep(d.toMillis)
-    }.flatMap(_ => eval(f(())))
+    evalSleep(d).flatMap(_ => eval(f(())))
   }
 
   private final def evalFlatMapTimeout[A, B](
@@ -127,6 +125,18 @@ object LazyRuntime extends LazyRuntime {
       promise.tryComplete(result)
     }
 
+    promise.future
+  }
+
+  private final def evalSleep(
+      duration: Duration
+  ): Future[Unit] = {
+    val promise = Promise[Unit]()
+    scheduler.schedule(
+      () => promise.success(()),
+      duration.toMillis,
+      TimeUnit.MILLISECONDS
+    )
     promise.future
   }
 
