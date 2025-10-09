@@ -216,6 +216,8 @@ object Lazy {
   private[lzy] final case class Timeout[A](lzy: Lazy[A], duration: Duration)
       extends Lazy[A]
 
+  private[lzy] final case class FromFuture[A](f: Future[A]) extends Lazy[A]
+
   /** A Lazy value that evaluates the provided expression.
     */
   def fn[A](a: => A): Lazy[A] = Fn(() => a)
@@ -391,6 +393,25 @@ object Lazy {
   /** Lazily evaluates the Try, folding the failure into a Lazy.fail */
   def fromTry[A](t: => Try[A]): Lazy[A] =
     Lazy.fn(t.fold(Lazy.fail, Lazy.fn)).flatten
+
+  /** Lifts a Future into a Lazy value.
+    *
+    * Important: The parameter is call-by-name, so the Future creation is
+    * deferred until the Lazy is run. However, once created, Futures are eager
+    * and will execute immediately.
+    *
+    * Example:
+    * {{{
+    *   // Future creation deferred - runs when Lazy executes
+    *   Lazy.fromFuture(Future { expensiveComputation() })
+    *
+    *   // Future already running - just wraps existing Future
+    *   val alreadyRunning = Future { expensiveComputation() }
+    *   Lazy.fromFuture(alreadyRunning)
+    * }}}
+    */
+  def fromFuture[A](f: => Future[A]): Lazy[A] =
+    Lazy.FromFuture(f)
 
   /** Wraps resource acquisition/usage of scala.util.Using into a Lazy. */
   def using[R: Releasable, A](resource: => R)(f: R => A): Lazy[A] =

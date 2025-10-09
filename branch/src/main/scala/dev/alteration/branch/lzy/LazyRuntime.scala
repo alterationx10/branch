@@ -47,14 +47,16 @@ object LazyRuntime extends LazyRuntime {
       case Lazy.Recover(lzy, f)  => evalRecover(lzy, f)
       case Lazy.Sleep(d)         => Future(Thread.sleep(d.toMillis))
       case Lazy.Timeout(lzy, d)  => evalTimeout(lzy, d)
+      case Lazy.FromFuture(f)    => f
       case Lazy.FlatMap(lzy, f) =>
         lzy match {
-          case Lazy.FlatMap(l, g)  => eval(l.flatMap(g(_).flatMap(f)))
-          case Lazy.Fn(a)          => eval(f(a()))
-          case Lazy.Fail(e)        => Future.failed(e)
-          case Lazy.Recover(l, r)  => evalFlatMapRecover(l, r, f)
-          case Lazy.Sleep(d)       => evalFlatMapSleep(d, f)
-          case Lazy.Timeout(l, d)  => evalFlatMapTimeout(l, d, f)
+          case Lazy.FlatMap(l, g)   => eval(l.flatMap(g(_).flatMap(f)))
+          case Lazy.Fn(a)           => eval(f(a()))
+          case Lazy.Fail(e)         => Future.failed(e)
+          case Lazy.Recover(l, r)   => evalFlatMapRecover(l, r, f)
+          case Lazy.Sleep(d)        => evalFlatMapSleep(d, f)
+          case Lazy.Timeout(l, d)   => evalFlatMapTimeout(l, d, f)
+          case Lazy.FromFuture(fut) => evalFlatMapFromFuture(fut, f)
         }
     }
   }
@@ -73,6 +75,13 @@ object LazyRuntime extends LazyRuntime {
       f: A => Lazy[B]
   )(using executionContext: ExecutionContext): Future[B] = {
     evalTimeout(lzy, d).flatMap(z => eval(f(z)))
+  }
+
+  private final def evalFlatMapFromFuture[A, B](
+      fut: Future[A],
+      f: A => Lazy[B]
+  )(using executionContext: ExecutionContext): Future[B] = {
+    fut.flatMap(a => eval(f(a)))
   }
 
   private final def evalFlatMapRecover[A, B](

@@ -7,7 +7,7 @@ import munit.FunSuite
 import java.io.{PipedInputStream, PipedOutputStream}
 import java.time.*
 import java.util.logging.Logger
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
 import scala.util.Try
@@ -363,6 +363,28 @@ class LazySpec extends LoggerFixtureSuite {
     assert(counter == 1)
     lzyTry.runSync()
     assert(counter == 1)
+  }
+
+  test("Lazy.fromFuture - success") {
+    for {
+      result <- Lazy.fromFuture(Future.successful(42))
+    } yield assertEquals(result, 42)
+  }
+
+  test("Lazy.fromFuture - failure") {
+    val result = Lazy
+      .fromFuture(Future.failed[Int](new Exception("future error")))
+      .runSync()
+
+    assert(result.isFailure)
+    assertEquals(result.failed.get.getMessage, "future error")
+  }
+
+  test("Lazy.fromFuture - with flatMap") {
+    for {
+      a <- Lazy.fromFuture(Future.successful(20))
+      b <- Lazy.fromFuture(Future.successful(22))
+    } yield assertEquals(a + b, 42)
   }
 
   test("Lazy.using") {

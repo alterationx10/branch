@@ -129,6 +129,9 @@ val fromTry: Lazy[Int] = Lazy.fromTry(Try(42 / 0))
 // From an Option
 val fromOption: Lazy[Int] = Lazy.fromOption(Some(42))
 
+// From a Future
+val fromFuture: Lazy[Int] = Lazy.fromFuture(Future.successful(42))
+
 // Create a failed computation
 val failed: Lazy[Int] = Lazy.fail(new Exception("Boom!"))
 
