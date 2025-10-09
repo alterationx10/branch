@@ -129,6 +129,9 @@ val fromTry: Lazy[Int] = Lazy.fromTry(Try(42 / 0))
 // From an Option
 val fromOption: Lazy[Int] = Lazy.fromOption(Some(42))
 
+// From a Future
+val fromFuture: Lazy[Int] = Lazy.fromFuture(Future.successful(42))
+
 // Create a failed computation
 val failed: Lazy[Int] = Lazy.fail(new Exception("Boom!"))
 
@@ -160,13 +163,68 @@ myLazyOp(0)
   .mapError(e => new Exception(s"Failed with: ${e.getMessage}"))
   .tapError(e => println(s"Error occurred: ${e.getMessage}"))
 
+// Convert errors to values with Either
+myLazyOp(0).either // Lazy[Either[Throwable, Int]]
+  // Success becomes Right(value), failure becomes Left(throwable)
+
+// Use Either for error handling
+for {
+  result <- myLazyOp(0).either
+  processed <- result match {
+    case Right(value) => Lazy.fn(s"Success: $value")
+    case Left(error)  => Lazy.fn(s"Error: ${error.getMessage}")
+  }
+} yield processed
+
 // Retry on failure
 myLazyOp(0).retryN(3) // Retry up to 3 times
 ```
 
+### Repetition and Looping
+
+Lzy provides multiple methods to repeat computations based on conditions:
+
+```scala
+import scala.util.Random
+
+// Repeat until the result satisfies a condition
+val rollDice = Lazy.fn(Random.nextInt(6) + 1)
+rollDice.until(_ == 6) // Keep rolling until we get a 6
+
+// Run forever (careful!)
+Lazy.fn(processNextItem()).forever
+
+// Repeat based on external condition - UNTIL true
+var attempts = 0
+Lazy.fn {
+  attempts += 1
+  fetchDataFromAPI()
+}.repeatUntil(attempts >= 3) // Keep going UNTIL attempts >= 3
+
+// Repeat based on external condition - WHILE true
+var retries = 5
+Lazy.fn {
+  retries -= 1
+  tryOperation()
+}.repeatWhile(retries > 0) // Keep going WHILE retries > 0
+
+// Combine with other operations
+val result = for {
+  data <- fetchData()
+    .until(_.isValid) // Retry until valid
+    .timeout(5.seconds) // But don't wait forever
+} yield data
+```
+
+**Key differences:**
+- `until(cond: A => Boolean)` - checks the **result value** and stops when the condition is true
+- `repeatUntil(cond: => Boolean)` - checks an **external condition** after each iteration, stops when true
+- `repeatWhile(cond: => Boolean)` - checks an **external condition** after each iteration, continues while true
+- `forever` - runs indefinitely (use with caution!)
+
 ### Timing Control
 
-You can add delays and pauses to your Lazy computations:
+You can add delays, pauses, and timeouts to your Lazy computations:
 
 ```scala
 import scala.concurrent.duration._
@@ -174,6 +232,15 @@ import scala.concurrent.duration._
 Lazy.fn("hello")
   .delay(1.second) // Delay before execution
   .pause(500.millis) // Pause after execution
+
+// Timeout a computation if it takes too long
+Lazy.fn(expensiveComputation())
+  .timeout(5.seconds) // Fails with TimeoutException if exceeds 5 seconds
+
+// Combine with error handling
+Lazy.fn(maybeSlowOperation())
+  .timeout(2.seconds)
+  .recover(_ => Lazy.fn(fallbackValue))
 ```
 
 ### Optional Values
@@ -264,8 +331,22 @@ Work with collections efficiently:
 // Iterate over collections
 Lazy.iterate(Iterator(1, 2, 3))(List.newBuilder[Int])(_ => Lazy.fn(1))
 
-// Process each element
+// Process each element (traverse)
 Lazy.forEach(List(1, 2, 3))(n => Lazy.fn(n * 2))
+// or use the traverse alias
+Lazy.traverse(List(1, 2, 3))(n => Lazy.fn(n * 2))
+
+// Sequence a collection of Lazy values
+val lazyList: List[Lazy[Int]] = List(Lazy.fn(1), Lazy.fn(2), Lazy.fn(3))
+Lazy.sequence(lazyList) // Lazy[List[Int]]
+
+// Works with various collection types
+Lazy.sequence(Vector(Lazy.fn("a"), Lazy.fn("b"))) // Lazy[Vector[String]]
+Lazy.traverse(Set(1, 2, 3))(x => Lazy.fn(x.toString)) // Lazy[Set[String]]
+
+// Parallel execution for independent computations
+Lazy.parSequence(List(lazy1, lazy2, lazy3)) // All run concurrently
+Lazy.parTraverse(List(1, 2, 3))(x => Lazy.fn(expensiveOp(x))) // Process in parallel
 ```
 
 ### Composing Operations
@@ -285,6 +366,33 @@ for {
 Lazy.fn(40)
   .flatMap(a => Lazy.fn(2).map(b => a + b))
   .tap(sum => Lazy.logInfo(s"Sum is $sum"))
+
+// Zip two Lazy values together
+Lazy.fn(40).zip(Lazy.fn(2)) // Lazy[(Int, Int)]
+
+// Zip with a combining function
+Lazy.fn(40).zipWith(Lazy.fn(2))(_ + _) // Lazy[Int]
+
+// Race two computations - return whichever succeeds first
+val fast = Lazy.fn(42)
+val slow = Lazy.sleep(1.second).as("slow")
+fast.race(slow) // Lazy[Int | String]
+
+// Pattern match on the union type to determine winner
+fast.race(slow).map { result =>
+  result match {
+    case i: Int    => s"Left won: $i"
+    case s: String => s"Right won: $s"
+  }
+}
+
+// If one fails, the success is returned
+Lazy.fail[Int](new Exception("error")).race(Lazy.fn("success"))
+  // -> "success"
+
+// If both fail, first failure is returned
+Lazy.fail[Int](new Exception("err1")).race(Lazy.fail[String](new Exception("err2")))
+  // -> Failure(err1 or err2)
 ```
 
 ## Running Lazy Values

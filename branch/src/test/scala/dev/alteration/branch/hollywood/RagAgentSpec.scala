@@ -131,7 +131,9 @@ class RagAgentSpec extends LlamaServerFixture {
     assert(results.nonEmpty)
   }
 
-  test("DocumentChunker should integrate with RAG pipeline for long documents") {
+  test(
+    "DocumentChunker should integrate with RAG pipeline for long documents"
+  ) {
     val vectorStore     = new InMemoryVectorStore()
     val embeddingClient = new EmbeddingClient()
 
@@ -143,18 +145,19 @@ class RagAgentSpec extends LlamaServerFixture {
     )
 
     // Long document about different topics
-    val longDocument = """Scala is a powerful programming language that combines object-oriented
-      |and functional programming paradigms. It was designed by Martin Odersky and first
-      |released in 2003. Scala runs on the Java Virtual Machine and provides seamless
-      |interoperability with Java libraries.
-      |
-      |The functional programming features in Scala include immutable data structures,
-      |higher-order functions, pattern matching, and algebraic data types. These features
-      |enable developers to write concise, maintainable code that is less prone to bugs.
-      |
-      |Scala's type system is one of its strongest features. It includes type inference,
-      |generics, variance annotations, and implicit conversions. The compiler performs
-      |sophisticated type checking at compile time, catching many errors before runtime.""".stripMargin
+    val longDocument =
+      """Scala is a powerful programming language that combines object-oriented
+        |and functional programming paradigms. It was designed by Martin Odersky and first
+        |released in 2003. Scala runs on the Java Virtual Machine and provides seamless
+        |interoperability with Java libraries.
+        |
+        |The functional programming features in Scala include immutable data structures,
+        |higher-order functions, pattern matching, and algebraic data types. These features
+        |enable developers to write concise, maintainable code that is less prone to bugs.
+        |
+        |Scala's type system is one of its strongest features. It includes type inference,
+        |generics, variance annotations, and implicit conversions. The compiler performs
+        |sophisticated type checking at compile time, catching many errors before runtime.""".stripMargin
 
     // Configure chunker for paragraph-based chunking
     val chunkConfig = ChunkConfig(
@@ -181,11 +184,15 @@ class RagAgentSpec extends LlamaServerFixture {
       }
 
       // Verify chunks were created
-      assert(result.totalChunks == 3, s"Expected 3 chunks, got ${result.totalChunks}")
+      assert(
+        result.totalChunks == 3,
+        s"Expected 3 chunks, got ${result.totalChunks}"
+      )
     }
 
     // Query for specific information from different chunks
-    val answer = ragAgent.chat("What are Scala's functional programming features?")
+    val answer =
+      ragAgent.chat("What are Scala's functional programming features?")
     println(answer)
     assert(answer.nonEmpty)
 

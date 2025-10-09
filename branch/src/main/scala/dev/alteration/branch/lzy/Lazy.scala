@@ -26,6 +26,34 @@ sealed trait Lazy[+A] {
   final def flatten[B](using ev: A <:< Lazy[B]): Lazy[B] =
     this.flatMap(a => ev(a))
 
+  /** Zip two Lazy values into a tuple.
+    */
+  final def zip[B](that: Lazy[B]): Lazy[(A, B)] =
+    this.flatMap(a => that.map(b => (a, b)))
+
+  /** Zip two Lazy values and apply a function to the results.
+    */
+  final def zipWith[B, C](that: Lazy[B])(f: (A, B) => C): Lazy[C] =
+    this.zip(that).map { case (a, b) => f(a, b) }
+
+  /** Race this Lazy against another, returning whichever completes first.
+    *
+    * Both computations are started concurrently. The result is a union type A |
+    * B - you can pattern match on the type to determine which completed first.
+    * If both fail, the first failure is returned.
+    *
+    * Example:
+    * {{{
+    *   val result: Int | String = Lazy.fn(42).race(Lazy.fn("hello")).runSync.get
+    *   result match {
+    *     case i: Int    => println(s"Left won: $i")
+    *     case s: String => println(s"Right won: $s")
+    *   }
+    * }}}
+    */
+  final def race[B](that: Lazy[B]): Lazy[A | B] =
+    Lazy.Race(this, that)
+
   /** If the Lazy fails, attempt to recover with the provided function.
     */
   final def recover[B >: A](f: Throwable => Lazy[B]): Lazy[B] =
@@ -53,8 +81,19 @@ sealed trait Lazy[+A] {
     loop
   }
 
-  /** Run the Lazy value until the result matches the provided condition is
-    * true.
+  /** Repeatedly run this Lazy computation until the result satisfies the given
+    * condition. Returns the first result that satisfies the condition.
+    *
+    * Example:
+    * {{{
+    *   // Keep generating random numbers until we get a 5
+    *   Lazy.fn(Random.nextInt(10)).until(_ == 5)
+    * }}}
+    *
+    * @param cond
+    *   A predicate that checks the result value
+    * @return
+    *   The first result where cond(result) is true
     */
   final def until(cond: A => Boolean): Lazy[A] = {
     lazy val loop: Lazy[A] = this.flatMap { a =>
@@ -64,15 +103,48 @@ sealed trait Lazy[+A] {
     loop
   }
 
-  /** Run the Lazy value until the provided condition is true
+  /** Repeatedly run this Lazy computation until an external condition becomes
+    * true. Returns the last computed result.
+    *
+    * Example:
+    * {{{
+    *   var attempts = 0
+    *   Lazy.fn { attempts += 1; processData() }
+    *     .repeatUntil(attempts >= 3)  // Run until we've tried 3 times
+    * }}}
+    *
+    * @param cond
+    *   A by-name boolean expression evaluated after each iteration
+    * @return
+    *   The result from when the condition became true
     */
-  final def until(cond: => Boolean): Lazy[A] = {
+  final def repeatUntil(cond: => Boolean): Lazy[A] = {
     lazy val loop: Lazy[A] = this.flatMap { a =>
       if (cond) Lazy.fn(a)
       else loop
     }
     loop
   }
+
+  /** Repeatedly run this Lazy computation while an external condition remains
+    * true. Returns the last computed result.
+    *
+    * Example:
+    * {{{
+    *   var retries = 3
+    *   Lazy.fn {
+    *     retries -= 1
+    *     tryFetch()
+    *   }.repeatWhile(retries > 0)  // Keep trying while retries remain
+    * }}}
+    *
+    * @param cond
+    *   A by-name boolean expression evaluated after each iteration
+    * @return
+    *   The result from when the condition became false
+    */
+  final def repeatWhile(cond: => Boolean): Lazy[A] =
+    repeatUntil(!cond)
 
   /** Map the result of a Lazy to Unit */
   final def unit: Lazy[Unit] =
@@ -125,6 +197,11 @@ sealed trait Lazy[+A] {
   final def pause(duration: Duration): Lazy[A] =
     this.flatMap(a => Lazy.sleep(duration).as(a))
 
+  /** Timeout the Lazy computation if it exceeds the provided duration.
+    */
+  final def timeout(duration: Duration): Lazy[A] =
+    Lazy.Timeout(this, duration)
+
   /** Map the error of the Lazy, evaluating the provided function.
     */
   final def mapError(f: Throwable => Throwable): Lazy[A] =
@@ -140,6 +217,12 @@ sealed trait Lazy[+A] {
     */
   final def logError(using logger: Logger): Lazy[A] =
     this.tapError(e => logger.log(Level.SEVERE, e.getMessage, e))
+
+  /** Convert errors to values, returning Either[Throwable, A]. Success becomes
+    * Right(a), failure becomes Left(throwable).
+    */
+  final def either: Lazy[Either[Throwable, A]] =
+    this.map(a => Right(a)).recover(e => Lazy.fn(Left(e)))
 
   /** Wraps this Lazy in [[Lazy.when]]
     */
@@ -191,6 +274,14 @@ object Lazy {
   ) extends Lazy[A]
 
   private[lzy] final case class Sleep(duration: Duration) extends Lazy[Unit]
+
+  private[lzy] final case class Timeout[A](lzy: Lazy[A], duration: Duration)
+      extends Lazy[A]
+
+  private[lzy] final case class FromFuture[A](f: Future[A]) extends Lazy[A]
+
+  private[lzy] final case class Race[A, B](left: Lazy[A], right: Lazy[B])
+      extends Lazy[A | B]
 
   /** A Lazy value that evaluates the provided expression.
     */
@@ -252,7 +343,133 @@ object Lazy {
     * a new Array
     */
   def forEach[A, B: ClassTag](arr: Array[A])(f: A => Lazy[B]): Lazy[Array[B]] =
-    iterate(arr.iterator)(Array.newBuilder[B])(f).map(_.toArray)
+    iterate(arr.iterator)(Array.newBuilder[B])(f)
+
+  /** Sequence a List of Lazy values into a Lazy List of values.
+    *
+    * Executes all Lazy computations sequentially, collecting results.
+    */
+  def sequence[A](list: List[Lazy[A]]): Lazy[List[A]] =
+    iterate(list.iterator)(List.newBuilder[A])(identity)
+
+  /** Sequence a Vector of Lazy values into a Lazy Vector of values.
+    */
+  def sequence[A](vec: Vector[Lazy[A]]): Lazy[Vector[A]] =
+    iterate(vec.iterator)(Vector.newBuilder[A])(identity)
+
+  /** Sequence a Seq of Lazy values into a Lazy Seq of values.
+    */
+  def sequence[A](seq: Seq[Lazy[A]]): Lazy[Seq[A]] =
+    iterate(seq.iterator)(Seq.newBuilder[A])(identity)
+
+  /** Sequence an IndexedSeq of Lazy values into a Lazy IndexedSeq of values.
+    */
+  def sequence[A](seq: IndexedSeq[Lazy[A]]): Lazy[IndexedSeq[A]] =
+    iterate(seq.iterator)(IndexedSeq.newBuilder[A])(identity)
+
+  /** Sequence a Set of Lazy values into a Lazy Set of values.
+    */
+  def sequence[A](set: Set[Lazy[A]]): Lazy[Set[A]] =
+    iterate(set.iterator)(Set.newBuilder[A])(identity)
+
+  /** Sequence an Array of Lazy values into a Lazy Array of values.
+    */
+  def sequence[A: ClassTag](arr: Array[Lazy[A]]): Lazy[Array[A]] =
+    iterate(arr.iterator)(Array.newBuilder[A])(identity)
+
+  /** Traverse a List with a function that returns Lazy values.
+    *
+    * Alias for forEach that follows standard functional programming naming.
+    */
+  def traverse[A, B](list: List[A])(f: A => Lazy[B]): Lazy[List[B]] =
+    forEach(list)(f)
+
+  /** Traverse a Vector with a function that returns Lazy values.
+    */
+  def traverse[A, B](vec: Vector[A])(f: A => Lazy[B]): Lazy[Vector[B]] =
+    forEach(vec)(f)
+
+  /** Traverse a Seq with a function that returns Lazy values.
+    */
+  def traverse[A, B](seq: Seq[A])(f: A => Lazy[B]): Lazy[Seq[B]] =
+    forEach(seq)(f)
+
+  /** Traverse an IndexedSeq with a function that returns Lazy values.
+    */
+  def traverse[A, B](seq: IndexedSeq[A])(f: A => Lazy[B]): Lazy[IndexedSeq[B]] =
+    forEach(seq)(f)
+
+  /** Traverse a Set with a function that returns Lazy values.
+    */
+  def traverse[A, B](set: Set[A])(f: A => Lazy[B]): Lazy[Set[B]] =
+    forEach(set)(f)
+
+  /** Traverse an Array with a function that returns Lazy values.
+    */
+  def traverse[A, B: ClassTag](arr: Array[A])(f: A => Lazy[B]): Lazy[Array[B]] =
+    forEach(arr)(f)
+
+  /** Sequence a List of Lazy values in parallel.
+    *
+    * All computations are started concurrently and their results collected.
+    * Requires an ExecutionContext for parallel execution.
+    */
+  def parSequence[A](list: List[Lazy[A]])(using
+      ec: ExecutionContext
+  ): Lazy[List[A]] =
+    fromFuture(Future.sequence(list.map(_.runAsync)))
+
+  /** Sequence a Vector of Lazy values in parallel.
+    */
+  def parSequence[A](vec: Vector[Lazy[A]])(using
+      ec: ExecutionContext
+  ): Lazy[Vector[A]] =
+    fromFuture(Future.sequence(vec.map(_.runAsync)).map(_.toVector))
+
+  /** Sequence a Seq of Lazy values in parallel.
+    */
+  def parSequence[A](seq: Seq[Lazy[A]])(using
+      ec: ExecutionContext
+  ): Lazy[Seq[A]] =
+    fromFuture(Future.sequence(seq.map(_.runAsync)))
+
+  /** Sequence an IndexedSeq of Lazy values in parallel.
+    */
+  def parSequence[A](seq: IndexedSeq[Lazy[A]])(using
+      ec: ExecutionContext
+  ): Lazy[IndexedSeq[A]] =
+    fromFuture(Future.sequence(seq.map(_.runAsync)).map(_.toIndexedSeq))
+
+  /** Traverse a List in parallel with a function that returns Lazy values.
+    *
+    * Each element is processed concurrently, with results collected in order.
+    */
+  def parTraverse[A, B](list: List[A])(f: A => Lazy[B])(using
+      ec: ExecutionContext
+  ): Lazy[List[B]] =
+    parSequence(list.map(f))
+
+  /** Traverse a Vector in parallel with a function that returns Lazy values.
+    */
+  def parTraverse[A, B](vec: Vector[A])(f: A => Lazy[B])(using
+      ec: ExecutionContext
+  ): Lazy[Vector[B]] =
+    parSequence(vec.map(f))
+
+  /** Traverse a Seq in parallel with a function that returns Lazy values.
+    */
+  def parTraverse[A, B](seq: Seq[A])(f: A => Lazy[B])(using
+      ec: ExecutionContext
+  ): Lazy[Seq[B]] =
+    parSequence(seq.map(f))
+
+  /** Traverse an IndexedSeq in parallel with a function that returns Lazy
+    * values.
+    */
+  def parTraverse[A, B](seq: IndexedSeq[A])(f: A => Lazy[B])(using
+      ec: ExecutionContext
+  ): Lazy[IndexedSeq[B]] =
+    parSequence(seq.map(f))
 
   /** A Lazy value that prints the provided string.
     */
@@ -367,6 +584,25 @@ object Lazy {
   /** Lazily evaluates the Try, folding the failure into a Lazy.fail */
   def fromTry[A](t: => Try[A]): Lazy[A] =
     Lazy.fn(t.fold(Lazy.fail, Lazy.fn)).flatten
+
+  /** Lifts a Future into a Lazy value.
+    *
+    * Important: The parameter is call-by-name, so the Future creation is
+    * deferred until the Lazy is run. However, once created, Futures are eager
+    * and will execute immediately.
+    *
+    * Example:
+    * {{{
+    *   // Future creation deferred - runs when Lazy executes
+    *   Lazy.fromFuture(Future { expensiveComputation() })
+    *
+    *   // Future already running - just wraps existing Future
+    *   val alreadyRunning = Future { expensiveComputation() }
+    *   Lazy.fromFuture(alreadyRunning)
+    * }}}
+    */
+  def fromFuture[A](f: => Future[A]): Lazy[A] =
+    Lazy.FromFuture(f)
 
   /** Wraps resource acquisition/usage of scala.util.Using into a Lazy. */
   def using[R: Releasable, A](resource: => R)(f: R => A): Lazy[A] =
