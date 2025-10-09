@@ -145,4 +145,254 @@ class EventBusSpec extends munit.FunSuite {
     latch.await()
     assertEquals(counter, 3)
   }
+
+  test("shutdown cleans up all subscribers") {
+    @volatile
+    var counter = 0
+    val latch   = new CountDownLatch(2)
+
+    // Create a fresh instance, not a singleton object
+    val testEventBus = new EventBus[Int] {}
+
+    val sub1 = new Subscriber[Int] {
+      override def onMsg(msg: EventBusMessage[Int]): Unit = {
+        counter += msg.payload
+        latch.countDown()
+      }
+    }
+
+    val sub2 = new Subscriber[Int] {
+      override def onMsg(msg: EventBusMessage[Int]): Unit = {
+        counter += msg.payload * 2
+        latch.countDown()
+      }
+    }
+
+    testEventBus.subscribe(sub1)
+    testEventBus.subscribe(sub2)
+
+    // Give threads time to start up
+    Thread.sleep(10)
+
+    // Publish one message to verify they work
+    testEventBus.publishNoTopic(1)
+    latch.await()
+    assertEquals(counter, 3)
+
+    // Shutdown the event bus
+    testEventBus.shutdown()
+
+    // Messages published after shutdown should not be processed
+    val oldCounter = counter
+    testEventBus.publishNoTopic(10)
+    Thread.sleep(100) // Give time for any potential message processing
+
+    assertEquals(counter, oldCounter, "No messages should be processed after shutdown")
+  }
+
+  test("subscriber with AutoCloseable") {
+    @volatile
+    var counter = 0
+    val latch   = new CountDownLatch(1)
+
+    // Create a fresh instance, not a singleton object
+    val testEventBus = new EventBus[Int] {}
+
+    val subscriber = new Subscriber[Int] {
+      override def onMsg(msg: EventBusMessage[Int]): Unit = {
+        counter += msg.payload
+        latch.countDown()
+      }
+    }
+
+    testEventBus.subscribe(subscriber)
+    testEventBus.publishNoTopic(5)
+    latch.await()
+    assertEquals(counter, 5)
+
+    // Use try-with-resources pattern
+    subscriber.close()
+
+    // Messages after close should not be processed
+    val oldCounter = counter
+    testEventBus.publishNoTopic(10)
+    Thread.sleep(100) // Give time for any potential message processing
+
+    assertEquals(counter, oldCounter, "No messages should be processed after close")
+  }
+
+  test("onPublishError callback for filter exceptions") {
+    @volatile
+    var errorCount = 0
+    @volatile
+    var lastError: Option[Throwable] = None
+    @volatile
+    var lastSubscriptionId: Option[java.util.UUID] = None
+
+    val testEventBus = new EventBus[Int] {
+      override def onPublishError(
+          error: Throwable,
+          message: EventBusMessage[Int],
+          subscriptionId: java.util.UUID
+      ): Unit = {
+        errorCount += 1
+        lastError = Some(error)
+        lastSubscriptionId = Some(subscriptionId)
+      }
+    }
+
+    // Subscribe with a filter that throws an exception
+    val subId = testEventBus.subscribe(
+      Subscriber[Int](_ => ()),
+      _ => throw new RuntimeException("Filter error!")
+    )
+
+    // Publish a message
+    testEventBus.publishNoTopic(42)
+    Thread.sleep(50) // Give time for error handling
+
+    assertEquals(errorCount, 1)
+    assert(lastError.isDefined)
+    assertEquals(lastError.get.getMessage, "Filter error!")
+    assert(lastSubscriptionId.isDefined)
+    assertEquals(lastSubscriptionId.get, subId)
+  }
+
+  test("onPublishError does not block other subscribers") {
+    @volatile
+    var errorCount = 0
+    @volatile
+    var successCounter = 0
+    val latch = new CountDownLatch(2)
+
+    val testEventBus = new EventBus[Int] {
+      override def onPublishError(
+          error: Throwable,
+          message: EventBusMessage[Int],
+          subscriptionId: java.util.UUID
+      ): Unit = {
+        errorCount += 1
+      }
+    }
+
+    // First subscriber with failing filter
+    testEventBus.subscribe(
+      Subscriber[Int](_ => ()),
+      _ => throw new RuntimeException("Boom!")
+    )
+
+    // Second subscriber that should still receive messages
+    testEventBus.subscribe(Subscriber[Int] { msg =>
+      successCounter += msg.payload
+      latch.countDown()
+    })
+
+    // Third subscriber that should also receive messages
+    testEventBus.subscribe(Subscriber[Int] { msg =>
+      successCounter += msg.payload * 2
+      latch.countDown()
+    })
+
+    testEventBus.publishNoTopic(1)
+    latch.await()
+
+    assertEquals(errorCount, 1, "Should have one error from failing filter")
+    assertEquals(
+      successCounter,
+      3,
+      "Other subscribers should still receive messages"
+    )
+  }
+
+  test("subscriber onError callback for message processing exceptions") {
+    @volatile
+    var errorCount = 0
+    @volatile
+    var lastError: Option[Throwable] = None
+    @volatile
+    var lastMessage: Option[EventBusMessage[Int]] = None
+    @volatile
+    var successCount = 0
+
+    val latch = new CountDownLatch(2)
+
+    val testEventBus = new EventBus[Int] {}
+
+    val subscriber = new Subscriber[Int] {
+      override def onMsg(msg: EventBusMessage[Int]): Unit = {
+        if (msg.payload < 0) {
+          throw new IllegalArgumentException("Negative value!")
+        }
+        successCount += 1
+        latch.countDown()
+      }
+
+      override def onError(
+          error: Throwable,
+          message: EventBusMessage[Int]
+      ): Unit = {
+        errorCount += 1
+        lastError = Some(error)
+        lastMessage = Some(message)
+        latch.countDown()
+      }
+    }
+
+    testEventBus.subscribe(subscriber)
+
+    // Send one good message
+    testEventBus.publishNoTopic(5)
+    // Send one bad message
+    testEventBus.publishNoTopic(-1)
+
+    latch.await()
+
+    assertEquals(successCount, 1, "One message should process successfully")
+    assertEquals(errorCount, 1, "One error should be caught")
+    assert(lastError.isDefined)
+    assertEquals(lastError.get.getMessage, "Negative value!")
+    assert(lastMessage.isDefined)
+    assertEquals(lastMessage.get.payload, -1)
+  }
+
+  test("subscriber continues processing after onMsg exception") {
+    @volatile
+    var processedCount = 0
+    val latch = new CountDownLatch(3)
+
+    val testEventBus = new EventBus[Int] {}
+
+    val subscriber = new Subscriber[Int] {
+      override def onMsg(msg: EventBusMessage[Int]): Unit = {
+        if (msg.payload == 2) {
+          throw new RuntimeException("Error on 2!")
+        }
+        processedCount += 1
+        latch.countDown()
+      }
+
+      override def onError(
+          error: Throwable,
+          message: EventBusMessage[Int]
+      ): Unit = {
+        // Still count down to show error was handled
+        latch.countDown()
+      }
+    }
+
+    testEventBus.subscribe(subscriber)
+
+    // Send three messages, middle one will fail
+    testEventBus.publishNoTopic(1)
+    testEventBus.publishNoTopic(2) // This will throw
+    testEventBus.publishNoTopic(3)
+
+    latch.await()
+
+    assertEquals(
+      processedCount,
+      2,
+      "Should process 2 messages (1 and 3), skipping the failing one"
+    )
+  }
 }
