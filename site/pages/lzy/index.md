@@ -166,7 +166,7 @@ myLazyOp(0).retryN(3) // Retry up to 3 times
 
 ### Timing Control
 
-You can add delays and pauses to your Lazy computations:
+You can add delays, pauses, and timeouts to your Lazy computations:
 
 ```scala
 import scala.concurrent.duration._
@@ -174,6 +174,15 @@ import scala.concurrent.duration._
 Lazy.fn("hello")
   .delay(1.second) // Delay before execution
   .pause(500.millis) // Pause after execution
+
+// Timeout a computation if it takes too long
+Lazy.fn(expensiveComputation())
+  .timeout(5.seconds) // Fails with TimeoutException if exceeds 5 seconds
+
+// Combine with error handling
+Lazy.fn(maybeSlowOperation())
+  .timeout(2.seconds)
+  .recover(_ => Lazy.fn(fallbackValue))
 ```
 
 ### Optional Values

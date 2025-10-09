@@ -241,6 +241,34 @@ class LazySpec extends LoggerFixtureSuite {
     }
   }
 
+  test("Lazy.timeout - completes before timeout") {
+    for {
+      result <- Lazy.fn(42).timeout(2.seconds)
+    } yield assertEquals(result, 42)
+  }
+
+  test("Lazy.timeout - times out") {
+    val result = Lazy
+      .sleep(2.seconds)
+      .as(42)
+      .timeout(500.millis)
+      .runSync()
+
+    assert(result.isFailure)
+    assert(result.failed.get.isInstanceOf[java.util.concurrent.TimeoutException])
+    assert(result.failed.get.getMessage.contains("Operation timed out"))
+  }
+
+  test("Lazy.timeout - error before timeout") {
+    val result = Lazy
+      .fail[Int](new Exception("test error"))
+      .timeout(2.seconds)
+      .runSync()
+
+    assert(result.isFailure)
+    assert(result.failed.get.getMessage == "test error")
+  }
+
   loggerFixture.test("Lazy.log") { (logger, handler) =>
     given Logger = logger
 

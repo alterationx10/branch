@@ -1,8 +1,9 @@
 package dev.alteration.branch.lzy
 
+import java.util.concurrent.{Executors, ScheduledExecutorService, TimeUnit, TimeoutException}
 import scala.annotation.tailrec
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 import scala.util.Try
 
 private[lzy] trait LazyRuntime {
@@ -15,6 +16,10 @@ private[lzy] trait LazyRuntime {
 }
 
 object LazyRuntime extends LazyRuntime {
+
+  // Shared scheduler for timeout and sleep operations
+  private val scheduler: ScheduledExecutorService =
+    Executors.newScheduledThreadPool(1)
 
   /** Run a Lazy value synchronously.
     */
@@ -37,17 +42,19 @@ object LazyRuntime extends LazyRuntime {
       lzy: Lazy[A]
   )(using executionContext: ExecutionContext): Future[A] = {
     lzy match {
-      case Lazy.Fn(a)           => Future(a())
-      case Lazy.Fail(e)         => Future.failed(e)
-      case Lazy.Recover(lzy, f) => evalRecover(lzy, f)
-      case Lazy.Sleep(d)        => Future(Thread.sleep(d.toMillis))
+      case Lazy.Fn(a)            => Future(a())
+      case Lazy.Fail(e)          => Future.failed(e)
+      case Lazy.Recover(lzy, f)  => evalRecover(lzy, f)
+      case Lazy.Sleep(d)         => Future(Thread.sleep(d.toMillis))
+      case Lazy.Timeout(lzy, d)  => evalTimeout(lzy, d)
       case Lazy.FlatMap(lzy, f) =>
         lzy match {
-          case Lazy.FlatMap(l, g) => eval(l.flatMap(g(_).flatMap(f)))
-          case Lazy.Fn(a)         => eval(f(a()))
-          case Lazy.Fail(e)       => Future.failed(e)
-          case Lazy.Recover(l, r) => evalFlatMapRecover(l, r, f)
-          case Lazy.Sleep(d)      => evalFlatMapSleep(d, f)
+          case Lazy.FlatMap(l, g)  => eval(l.flatMap(g(_).flatMap(f)))
+          case Lazy.Fn(a)          => eval(f(a()))
+          case Lazy.Fail(e)        => Future.failed(e)
+          case Lazy.Recover(l, r)  => evalFlatMapRecover(l, r, f)
+          case Lazy.Sleep(d)       => evalFlatMapSleep(d, f)
+          case Lazy.Timeout(l, d)  => evalFlatMapTimeout(l, d, f)
         }
     }
   }
@@ -58,6 +65,14 @@ object LazyRuntime extends LazyRuntime {
     Future {
       Thread.sleep(d.toMillis)
     }.flatMap(_ => eval(f(())))
+  }
+
+  private final def evalFlatMapTimeout[A, B](
+      lzy: Lazy[A],
+      d: Duration,
+      f: A => Lazy[B]
+  )(using executionContext: ExecutionContext): Future[B] = {
+    evalTimeout(lzy, d).flatMap(z => eval(f(z)))
   }
 
   private final def evalFlatMapRecover[A, B](
@@ -76,5 +91,31 @@ object LazyRuntime extends LazyRuntime {
       case Lazy.Fail(e) => eval(f(e))
       case _            => eval(lzy).recoverWith { case t: Throwable => eval(f(t)) }
     }
+  }
+
+  private final def evalTimeout[A](
+      lzy: Lazy[A],
+      duration: Duration
+  )(using executionContext: ExecutionContext): Future[A] = {
+    val promise = Promise[A]()
+
+    // Schedule timeout task
+    val timeoutTask = scheduler.schedule(
+      () => {
+        promise.tryFailure(
+          new TimeoutException(s"Operation timed out after $duration")
+        )
+      },
+      duration.toMillis,
+      TimeUnit.MILLISECONDS
+    )
+
+    // Run actual computation
+    eval(lzy).onComplete { result =>
+      timeoutTask.cancel(false) // Cancel timeout if computation finishes first
+      promise.tryComplete(result)
+    }
+
+    promise.future
   }
 }

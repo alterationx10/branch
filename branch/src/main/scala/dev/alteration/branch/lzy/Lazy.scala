@@ -135,6 +135,11 @@ sealed trait Lazy[+A] {
   final def pause(duration: Duration): Lazy[A] =
     this.flatMap(a => Lazy.sleep(duration).as(a))
 
+  /** Timeout the Lazy computation if it exceeds the provided duration.
+    */
+  final def timeout(duration: Duration): Lazy[A] =
+    Lazy.Timeout(this, duration)
+
   /** Map the error of the Lazy, evaluating the provided function.
     */
   final def mapError(f: Throwable => Throwable): Lazy[A] =
@@ -201,6 +206,9 @@ object Lazy {
   ) extends Lazy[A]
 
   private[lzy] final case class Sleep(duration: Duration) extends Lazy[Unit]
+
+  private[lzy] final case class Timeout[A](lzy: Lazy[A], duration: Duration)
+      extends Lazy[A]
 
   /** A Lazy value that evaluates the provided expression.
     */
