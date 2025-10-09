@@ -301,6 +301,10 @@ Lazy.sequence(lazyList) // Lazy[List[Int]]
 // Works with various collection types
 Lazy.sequence(Vector(Lazy.fn("a"), Lazy.fn("b"))) // Lazy[Vector[String]]
 Lazy.traverse(Set(1, 2, 3))(x => Lazy.fn(x.toString)) // Lazy[Set[String]]
+
+// Parallel execution for independent computations
+Lazy.parSequence(List(lazy1, lazy2, lazy3)) // All run concurrently
+Lazy.parTraverse(List(1, 2, 3))(x => Lazy.fn(expensiveOp(x))) // Process in parallel
 ```
 
 ### Composing Operations

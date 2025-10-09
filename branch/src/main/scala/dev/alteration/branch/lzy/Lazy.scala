@@ -365,6 +365,68 @@ object Lazy {
   def traverse[A, B: ClassTag](arr: Array[A])(f: A => Lazy[B]): Lazy[Array[B]] =
     forEach(arr)(f)
 
+  /** Sequence a List of Lazy values in parallel.
+    *
+    * All computations are started concurrently and their results collected.
+    * Requires an ExecutionContext for parallel execution.
+    */
+  def parSequence[A](list: List[Lazy[A]])(using
+      ec: ExecutionContext
+  ): Lazy[List[A]] =
+    fromFuture(Future.sequence(list.map(_.runAsync)))
+
+  /** Sequence a Vector of Lazy values in parallel.
+    */
+  def parSequence[A](vec: Vector[Lazy[A]])(using
+      ec: ExecutionContext
+  ): Lazy[Vector[A]] =
+    fromFuture(Future.sequence(vec.map(_.runAsync)).map(_.toVector))
+
+  /** Sequence a Seq of Lazy values in parallel.
+    */
+  def parSequence[A](seq: Seq[Lazy[A]])(using
+      ec: ExecutionContext
+  ): Lazy[Seq[A]] =
+    fromFuture(Future.sequence(seq.map(_.runAsync)))
+
+  /** Sequence an IndexedSeq of Lazy values in parallel.
+    */
+  def parSequence[A](seq: IndexedSeq[Lazy[A]])(using
+      ec: ExecutionContext
+  ): Lazy[IndexedSeq[A]] =
+    fromFuture(Future.sequence(seq.map(_.runAsync)).map(_.toIndexedSeq))
+
+  /** Traverse a List in parallel with a function that returns Lazy values.
+    *
+    * Each element is processed concurrently, with results collected in order.
+    */
+  def parTraverse[A, B](list: List[A])(f: A => Lazy[B])(using
+      ec: ExecutionContext
+  ): Lazy[List[B]] =
+    parSequence(list.map(f))
+
+  /** Traverse a Vector in parallel with a function that returns Lazy values.
+    */
+  def parTraverse[A, B](vec: Vector[A])(f: A => Lazy[B])(using
+      ec: ExecutionContext
+  ): Lazy[Vector[B]] =
+    parSequence(vec.map(f))
+
+  /** Traverse a Seq in parallel with a function that returns Lazy values.
+    */
+  def parTraverse[A, B](seq: Seq[A])(f: A => Lazy[B])(using
+      ec: ExecutionContext
+  ): Lazy[Seq[B]] =
+    parSequence(seq.map(f))
+
+  /** Traverse an IndexedSeq in parallel with a function that returns Lazy
+    * values.
+    */
+  def parTraverse[A, B](seq: IndexedSeq[A])(f: A => Lazy[B])(using
+      ec: ExecutionContext
+  ): Lazy[IndexedSeq[B]] =
+    parSequence(seq.map(f))
+
   /** A Lazy value that prints the provided string.
     */
   def println(str: String): Lazy[Unit] =

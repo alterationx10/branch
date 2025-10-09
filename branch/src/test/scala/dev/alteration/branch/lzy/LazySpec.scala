@@ -297,6 +297,85 @@ class LazySpec extends LoggerFixtureSuite {
     } yield assertEquals(result.toList, List(2, 4, 6))
   }
 
+  test("Lazy.parSequence - List") {
+    for {
+      result <- Lazy.parSequence(List(Lazy.fn(1), Lazy.fn(2), Lazy.fn(3)))
+    } yield assertEquals(result, List(1, 2, 3))
+  }
+
+  test("Lazy.parSequence - Vector") {
+    for {
+      result <- Lazy.parSequence(
+                  Vector(Lazy.fn("a"), Lazy.fn("b"), Lazy.fn("c"))
+                )
+    } yield assertEquals(result, Vector("a", "b", "c"))
+  }
+
+  test("Lazy.parSequence - parallel execution") {
+    val start = System.currentTimeMillis()
+
+    val lazies = List(
+      Lazy.sleep(100.millis).as(1),
+      Lazy.sleep(100.millis).as(2),
+      Lazy.sleep(100.millis).as(3)
+    )
+
+    for {
+      result <- Lazy.parSequence(lazies)
+      end = System.currentTimeMillis()
+    } yield {
+      assertEquals(result, List(1, 2, 3))
+      // Should take ~100ms in parallel, not 300ms sequentially
+      assert(
+        (end - start) < 250,
+        s"Took ${end - start}ms, expected < 250ms for parallel execution"
+      )
+    }
+  }
+
+  test("Lazy.parSequence - with error") {
+    val result = Lazy
+      .parSequence(
+        List(Lazy.fn(1), Lazy.fail[Int](new Exception("error")), Lazy.fn(3))
+      )
+      .runSync()
+
+    assert(result.isFailure)
+    assertEquals(result.failed.get.getMessage, "error")
+  }
+
+  test("Lazy.parTraverse - List") {
+    for {
+      result <- Lazy.parTraverse(List(1, 2, 3))(x => Lazy.fn(x * 2))
+    } yield assertEquals(result, List(2, 4, 6))
+  }
+
+  test("Lazy.parTraverse - Vector") {
+    for {
+      result <- Lazy.parTraverse(Vector("a", "b", "c"))(s =>
+                  Lazy.fn(s.toUpperCase)
+                )
+    } yield assertEquals(result, Vector("A", "B", "C"))
+  }
+
+  test("Lazy.parTraverse - parallel execution") {
+    val start = System.currentTimeMillis()
+
+    for {
+      result <- Lazy.parTraverse(List(1, 2, 3)) { x =>
+                  Lazy.sleep(100.millis).as(x * 2)
+                }
+      end = System.currentTimeMillis()
+    } yield {
+      assertEquals(result, List(2, 4, 6))
+      // Should take ~100ms in parallel, not 300ms sequentially
+      assert(
+        (end - start) < 250,
+        s"Took ${end - start}ms, expected < 250ms for parallel execution"
+      )
+    }
+  }
+
   test("Lazy.now") {
     for {
       l <- Lazy.now()
