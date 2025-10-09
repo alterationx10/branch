@@ -119,7 +119,8 @@ class LazySpec extends LoggerFixtureSuite {
 
   test("Lazy.race - left succeeds, right fails") {
     for {
-      result <- Lazy.fn(42).race(Lazy.fail[String](new Exception("right error")))
+      result <-
+        Lazy.fn(42).race(Lazy.fail[String](new Exception("right error")))
     } yield {
       result match {
         case i: Int    => assertEquals(i, 42)
@@ -266,7 +267,9 @@ class LazySpec extends LoggerFixtureSuite {
 
   test("Lazy.sequence - with error") {
     val result = Lazy
-      .sequence(List(Lazy.fn(1), Lazy.fail[Int](new Exception("error")), Lazy.fn(3)))
+      .sequence(
+        List(Lazy.fn(1), Lazy.fail[Int](new Exception("error")), Lazy.fn(3))
+      )
       .runSync()
 
     assert(result.isFailure)
@@ -281,7 +284,8 @@ class LazySpec extends LoggerFixtureSuite {
 
   test("Lazy.traverse - Vector") {
     for {
-      result <- Lazy.traverse(Vector("a", "b", "c"))(s => Lazy.fn(s.toUpperCase))
+      result <-
+        Lazy.traverse(Vector("a", "b", "c"))(s => Lazy.fn(s.toUpperCase))
     } yield assertEquals(result, Vector("A", "B", "C"))
   }
 
@@ -322,7 +326,7 @@ class LazySpec extends LoggerFixtureSuite {
 
     for {
       result <- Lazy.parSequence(lazies)
-      end = System.currentTimeMillis()
+      end     = System.currentTimeMillis()
     } yield {
       assertEquals(result, List(1, 2, 3))
       // Should take ~100ms in parallel, not 300ms sequentially
@@ -352,9 +356,8 @@ class LazySpec extends LoggerFixtureSuite {
 
   test("Lazy.parTraverse - Vector") {
     for {
-      result <- Lazy.parTraverse(Vector("a", "b", "c"))(s =>
-                  Lazy.fn(s.toUpperCase)
-                )
+      result <-
+        Lazy.parTraverse(Vector("a", "b", "c"))(s => Lazy.fn(s.toUpperCase))
     } yield assertEquals(result, Vector("A", "B", "C"))
   }
 
@@ -365,7 +368,7 @@ class LazySpec extends LoggerFixtureSuite {
       result <- Lazy.parTraverse(List(1, 2, 3)) { x =>
                   Lazy.sleep(100.millis).as(x * 2)
                 }
-      end = System.currentTimeMillis()
+      end     = System.currentTimeMillis()
     } yield {
       assertEquals(result, List(2, 4, 6))
       // Should take ~100ms in parallel, not 300ms sequentially
@@ -463,7 +466,9 @@ class LazySpec extends LoggerFixtureSuite {
       .runSync()
 
     assert(result.isFailure)
-    assert(result.failed.get.isInstanceOf[java.util.concurrent.TimeoutException])
+    assert(
+      result.failed.get.isInstanceOf[java.util.concurrent.TimeoutException]
+    )
     assert(result.failed.get.getMessage.contains("Operation timed out"))
   }
 

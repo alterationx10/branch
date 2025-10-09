@@ -38,9 +38,9 @@ sealed trait Lazy[+A] {
 
   /** Race this Lazy against another, returning whichever completes first.
     *
-    * Both computations are started concurrently. The result is a union type
-    * A | B - you can pattern match on the type to determine which completed
-    * first. If both fail, the first failure is returned.
+    * Both computations are started concurrently. The result is a union type A |
+    * B - you can pattern match on the type to determine which completed first.
+    * If both fail, the first failure is returned.
     *
     * Example:
     * {{{

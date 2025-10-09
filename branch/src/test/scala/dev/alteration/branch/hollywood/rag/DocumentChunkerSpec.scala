@@ -4,7 +4,8 @@ import munit.FunSuite
 
 class DocumentChunkerSpec extends FunSuite {
 
-  val sampleText = """This is the first sentence. This is the second sentence. This is the third sentence.
+  val sampleText =
+    """This is the first sentence. This is the second sentence. This is the third sentence.
 This is the fourth sentence. This is the fifth sentence. This is the sixth sentence."""
 
   val sampleParagraphs = """This is the first paragraph.
@@ -26,7 +27,10 @@ Final thoughts go here. The end."""
     assert(result.isRight, "Should succeed")
     result.foreach { r =>
       assert(r.totalChunks > 0, "Should create chunks")
-      assert(r.chunks.forall(_.content.nonEmpty), "All chunks should have content")
+      assert(
+        r.chunks.forall(_.content.nonEmpty),
+        "All chunks should have content"
+      )
     }
   }
 
@@ -136,7 +140,10 @@ Final thoughts go here. The end."""
 
     assert(result.isRight, "Should succeed")
     result.foreach { r =>
-      assert(r.chunks.forall(_.size >= 20), "All chunks should meet minimum size")
+      assert(
+        r.chunks.forall(_.size >= 20),
+        "All chunks should meet minimum size"
+      )
     }
   }
 
@@ -202,7 +209,10 @@ Final thoughts go here. The end."""
 
     assert(result.isLeft, "Should fail validation")
     result.left.foreach { error =>
-      assert(error.contains("overlap must be non-negative"), s"Got error: $error")
+      assert(
+        error.contains("overlap must be non-negative"),
+        s"Got error: $error"
+      )
     }
   }
 
@@ -216,7 +226,10 @@ Final thoughts go here. The end."""
 
     assert(result.isLeft, "Should fail validation")
     result.left.foreach { error =>
-      assert(error.contains("overlap must be less than chunkSize"), s"Got error: $error")
+      assert(
+        error.contains("overlap must be less than chunkSize"),
+        s"Got error: $error"
+      )
     }
   }
 
@@ -238,7 +251,8 @@ Final thoughts go here. The end."""
       strategy = ChunkStrategy.Sentence,
       chunkSize = 1
     )
-    val result = DocumentChunker.chunk("This is text without proper punctuation", config)
+    val result =
+      DocumentChunker.chunk("This is text without proper punctuation", config)
 
     assert(result.isRight, "Should succeed")
     result.foreach { r =>
@@ -247,12 +261,13 @@ Final thoughts go here. The end."""
   }
 
   test("DocumentChunker should detect multiple sentence types") {
-    val mixedText = "First sentence. Second sentence! Third sentence? Fourth sentence."
-    val config = ChunkConfig(
+    val mixedText =
+      "First sentence. Second sentence! Third sentence? Fourth sentence."
+    val config    = ChunkConfig(
       strategy = ChunkStrategy.Sentence,
       chunkSize = 1
     )
-    val result = DocumentChunker.chunk(mixedText, config)
+    val result    = DocumentChunker.chunk(mixedText, config)
 
     assert(result.isRight, "Should succeed")
     result.foreach { r =>
@@ -287,12 +302,17 @@ Final thoughts go here. The end."""
     assert(result.isRight, "Should succeed")
     result.foreach { r =>
       val indices = r.chunks.map(_.index)
-      assertEquals(indices, (0 until r.totalChunks).toList, "Chunks should be indexed 0, 1, 2, ...")
+      assertEquals(
+        indices,
+        (0 until r.totalChunks).toList,
+        "Chunks should be indexed 0, 1, 2, ..."
+      )
     }
   }
 
   test("DocumentChunker should handle real-world document") {
-    val document = """Artificial intelligence (AI) is intelligence demonstrated by machines,
+    val document =
+      """Artificial intelligence (AI) is intelligence demonstrated by machines,
 in contrast to the natural intelligence displayed by humans and animals. Leading AI
 textbooks define the field as the study of "intelligent agents": any device that
 perceives its environment and takes actions that maximize its chance of successfully
@@ -349,7 +369,11 @@ how the chunker handles sentences of varying lengths and complexities."""
     assert(result.isRight, "Should succeed")
     result.foreach { r =>
       r.chunks.foreach { chunk =>
-        assertEquals(chunk.size, chunk.content.length, "Chunk size should match content length")
+        assertEquals(
+          chunk.size,
+          chunk.content.length,
+          "Chunk size should match content length"
+        )
       }
     }
   }
@@ -369,8 +393,15 @@ how the chunker handles sentences of varying lengths and complexities."""
         (s"doc-${chunk.index}", chunk.content)
       }
 
-      assertEquals(documentsToIndex.size, r.totalChunks, "Should create indexable documents")
-      assert(documentsToIndex.forall(_._2.nonEmpty), "All documents should have content")
+      assertEquals(
+        documentsToIndex.size,
+        r.totalChunks,
+        "Should create indexable documents"
+      )
+      assert(
+        documentsToIndex.forall(_._2.nonEmpty),
+        "All documents should have content"
+      )
     }
   }
 

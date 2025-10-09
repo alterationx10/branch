@@ -1,6 +1,11 @@
 package dev.alteration.branch.lzy
 
-import java.util.concurrent.{Executors, ScheduledExecutorService, TimeUnit, TimeoutException}
+import java.util.concurrent.{
+  Executors,
+  ScheduledExecutorService,
+  TimeoutException,
+  TimeUnit
+}
 import scala.annotation.tailrec
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future, Promise}
@@ -42,22 +47,22 @@ object LazyRuntime extends LazyRuntime {
       lzy: Lazy[A]
   )(using executionContext: ExecutionContext): Future[A] = {
     lzy match {
-      case Lazy.Fn(a)            => Future(a())
-      case Lazy.Fail(e)          => Future.failed(e)
-      case Lazy.Recover(lzy, f)  => evalRecover(lzy, f)
-      case Lazy.Sleep(d)         => evalSleep(d)
-      case Lazy.Timeout(lzy, d)  => evalTimeout(lzy, d)
-      case Lazy.FromFuture(f)    => f
+      case Lazy.Fn(a)             => Future(a())
+      case Lazy.Fail(e)           => Future.failed(e)
+      case Lazy.Recover(lzy, f)   => evalRecover(lzy, f)
+      case Lazy.Sleep(d)          => evalSleep(d)
+      case Lazy.Timeout(lzy, d)   => evalTimeout(lzy, d)
+      case Lazy.FromFuture(f)     => f
       case Lazy.Race(left, right) => evalRace(left, right)
-      case Lazy.FlatMap(lzy, f) =>
+      case Lazy.FlatMap(lzy, f)   =>
         lzy match {
-          case Lazy.FlatMap(l, g)   => eval(l.flatMap(g(_).flatMap(f)))
-          case Lazy.Fn(a)           => eval(f(a()))
-          case Lazy.Fail(e)         => Future.failed(e)
-          case Lazy.Recover(l, r)   => evalFlatMapRecover(l, r, f)
-          case Lazy.Sleep(d)        => evalFlatMapSleep(d, f)
-          case Lazy.Timeout(l, d)   => evalFlatMapTimeout(l, d, f)
-          case Lazy.FromFuture(fut) => evalFlatMapFromFuture(fut, f)
+          case Lazy.FlatMap(l, g)     => eval(l.flatMap(g(_).flatMap(f)))
+          case Lazy.Fn(a)             => eval(f(a()))
+          case Lazy.Fail(e)           => Future.failed(e)
+          case Lazy.Recover(l, r)     => evalFlatMapRecover(l, r, f)
+          case Lazy.Sleep(d)          => evalFlatMapSleep(d, f)
+          case Lazy.Timeout(l, d)     => evalFlatMapTimeout(l, d, f)
+          case Lazy.FromFuture(fut)   => evalFlatMapFromFuture(fut, f)
           case Lazy.Race(left, right) => evalFlatMapRace(left, right, f)
         }
     }
@@ -144,8 +149,8 @@ object LazyRuntime extends LazyRuntime {
       left: Lazy[A],
       right: Lazy[B]
   )(using executionContext: ExecutionContext): Future[A | B] = {
-    val promise = Promise[A | B]()
-    val leftFuture = eval(left)
+    val promise     = Promise[A | B]()
+    val leftFuture  = eval(left)
     val rightFuture = eval(right)
 
     leftFuture.onComplete {
