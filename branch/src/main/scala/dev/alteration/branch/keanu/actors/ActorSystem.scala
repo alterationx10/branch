@@ -110,8 +110,8 @@ trait ActorSystem {
     */
   private final def restartActor(
       refId: ActorRefId,
-      error: Option[Throwable] = None,
-      strategy: SupervisionStrategy = RestartStrategy
+      error: Option[Throwable],
+      strategy: SupervisionStrategy
   ): Unit = {
     val mailbox = getOrCreateMailbox(refId)
     actors -= refId
@@ -372,7 +372,7 @@ trait ActorSystem {
     */
   private final def registerChild(parent: ActorPath, child: ActorPath): Unit = {
     children.updateWith(parent) {
-      case Some(existing) => Some(existing + child)
+      case Some(existing) => Some(existing.union(Set(child)))
       case None           => Some(Set(child))
     }
   }
@@ -386,7 +386,7 @@ trait ActorSystem {
     path.parent.foreach { parent =>
       children.updateWith(parent) {
         case Some(existing) =>
-          val updated = existing - path
+          val updated = existing.diff(Set(path))
           if (updated.isEmpty) None else Some(updated)
         case None           => None
       }
