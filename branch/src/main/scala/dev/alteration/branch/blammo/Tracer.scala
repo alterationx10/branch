@@ -4,7 +4,7 @@ import dev.alteration.branch.friday.Json
 import dev.alteration.branch.friday.Json.*
 
 import java.util.UUID
-import scala.util.{Try, Success, Failure}
+import scala.util.{Failure, Success, Try}
 
 /** Context for a single span in a distributed trace
   * @param traceId
@@ -159,8 +159,8 @@ trait Tracer { self: BaseLogger =>
     }
   }
 
-  /** Execute a block of code within a traced span, with explicit success/failure
-    * handling based on the Try result
+  /** Execute a block of code within a traced span, with explicit
+    * success/failure handling based on the Try result
     * @param operation
     *   The operation name for this span
     * @param attributes
@@ -212,18 +212,20 @@ trait Tracer { self: BaseLogger =>
     * @param attributes
     *   Optional key-value attributes for the event
     */
-  def spanEvent(name: String, attributes: Map[String, Json] = Map.empty): Unit =
-    {
-      currentSpan.foreach { ctx =>
-        val fields = Map(
-          "event"     -> JsonString("span.event"),
-          "trace_id"  -> JsonString(ctx.traceId),
-          "span_id"   -> JsonString(ctx.spanId),
-          "name"      -> JsonString(name),
-          "timestamp" -> JsonNumber(System.currentTimeMillis().toDouble)
-        ) ++ attributes
+  def spanEvent(
+      name: String,
+      attributes: Map[String, Json] = Map.empty
+  ): Unit = {
+    currentSpan.foreach { ctx =>
+      val fields = Map(
+        "event"     -> JsonString("span.event"),
+        "trace_id"  -> JsonString(ctx.traceId),
+        "span_id"   -> JsonString(ctx.spanId),
+        "name"      -> JsonString(name),
+        "timestamp" -> JsonNumber(System.currentTimeMillis().toDouble)
+      ) ++ attributes
 
-        logger.info(Json.obj(fields.toSeq*).toJsonString)
-      }
+      logger.info(Json.obj(fields.toSeq*).toJsonString)
     }
+  }
 }

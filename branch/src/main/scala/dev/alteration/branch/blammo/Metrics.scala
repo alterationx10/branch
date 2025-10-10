@@ -25,7 +25,9 @@ case class Metrics(module: String) {
   private val histograms = mutable.Map.empty[String, () => Double]
 
   private val mbs  = ManagementFactory.getPlatformMBeanServer
-  private val name = new ObjectName(s"dev.alteration.branch:type=$module,name=Metrics")
+  private val name = new ObjectName(
+    s"dev.alteration.branch:type=$module,name=Metrics"
+  )
 
   /** Add a gauge metric - a value that can go up or down
     * @param name
@@ -72,13 +74,20 @@ case class Metrics(module: String) {
 
     val mbean = new DynamicMBean {
       override def getAttribute(attribute: String): Object = {
-        gauges.get(attribute).map(_()).orElse(
-          counters.get(attribute).map(_())
-        ).orElse(
-          histograms.get(attribute).map(_())
-        ).map(_.asInstanceOf[Object])
+        gauges
+          .get(attribute)
+          .map(_())
+          .orElse(
+            counters.get(attribute).map(_())
+          )
+          .orElse(
+            histograms.get(attribute).map(_())
+          )
+          .map(_.asInstanceOf[Object])
           .getOrElse(
-            throw new AttributeNotFoundException(s"Attribute $attribute not found")
+            throw new AttributeNotFoundException(
+              s"Attribute $attribute not found"
+            )
           )
       }
 
@@ -96,30 +105,36 @@ case class Metrics(module: String) {
 
       override def getMBeanInfo: MBeanInfo = {
         val allAttrs = (
-          gauges.keys.map(name => new MBeanAttributeInfo(
-            name,
-            "java.lang.Object",
-            s"Gauge: $name",
-            true,  // readable
-            false, // not writable
-            false  // not is(...)
-          )) ++
-          counters.keys.map(name => new MBeanAttributeInfo(
-            name,
-            "java.lang.Long",
-            s"Counter: $name",
-            true,
-            false,
-            false
-          )) ++
-          histograms.keys.map(name => new MBeanAttributeInfo(
-            name,
-            "java.lang.Double",
-            s"Histogram: $name",
-            true,
-            false,
-            false
-          ))
+          gauges.keys.map(name =>
+            new MBeanAttributeInfo(
+              name,
+              "java.lang.Object",
+              s"Gauge: $name",
+              true,  // readable
+              false, // not writable
+              false  // not is(...)
+            )
+          ) ++
+            counters.keys.map(name =>
+              new MBeanAttributeInfo(
+                name,
+                "java.lang.Long",
+                s"Counter: $name",
+                true,
+                false,
+                false
+              )
+            ) ++
+            histograms.keys.map(name =>
+              new MBeanAttributeInfo(
+                name,
+                "java.lang.Double",
+                s"Histogram: $name",
+                true,
+                false,
+                false
+              )
+            )
         ).toArray
 
         new MBeanInfo(

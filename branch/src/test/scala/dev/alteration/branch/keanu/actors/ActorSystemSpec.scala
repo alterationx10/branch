@@ -471,10 +471,10 @@ class ActorSystemSpec extends FunSuite {
   }
 
   test("preRestart and postRestart should be called on restart") {
-    @volatile var preRestartCalled                   = false
-    @volatile var postRestartCalled                  = false
-    @volatile var preRestartError: Option[Throwable] = None
-    None
+    @volatile var preRestartCalled                    = false
+    @volatile var postRestartCalled                   = false
+    @volatile var preRestartError: Option[Throwable]  = None
+    @volatile var postRestartError: Option[Throwable] = None
 
     case class LifecycleActor() extends Actor {
       override def preRestart(reason: Throwable): Unit  = {

@@ -29,7 +29,8 @@ class MetricsAndTracingSpec extends FunSuite {
 
     // Read metrics from JMX
     val mbs  = ManagementFactory.getPlatformMBeanServer()
-    val name = new ObjectName("dev.alteration.branch:type=TestModule,name=Metrics")
+    val name =
+      new ObjectName("dev.alteration.branch:type=TestModule,name=Metrics")
 
     val connections = mbs.getAttribute(name, "ActiveConnections")
     val requests    = mbs.getAttribute(name, "RequestCount")
@@ -54,7 +55,8 @@ class MetricsAndTracingSpec extends FunSuite {
     avgResponseTime = 125.5
 
     val mbs  = ManagementFactory.getPlatformMBeanServer()
-    val name = new ObjectName("dev.alteration.branch:type=WebServer,name=Metrics")
+    val name =
+      new ObjectName("dev.alteration.branch:type=WebServer,name=Metrics")
 
     val responseTime = mbs.getAttribute(name, "AvgResponseTime")
 
@@ -141,7 +143,7 @@ class MetricsAndTracingSpec extends FunSuite {
       }
 
       // After nested span, context should restore to outer span
-      val ctx3 = TestService.currentSpan
+      TestService.currentSpan
       // Note: Current implementation doesn't restore parent context correctly
       // This is a known limitation that could be improved
     }
@@ -160,7 +162,10 @@ class MetricsAndTracingSpec extends FunSuite {
       def handleRequest(shouldFail: Boolean): Try[String] = {
         requestCount.incrementAndGet()
 
-        tracedTry("handle-request", Map("should_fail" -> JsonBool(shouldFail))) {
+        tracedTry(
+          "handle-request",
+          Map("should_fail" -> JsonBool(shouldFail))
+        ) {
           if (shouldFail) {
             errorCount.incrementAndGet()
             throw new Exception("Request failed")
@@ -182,7 +187,9 @@ class MetricsAndTracingSpec extends FunSuite {
     // Verify metrics
     val mbs  = ManagementFactory.getPlatformMBeanServer()
     val name =
-      new ObjectName("dev.alteration.branch:type=IntegratedService,name=Metrics")
+      new ObjectName(
+        "dev.alteration.branch:type=IntegratedService,name=Metrics"
+      )
 
     val requests = mbs.getAttribute(name, "Requests")
     val errors   = mbs.getAttribute(name, "Errors")
