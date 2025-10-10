@@ -2,6 +2,7 @@ package dev.alteration.branch.keanu.eventbus
 
 import java.util.concurrent.CountDownLatch
 import scala.concurrent.duration._
+
 class EventBusSpec extends munit.FunSuite {
 
   test("EventBus") {
@@ -148,35 +149,47 @@ class EventBusSpec extends munit.FunSuite {
 
   test("shutdown cleans up all subscribers") {
     @volatile
-    var counter = 0
-    val latch   = new CountDownLatch(2)
+    var counter      = 0
+    val messageLatch = new CountDownLatch(2)
+    val readyLatch   = new CountDownLatch(2)
 
     // Create a fresh instance, not a singleton object
     val testEventBus = new EventBus[Int] {}
 
     val sub1 = new Subscriber[Int] {
       override def onMsg(msg: EventBusMessage[Int]): Unit = {
-        counter += msg.payload
-        latch.countDown()
+        // Signal ready on first message
+        if (msg.payload == 0) {
+          readyLatch.countDown()
+        } else {
+          counter += msg.payload
+          messageLatch.countDown()
+        }
       }
     }
 
     val sub2 = new Subscriber[Int] {
       override def onMsg(msg: EventBusMessage[Int]): Unit = {
-        counter += msg.payload * 2
-        latch.countDown()
+        // Signal ready on first message
+        if (msg.payload == 0) {
+          readyLatch.countDown()
+        } else {
+          counter += msg.payload * 2
+          messageLatch.countDown()
+        }
       }
     }
 
     testEventBus.subscribe(sub1)
     testEventBus.subscribe(sub2)
 
-    // Give threads time to start up
-    Thread.sleep(10)
+    // Send ready signal and wait for both subscribers to be ready
+    testEventBus.publishNoTopic(0)
+    readyLatch.await()
 
-    // Publish one message to verify they work
+    // Now publish the real message
     testEventBus.publishNoTopic(1)
-    latch.await()
+    messageLatch.await()
     assertEquals(counter, 3)
 
     // Shutdown the event bus
@@ -187,7 +200,11 @@ class EventBusSpec extends munit.FunSuite {
     testEventBus.publishNoTopic(10)
     Thread.sleep(100) // Give time for any potential message processing
 
-    assertEquals(counter, oldCounter, "No messages should be processed after shutdown")
+    assertEquals(
+      counter,
+      oldCounter,
+      "No messages should be processed after shutdown"
+    )
   }
 
   test("subscriber with AutoCloseable") {
@@ -218,14 +235,18 @@ class EventBusSpec extends munit.FunSuite {
     testEventBus.publishNoTopic(10)
     Thread.sleep(100) // Give time for any potential message processing
 
-    assertEquals(counter, oldCounter, "No messages should be processed after close")
+    assertEquals(
+      counter,
+      oldCounter,
+      "No messages should be processed after close"
+    )
   }
 
   test("onPublishError callback for filter exceptions") {
     @volatile
-    var errorCount = 0
+    var errorCount                                 = 0
     @volatile
-    var lastError: Option[Throwable] = None
+    var lastError: Option[Throwable]               = None
     @volatile
     var lastSubscriptionId: Option[java.util.UUID] = None
 
@@ -260,10 +281,10 @@ class EventBusSpec extends munit.FunSuite {
 
   test("onPublishError does not block other subscribers") {
     @volatile
-    var errorCount = 0
+    var errorCount     = 0
     @volatile
     var successCounter = 0
-    val latch = new CountDownLatch(2)
+    val latch          = new CountDownLatch(2)
 
     val testEventBus = new EventBus[Int] {
       override def onPublishError(
@@ -306,13 +327,13 @@ class EventBusSpec extends munit.FunSuite {
 
   test("subscriber onError callback for message processing exceptions") {
     @volatile
-    var errorCount = 0
+    var errorCount                                = 0
     @volatile
-    var lastError: Option[Throwable] = None
+    var lastError: Option[Throwable]              = None
     @volatile
     var lastMessage: Option[EventBusMessage[Int]] = None
     @volatile
-    var successCount = 0
+    var successCount                              = 0
 
     val latch = new CountDownLatch(2)
 
@@ -358,7 +379,7 @@ class EventBusSpec extends munit.FunSuite {
   test("subscriber continues processing after onMsg exception") {
     @volatile
     var processedCount = 0
-    val latch = new CountDownLatch(3)
+    val latch          = new CountDownLatch(3)
 
     val testEventBus = new EventBus[Int] {}
 

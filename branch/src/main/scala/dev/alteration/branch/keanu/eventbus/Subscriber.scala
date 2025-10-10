@@ -2,29 +2,12 @@ package dev.alteration.branch.keanu.eventbus
 
 import java.util.concurrent.{BlockingQueue, LinkedBlockingQueue}
 
-/** A trait for creating a subscriber to an event bus.
+/** A subscriber to an event bus.
   *
   * Each subscriber runs on its own virtual thread and processes messages
-  * asynchronously from a mailbox queue. Call [[shutdown()]] or [[close()]]
-  * to cleanly terminate the subscriber thread.
-  *
-  * == Error Handling ==
-  *
-  * Exceptions thrown in [[onMsg]] are caught and passed to [[onError]]. The
-  * default [[onError]] is a no-op for resilience, but can be overridden:
-  *
-  * {{{
-  * new Subscriber[Int] {
-  *   override def onMsg(msg: EventBusMessage[Int]): Unit = {
-  *     if (msg.payload < 0) throw new IllegalArgumentException("Negative!")
-  *     println(msg.payload)
-  *   }
-  *
-  *   override def onError(error: Throwable, msg: EventBusMessage[Int]): Unit = {
-  *     logger.error(s"Failed to process message: \${msg.payload}", error)
-  *   }
-  * }
-  * }}}
+  * asynchronously. Exceptions thrown in [[onMsg]] are caught and passed to
+  * [[onError]] (which defaults to a no-op). Call [[shutdown()]] or [[close()]]
+  * to terminate the subscriber thread.
   */
 trait Subscriber[T] extends AutoCloseable {
 
@@ -68,27 +51,14 @@ trait Subscriber[T] extends AutoCloseable {
     */
   def onMsg(msg: EventBusMessage[T]): Unit
 
-  /** Called when an error occurs during message processing.
+  /** Called when [[onMsg]] throws an exception.
     *
-    * This method is invoked when [[onMsg]] throws an exception. The default
-    * implementation is a no-op for maximum resilience, but users can override
-    * it to add logging, metrics, alerting, or other error handling.
-    *
-    * Note: This method is called synchronously in the subscriber's thread, so
-    * it should be fast and non-blocking. Avoid heavy operations here.
-    *
-    * @param error
-    *   The exception that occurred
-    * @param message
-    *   The message that was being processed
+    * Override to add logging, metrics, or other error handling. Default is a
+    * no-op. Keep this method fast and non-blocking.
     */
-  def onError(error: Throwable, message: EventBusMessage[T]): Unit = {
-    // Default: no-op for resilience
-    // Override to add logging, metrics, etc.
-  }
+  def onError(error: Throwable, message: EventBusMessage[T]): Unit = ()
 
-  /** Shuts down the subscriber, stopping the message processing thread.
-    * This method is idempotent and can be called multiple times safely.
+  /** Stops the message processing thread. Idempotent.
     */
   def shutdown(): Unit = {
     if (running) {
@@ -97,7 +67,7 @@ trait Subscriber[T] extends AutoCloseable {
     }
   }
 
-  /** Closes the subscriber (delegates to shutdown for AutoCloseable support).
+  /** Delegates to [[shutdown()]].
     */
   override def close(): Unit = shutdown()
 
@@ -106,21 +76,6 @@ trait Subscriber[T] extends AutoCloseable {
 object Subscriber {
 
   /** Creates a subscriber from a message handler function.
-    *
-    * This is equivalent to using SAM conversion, but may be more explicit
-    * and discoverable for users unfamiliar with SAM types.
-    *
-    * @param handler
-    *   The function to handle incoming messages
-    * @return
-    *   A new subscriber instance
-    * @example
-    *   {{{
-    * val subscriber = Subscriber[Int] { msg =>
-    *   println(s"Received: \${msg.payload}")
-    * }
-    * eventBus.subscribe(subscriber)
-    *   }}}
     */
   def apply[T](handler: EventBusMessage[T] => Unit): Subscriber[T] =
     new Subscriber[T] {
