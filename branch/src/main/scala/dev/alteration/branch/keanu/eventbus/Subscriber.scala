@@ -46,8 +46,8 @@ trait Subscriber[T] extends AutoCloseable {
 
   /** The method called when a message is received.
     *
-    * Exceptions thrown by this method will be caught and passed to
-    * [[onError]]. The subscriber will continue processing subsequent messages.
+    * Exceptions thrown by this method will be caught and passed to [[onError]].
+    * The subscriber will continue processing subsequent messages.
     */
   def onMsg(msg: EventBusMessage[T]): Unit
 

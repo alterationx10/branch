@@ -65,8 +65,8 @@ trait EventBus[T] extends AutoCloseable {
     sub.id
   }
 
-  /** Subscribes a subscriber with a filter. New subscribers may miss
-    * in-flight messages.
+  /** Subscribes a subscriber with a filter. New subscribers may miss in-flight
+    * messages.
     */
   final def subscribe(
       subscriber: Subscriber[T],

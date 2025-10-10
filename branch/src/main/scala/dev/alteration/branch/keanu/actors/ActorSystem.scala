@@ -17,6 +17,11 @@ import scala.util.*
   */
 trait ActorSystem {
 
+  /** The logger used for actor system events. Override this to provide custom
+    * logging.
+    */
+  def logger: ActorLogger = NoOpLogger
+
   /** A flag for internally controlling if the ActorSystem is shutting down */
   private final val isShuttingDown: AtomicBoolean =
     new AtomicBoolean(false)
@@ -43,6 +48,17 @@ trait ActorSystem {
   private final val actors: concurrent.Map[ActorRefId, ActorRef] =
     concurrent.TrieMap.empty
 
+  /** Backoff state for actors using RestartWithBackoff strategy
+    */
+  private case class BackoffState(
+      failureCount: Int,
+      lastFailureTime: Long,
+      currentBackoff: Long
+  )
+
+  private final val backoffState: concurrent.Map[ActorRefId, BackoffState] =
+    concurrent.TrieMap.empty
+
   /** A queue for messages that could not be delivered or processed. Bounded to
     * prevent memory issues.
     */
@@ -62,8 +78,8 @@ trait ActorSystem {
     deadLetters.asScala.take(limit).toList
   }
 
-  /** Adds a dead letter to the queue. If the queue is full, the oldest entry
-    * is silently dropped.
+  /** Adds a dead letter to the queue. If the queue is full, the oldest entry is
+    * silently dropped.
     *
     * @param deadLetter
     *   The dead letter to record
@@ -80,11 +96,69 @@ trait ActorSystem {
 
   /** Ensure there is a mailbox and running actor for the given refId
     * @param refId
+    * @param error
+    *   Optional error that caused the restart
+    * @param strategy
+    *   The supervision strategy to apply
     */
-  private final def restartActor(refId: ActorRefId): Unit = {
+  private final def restartActor(
+      refId: ActorRefId,
+      error: Option[Throwable] = None,
+      strategy: SupervisionStrategy = RestartStrategy
+  ): Unit = {
     val mailbox = getOrCreateMailbox(refId)
     actors -= refId
-    actors += (refId -> submitActor(refId, mailbox))
+
+    // Handle backoff if using RestartWithBackoff strategy
+    strategy match {
+      case RestartWithBackoff(minBackoff, maxBackoff, maxRetries, resetAfter) =>
+        val now   = System.currentTimeMillis()
+        val state = backoffState.get(refId)
+
+        // Check if we should reset the failure count
+        val resetState = state.flatMap { s =>
+          resetAfter.flatMap { reset =>
+            if (now - s.lastFailureTime > reset.toMillis) {
+              Some(BackoffState(0, now, minBackoff.toMillis))
+            } else None
+          }
+        }
+
+        val currentState = resetState
+          .orElse(state)
+          .getOrElse(
+            BackoffState(0, now, minBackoff.toMillis)
+          )
+
+        val newFailureCount = currentState.failureCount + 1
+
+        // Check if we exceeded max retries (retries = restarts after initial failure)
+        // So maxRetries = 3 means: initial failure + 3 restarts = 4 total attempts
+        if (maxRetries.exists(newFailureCount >= _)) {
+          unregisterMailboxAndActor(refId)
+          backoffState -= refId
+          return
+        }
+
+        // Calculate next backoff (exponential with max)
+        val nextBackoff = math.min(
+          currentState.currentBackoff * 2,
+          maxBackoff.toMillis
+        )
+
+        backoffState += (refId -> BackoffState(
+          newFailureCount,
+          now,
+          nextBackoff
+        ))
+
+        // Wait before restarting
+        Thread.sleep(currentState.currentBackoff)
+
+      case _ => () // No backoff for other strategies
+    }
+
+    actors += (refId -> submitActor(refId, mailbox, error))
   }
 
   /** Remove the mailbox and actor for the given refId from the system
@@ -101,8 +175,10 @@ trait ActorSystem {
     */
   final def registerProp(prop: ActorProps[?]): Unit = {
     require(prop != null, "ActorProps cannot be null")
-    require(prop.identifier != null && prop.identifier.nonEmpty,
-      "ActorProps identifier cannot be null or empty")
+    require(
+      prop.identifier != null && prop.identifier.nonEmpty,
+      "ActorProps identifier cannot be null or empty"
+    )
     props += (prop.identifier -> prop)
   }
 
@@ -113,26 +189,66 @@ trait ActorSystem {
   private final def getOrCreateMailbox(
       refId: ActorRefId
   ): Mailbox =
-    mailboxes.getOrElseUpdate(refId, new LinkedBlockingQueue[Any]())
+    mailboxes.getOrElseUpdate(
+      refId,
+      props.get(refId.propId) match {
+        case Some(prop) => prop.mailboxType.createMailbox()
+        case None       => new LinkedBlockingQueue[Any]() // Fallback
+      }
+    )
 
   /** Submit an actor to the executor service
     * @param refId
     * @param mailbox
+    * @param restartReason
+    *   If this is a restart, the error that caused it
     * @return
     */
   private final def submitActor(
       refId: ActorRefId,
-      mailbox: Mailbox
+      mailbox: Mailbox,
+      restartReason: Option[Throwable] = None
   ): ActorRef = {
     CompletableFuture.supplyAsync[LifecycleEvent](
       () => {
+        var currentActor: Option[Actor]       = None
         val terminationResult: LifecycleEvent = {
           try {
-            val newActor: Actor = try {
-              props(refId.propId).create()
+            val newActor: Actor =
+              try {
+                props(refId.propId).create()
+              } catch {
+                case e: Exception => throw InstantiationException(e)
+              }
+            currentActor = Some(newActor) // Save for catch block
+
+            // Call lifecycle hooks
+            try {
+              restartReason match {
+                case Some(error) =>
+                  // This is a restart
+                  logger.lifecycleEvent(ActorRestarted(error), refId)
+                  try {
+                    newActor.postRestart(error)
+                  } catch {
+                    case _: Exception => () // Log but don't fail
+                  }
+                case None        =>
+                  // This is initial start
+                  logger.lifecycleEvent(ActorStarted, refId)
+                  newActor.preStart()
+              }
             } catch {
-              case e: Exception => throw InstantiationException(e)
+              case e: Exception =>
+                // preStart/postRestart failed, terminate actor
+                try {
+                  newActor.postStop()
+                } catch {
+                  case _: Exception => () // Ignore exceptions in postStop
+                }
+                throw InstantiationException(e)
             }
+
             while (true) {
               mailbox.take() match {
                 case PoisonPill => throw PoisonPillException
@@ -154,20 +270,80 @@ trait ActorSystem {
             }
             UnexpectedTermination
           } catch {
-            case PoisonPillException       =>
+            case PoisonPillException =>
+              // Call postStop before terminating
+              logger.lifecycleEvent(ActorStopped, refId)
+              val actor = Try(props(refId.propId).create()).toOption
+              actor.foreach { a =>
+                try {
+                  a.postStop()
+                } catch {
+                  case _: Exception => () // Ignore exceptions in postStop
+                }
+              }
               unregisterMailboxAndActor(refId)
+              backoffState -= refId
               PoisonPillTermination
-            case _: InterruptedException   =>
+
+            case _: InterruptedException =>
+              logger.lifecycleEvent(ActorTerminated, refId)
               unregisterMailboxAndActor(refId)
+              backoffState -= refId
               InterruptedTermination
+
             case InstantiationException(e) =>
+              logger.error("Actor instantiation failed", Some(refId), Some(e))
+              logger.lifecycleEvent(ActorTerminated, refId)
               unregisterMailboxAndActor(refId)
+              backoffState -= refId
               InitializationTermination
-            case _: CancellationException  =>
+
+            case _: CancellationException =>
+              logger.lifecycleEvent(ActorTerminated, refId)
               unregisterMailboxAndActor(refId)
+              backoffState -= refId
               CancellationTermination
-            case e                         =>
-              restartActor(refId)
+
+            case e: Throwable =>
+              // Check supervision strategy of the current actor
+              logger.lifecycleEvent(ActorFailed(e), refId)
+              currentActor.foreach { actor =>
+                // Call preRestart before deciding
+                try {
+                  actor.preRestart(e)
+                } catch {
+                  case _: Exception => () // Ignore exceptions in preRestart
+                }
+
+                actor.supervisorStrategy match {
+                  case StopStrategy =>
+                    // Stop the actor
+                    logger.lifecycleEvent(ActorStopped, refId)
+                    try {
+                      actor.postStop()
+                    } catch {
+                      case _: Exception => () // Ignore exceptions in postStop
+                    }
+                    unregisterMailboxAndActor(refId)
+                    backoffState -= refId
+
+                  case strategy @ (RestartStrategy | _: RestartWithBackoff) =>
+                    // Restart the actor
+                    logger.debug(
+                      s"Restarting actor with strategy: ${strategy.getClass.getSimpleName}",
+                      Some(refId)
+                    )
+                    restartActor(refId, Some(e), strategy)
+                }
+              }
+
+              // If actor wasn't created, stop it
+              if (currentActor.isEmpty) {
+                logger.lifecycleEvent(ActorTerminated, refId)
+                unregisterMailboxAndActor(refId)
+                backoffState -= refId
+              }
+
               OnMsgTermination(e)
           }
         }
@@ -244,7 +420,14 @@ trait ActorSystem {
       return actors.isEmpty
     }
 
-    cleanUp(timeoutMillis)
+    logger.info("ActorSystem shutting down")
+    val result = cleanUp(timeoutMillis)
+    if (result) {
+      logger.info("ActorSystem shutdown completed successfully")
+    } else {
+      logger.warn("ActorSystem shutdown timed out")
+    }
+    result
   }
 
   /** Tell an actor to process a message. If the actor does not exist, it will

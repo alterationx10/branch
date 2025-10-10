@@ -18,13 +18,13 @@ private[actors] object ActorRefId {
   def apply[A <: Actor: ClassTag](name: String): ActorRefId =
     ActorRefId(name, classTag[A].runtimeClass.getName)
 
-  /** Re-create an ActorRefId from an identifier.
-    * Returns None if the identifier format is invalid.
+  /** Re-create an ActorRefId from an identifier. Returns None if the identifier
+    * format is invalid.
     */
   def fromIdentifier(id: String): Option[ActorRefId] = {
     id.split(":").toList match {
       case name :: propId :: Nil => Some(ActorRefId(name, propId))
-      case _ => None
+      case _                     => None
     }
   }
 }

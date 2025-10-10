@@ -11,7 +11,10 @@ class ActorRefIdSpec extends FunSuite {
   test("ActorRefId.apply should create identifier from name and type") {
     val refId = ActorRefId[TestActor]("myActor")
     assertEquals(refId.name, "myActor")
-    assert(refId.propId.contains("TestActor"), "propId should contain class name")
+    assert(
+      refId.propId.contains("TestActor"),
+      "propId should contain class name"
+    )
   }
 
   test("ActorRefId.toIdentifier should create parseable string") {
@@ -41,22 +44,38 @@ class ActorRefIdSpec extends FunSuite {
     assertEquals(parsed2, Some(refId2))
   }
 
-  test("ActorRefId.fromIdentifier should return None for invalid format - no colon") {
+  test(
+    "ActorRefId.fromIdentifier should return None for invalid format - no colon"
+  ) {
     val result = ActorRefId.fromIdentifier("invalididentifier")
-    assertEquals(result, None, "Should return None for identifier without colon")
+    assertEquals(
+      result,
+      None,
+      "Should return None for identifier without colon"
+    )
   }
 
-  test("ActorRefId.fromIdentifier should return None for invalid format - too many colons") {
+  test(
+    "ActorRefId.fromIdentifier should return None for invalid format - too many colons"
+  ) {
     val result = ActorRefId.fromIdentifier("name:class:extra")
-    assertEquals(result, None, "Should return None for identifier with too many parts")
+    assertEquals(
+      result,
+      None,
+      "Should return None for identifier with too many parts"
+    )
   }
 
-  test("ActorRefId.fromIdentifier should return None for invalid format - empty string") {
+  test(
+    "ActorRefId.fromIdentifier should return None for invalid format - empty string"
+  ) {
     val result = ActorRefId.fromIdentifier("")
     assertEquals(result, None, "Should return None for empty string")
   }
 
-  test("ActorRefId.fromIdentifier should return None for invalid format - only colon") {
+  test(
+    "ActorRefId.fromIdentifier should return None for invalid format - only colon"
+  ) {
     val result = ActorRefId.fromIdentifier(":")
     assertEquals(
       result,
@@ -65,9 +84,15 @@ class ActorRefIdSpec extends FunSuite {
     )
   }
 
-  test("ActorRefId.fromIdentifier should handle names with special characters") {
-    val refId = ActorRefId("actor-name_123", "com.example.MyActor")
+  test(
+    "ActorRefId.fromIdentifier should handle names with special characters"
+  ) {
+    val refId  = ActorRefId("actor-name_123", "com.example.MyActor")
     val parsed = ActorRefId.fromIdentifier(refId.toIdentifier)
-    assertEquals(parsed, Some(refId), "Should handle special characters in name")
+    assertEquals(
+      parsed,
+      Some(refId),
+      "Should handle special characters in name"
+    )
   }
 }
