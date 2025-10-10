@@ -50,6 +50,11 @@ trait ActorSystem {
   private final val actors: concurrent.Map[ActorRefId, ActorRef] =
     concurrent.TrieMap.empty
 
+  /** A collection tracking parent-child relationships in the actor hierarchy
+    */
+  private final val children: concurrent.Map[ActorPath, Set[ActorPath]] =
+    concurrent.TrieMap.empty
+
   /** Backoff state for actors using RestartWithBackoff strategy
     */
   private case class BackoffState(
@@ -170,6 +175,7 @@ trait ActorSystem {
   private final def unregisterMailboxAndActor(refId: ActorRefId) = {
     mailboxes -= refId
     actors -= refId
+    unregisterChild(refId.path)
   }
 
   /** Register a prop with the system, so it can be used to create actors
@@ -355,6 +361,37 @@ trait ActorSystem {
     )
   }
 
+  /** Register a child actor under a parent path.
+    * @param parent
+    *   The parent actor path
+    * @param child
+    *   The child actor path
+    */
+  private final def registerChild(parent: ActorPath, child: ActorPath): Unit = {
+    children.updateWith(parent) {
+      case Some(existing) => Some(existing + child)
+      case None           => Some(Set(child))
+    }
+  }
+
+  /** Remove a child from the hierarchy when it terminates.
+    * @param path
+    *   The actor path to remove
+    */
+  private final def unregisterChild(path: ActorPath): Unit = {
+    // Remove from parent's children set
+    path.parent.foreach { parent =>
+      children.updateWith(parent) {
+        case Some(existing) =>
+          val updated = existing - path
+          if (updated.isEmpty) None else Some(updated)
+        case None => None
+      }
+    }
+    // Remove this actor's children set
+    children -= path
+  }
+
   /** Get or create an actor for the given name.
     * @param name
     * @tparam A
@@ -363,13 +400,22 @@ trait ActorSystem {
   private final def actorForName[A <: Actor: ClassTag](
       name: String
   ): Mailbox = {
-    val refId =
-      ActorRefId[A](name)
+    val refId = ActorRefId[A](name)
+    actorForRefId(refId)
+  }
 
+  /** Get or create an actor for the given ActorRefId.
+    * @param refId
+    * @return
+    */
+  private final def actorForRefId(refId: ActorRefId): Mailbox = {
     val mailbox = getOrCreateMailbox(refId)
 
-    if !actors.contains(refId) then
+    if !actors.contains(refId) then {
       actors.addOne(refId -> submitActor(refId, mailbox))
+      // Register in hierarchy if this actor has a parent
+      refId.parent.foreach(parent => registerChild(parent, refId.path))
+    }
 
     mailbox
   }
@@ -443,6 +489,64 @@ trait ActorSystem {
       throw new IllegalStateException("ActorSystem is shutting down")
 
     actorForName[A](name).put(msg)
+  }
+
+  /** Tell an actor to process a message using an ActorRefId.
+    *
+    * @param refId
+    *   The actor reference ID
+    * @param msg
+    *   The message to send
+    */
+  final def tell(refId: ActorRefId, msg: Any): Unit = {
+    require(refId != null, "ActorRefId cannot be null")
+    require(msg != null, "Message cannot be null")
+
+    if isShuttingDown.get() then
+      throw new IllegalStateException("ActorSystem is shutting down")
+
+    actorForRefId(refId).put(msg)
+  }
+
+  /** Tell an actor to process a message by path. The actor must already exist.
+    *
+    * @param path
+    *   The actor path
+    * @param msg
+    *   The message to send
+    * @throws IllegalArgumentException
+    *   if the actor does not exist
+    */
+  final def tellPath(path: ActorPath, msg: Any): Unit = {
+    require(path != null, "Actor path cannot be null")
+    require(msg != null, "Message cannot be null")
+
+    if isShuttingDown.get() then
+      throw new IllegalStateException("ActorSystem is shutting down")
+
+    actorSelection(path) match {
+      case Some(refId) => tell(refId, msg)
+      case None =>
+        throw new IllegalArgumentException(s"Actor not found at path: $path")
+    }
+  }
+
+  /** Tell an actor to process a message by path string. The actor must already
+    * exist.
+    *
+    * @param pathStr
+    *   The actor path as a string (e.g., "/user/parent/child")
+    * @param msg
+    *   The message to send
+    * @throws IllegalArgumentException
+    *   if the actor does not exist or path is invalid
+    */
+  final def tellPath(pathStr: String, msg: Any): Unit = {
+    ActorPath.fromString(pathStr) match {
+      case Some(path) => tellPath(path, msg)
+      case None =>
+        throw new IllegalArgumentException(s"Invalid actor path: $pathStr")
+    }
   }
 
   /** Ask an actor to process a message and return a Future with the response.
@@ -533,6 +637,100 @@ trait ActorSystem {
 
     // Return the promise's future
     promise.future
+  }
+
+  /** Create an actor with the given path. The parent actor must exist if
+    * creating a child actor.
+    *
+    * @param path
+    *   The full path for the actor
+    * @tparam A
+    *   The actor type
+    * @return
+    *   The ActorRefId for the created actor
+    */
+  final def actorOf[A <: Actor: ClassTag](path: ActorPath): ActorRefId = {
+    require(path != null, "Actor path cannot be null")
+
+    if isShuttingDown.get() then
+      throw new IllegalStateException("ActorSystem is shutting down")
+
+    // Check if parent exists (if this is a child actor)
+    path.parent.foreach { parent =>
+      // Parent must exist for child actors (except for top-level /user actors)
+      if (parent != ActorPath.userRoot && !actors.keys.exists(_.path == parent)) {
+        throw new IllegalArgumentException(
+          s"Parent actor does not exist: $parent"
+        )
+      }
+    }
+
+    val refId = ActorRefId[A](path)
+    actorForRefId(refId) // This will create the actor
+    refId
+  }
+
+  /** Create a top-level user actor with the given name.
+    *
+    * @param name
+    *   The actor name (will be created at /user/name)
+    * @tparam A
+    *   The actor type
+    * @return
+    *   The ActorRefId for the created actor
+    */
+  final def actorOf[A <: Actor: ClassTag](name: String): ActorRefId = {
+    require(name != null && name.nonEmpty, "Actor name cannot be null or empty")
+    actorOf[A](ActorPath.user(name))
+  }
+
+  /** Select an actor by path.
+    *
+    * @param path
+    *   The actor path to select
+    * @return
+    *   Some(ActorRefId) if the actor exists, None otherwise
+    */
+  final def actorSelection(path: ActorPath): Option[ActorRefId] = {
+    actors.keys.find(_.path == path)
+  }
+
+  /** Select an actor by path string.
+    *
+    * @param pathStr
+    *   The actor path as a string (e.g., "/user/parent/child")
+    * @return
+    *   Some(ActorRefId) if the actor exists and path is valid, None otherwise
+    */
+  final def actorSelection(pathStr: String): Option[ActorRefId] = {
+    ActorPath.fromString(pathStr).flatMap(actorSelection)
+  }
+
+  /** Get all children of an actor at the given path.
+    *
+    * @param path
+    *   The parent actor path
+    * @return
+    *   List of ActorRefIds for all children
+    */
+  final def getChildren(path: ActorPath): List[ActorRefId] = {
+    children
+      .get(path)
+      .map { childPaths =>
+        actors.keys.filter(refId => childPaths.contains(refId.path)).toList
+      }
+      .getOrElse(List.empty)
+  }
+
+  /** Get all children of an actor by name (assumes /user path).
+    *
+    * @param name
+    *   The parent actor name
+    * @return
+    *   List of ActorRefIds for all children
+    */
+  final def getChildren(name: String): List[ActorRefId] = {
+    getChildren(ActorPath.user(name))
   }
 
 }

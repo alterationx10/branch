@@ -87,7 +87,8 @@ class ActorRefIdSpec extends FunSuite {
   test(
     "ActorRefId.fromIdentifier should handle names with special characters"
   ) {
-    val refId  = ActorRefId("actor-name_123", "com.example.MyActor")
+    val path   = ActorPath.user("actor-name_123")
+    val refId  = ActorRefId(path, "com.example.MyActor")
     val parsed = ActorRefId.fromIdentifier(refId.toIdentifier)
     assertEquals(
       parsed,

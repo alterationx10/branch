@@ -1251,4 +1251,449 @@ class ActorSystemSpec extends FunSuite {
 
     as.shutdownAwait()
   }
+
+  // Actor Hierarchy & Selection Tests
+
+  test("ActorPath should create hierarchical paths") {
+    val path = ActorPath.user("parent") / "child" / "grandchild"
+    assertEquals(path.toString, "/user/parent/child/grandchild")
+    assertEquals(path.name, "grandchild")
+  }
+
+  test("ActorPath should return parent path") {
+    val path   = ActorPath.user("parent") / "child"
+    val parent = path.parent
+
+    assert(parent.isDefined, "Should have a parent")
+    assertEquals(parent.get.toString, "/user/parent")
+  }
+
+  test("ActorPath should detect child relationships") {
+    val parent = ActorPath.user("parent")
+    val child  = parent / "child"
+
+    assert(child.isChildOf(parent), "Should be a child of parent")
+    assert(
+      !parent.isChildOf(child),
+      "Parent should not be a child of child"
+    )
+  }
+
+  test("ActorPath should detect descendant relationships") {
+    val parent     = ActorPath.user("parent")
+    val child      = parent / "child"
+    val grandchild = child / "grandchild"
+
+    assert(grandchild.isDescendantOf(parent), "Should be a descendant")
+    assert(grandchild.isDescendantOf(child), "Should be a descendant of child")
+    assert(
+      !parent.isDescendantOf(grandchild),
+      "Parent should not be descendant"
+    )
+  }
+
+  test("ActorPath.fromString should parse valid paths") {
+    val path = ActorPath.fromString("/user/parent/child")
+
+    assert(path.isDefined, "Should parse valid path")
+    assertEquals(path.get.toString, "/user/parent/child")
+    assertEquals(path.get.name, "child")
+  }
+
+  test("ActorPath.fromString should reject invalid paths") {
+    val emptyPath = ActorPath.fromString("")
+    val nullPath  = ActorPath.fromString(null)
+
+    assert(emptyPath.isEmpty, "Should reject empty path")
+    assert(nullPath.isEmpty, "Should reject null path")
+  }
+
+  test("actorOf should create actor with custom path") {
+    case class TestActor() extends Actor {
+      override def onMsg: PartialFunction[Any, Any] = { case _ => () }
+    }
+
+    val as    = ActorSystem()
+    val props = ActorProps.props[TestActor](EmptyTuple)
+    as.registerProp(props)
+
+    val path  = ActorPath.user("myactor")
+    val refId = as.actorOf[TestActor](path)
+
+    assertEquals(refId.path, path)
+    assertEquals(refId.name, "myactor")
+
+    as.shutdownAwait()
+  }
+
+  test("actorOf with name should create actor at /user path") {
+    case class TestActor() extends Actor {
+      override def onMsg: PartialFunction[Any, Any] = { case _ => () }
+    }
+
+    val as    = ActorSystem()
+    val props = ActorProps.props[TestActor](EmptyTuple)
+    as.registerProp(props)
+
+    val refId = as.actorOf[TestActor]("myactor")
+
+    assertEquals(refId.path.toString, "/user/myactor")
+    assertEquals(refId.name, "myactor")
+
+    as.shutdownAwait()
+  }
+
+  test("actorOf should create parent-child hierarchy") {
+    case class TestActor() extends Actor {
+      override def onMsg: PartialFunction[Any, Any] = { case _ => () }
+    }
+
+    val as    = ActorSystem()
+    val props = ActorProps.props[TestActor](EmptyTuple)
+    as.registerProp(props)
+
+    // Create parent
+    val parentPath = ActorPath.user("parent")
+    val parentRef  = as.actorOf[TestActor](parentPath)
+
+    // Create child
+    val childPath = parentPath / "child"
+    val childRef  = as.actorOf[TestActor](childPath)
+
+    assertEquals(childRef.path.toString, "/user/parent/child")
+    assert(childRef.parent.isDefined, "Child should have parent path")
+    assertEquals(childRef.parent.get, parentPath)
+
+    as.shutdownAwait()
+  }
+
+  test("actorOf should reject child creation when parent doesn't exist") {
+    case class TestActor() extends Actor {
+      override def onMsg: PartialFunction[Any, Any] = { case _ => () }
+    }
+
+    val as    = ActorSystem()
+    val props = ActorProps.props[TestActor](EmptyTuple)
+    as.registerProp(props)
+
+    val childPath = ActorPath.user("nonexistent") / "child"
+
+    intercept[IllegalArgumentException] {
+      as.actorOf[TestActor](childPath)
+    }
+
+    as.shutdownAwait()
+  }
+
+  test("actorSelection should find existing actor by path") {
+    case class TestActor() extends Actor {
+      override def onMsg: PartialFunction[Any, Any] = { case _ => () }
+    }
+
+    val as    = ActorSystem()
+    val props = ActorProps.props[TestActor](EmptyTuple)
+    as.registerProp(props)
+
+    val path  = ActorPath.user("myactor")
+    val refId = as.actorOf[TestActor](path)
+
+    val found = as.actorSelection(path)
+
+    assert(found.isDefined, "Should find the actor")
+    assertEquals(found.get, refId)
+
+    as.shutdownAwait()
+  }
+
+  test("actorSelection should return None for non-existent actor") {
+    val as   = ActorSystem()
+    val path = ActorPath.user("nonexistent")
+
+    val found = as.actorSelection(path)
+
+    assert(found.isEmpty, "Should not find non-existent actor")
+
+    as.shutdownAwait()
+  }
+
+  test("actorSelection with string should find actor") {
+    case class TestActor() extends Actor {
+      override def onMsg: PartialFunction[Any, Any] = { case _ => () }
+    }
+
+    val as    = ActorSystem()
+    val props = ActorProps.props[TestActor](EmptyTuple)
+    as.registerProp(props)
+
+    as.actorOf[TestActor]("myactor")
+
+    val found = as.actorSelection("/user/myactor")
+
+    assert(found.isDefined, "Should find the actor by string path")
+    assertEquals(found.get.name, "myactor")
+
+    as.shutdownAwait()
+  }
+
+  test("getChildren should return all child actors") {
+    case class TestActor() extends Actor {
+      override def onMsg: PartialFunction[Any, Any] = { case _ => () }
+    }
+
+    val as    = ActorSystem()
+    val props = ActorProps.props[TestActor](EmptyTuple)
+    as.registerProp(props)
+
+    val parentPath = ActorPath.user("parent")
+    as.actorOf[TestActor](parentPath)
+
+    // Create multiple children
+    as.actorOf[TestActor](parentPath / "child1")
+    as.actorOf[TestActor](parentPath / "child2")
+    as.actorOf[TestActor](parentPath / "child3")
+
+    val children = as.getChildren(parentPath)
+
+    assertEquals(children.size, 3, "Should have 3 children")
+
+    val childNames = children.map(_.name).toSet
+    assertEquals(
+      childNames,
+      Set("child1", "child2", "child3"),
+      "Should have all children"
+    )
+
+    as.shutdownAwait()
+  }
+
+  test("getChildren should return empty list for actor with no children") {
+    case class TestActor() extends Actor {
+      override def onMsg: PartialFunction[Any, Any] = { case _ => () }
+    }
+
+    val as    = ActorSystem()
+    val props = ActorProps.props[TestActor](EmptyTuple)
+    as.registerProp(props)
+
+    val parentPath = ActorPath.user("parent")
+    as.actorOf[TestActor](parentPath)
+
+    val children = as.getChildren(parentPath)
+
+    assertEquals(children.size, 0, "Should have no children")
+
+    as.shutdownAwait()
+  }
+
+  test("getChildren by name should work for top-level actors") {
+    case class TestActor() extends Actor {
+      override def onMsg: PartialFunction[Any, Any] = { case _ => () }
+    }
+
+    val as    = ActorSystem()
+    val props = ActorProps.props[TestActor](EmptyTuple)
+    as.registerProp(props)
+
+    as.actorOf[TestActor]("parent")
+    as.actorOf[TestActor](ActorPath.user("parent") / "child1")
+    as.actorOf[TestActor](ActorPath.user("parent") / "child2")
+
+    val children = as.getChildren("parent")
+
+    assertEquals(children.size, 2, "Should have 2 children")
+
+    as.shutdownAwait()
+  }
+
+  test("tellPath should send message to actor by path") {
+    val receivedMessages = scala.collection.mutable.ArrayBuffer[String]()
+
+    case class TestActor() extends Actor {
+      override def onMsg: PartialFunction[Any, Any] = { case msg: String =>
+        receivedMessages.synchronized {
+          receivedMessages += msg
+        }
+      }
+    }
+
+    val as    = ActorSystem()
+    val props = ActorProps.props[TestActor](EmptyTuple)
+    as.registerProp(props)
+
+    val path = ActorPath.user("myactor")
+    as.actorOf[TestActor](path)
+
+    as.tellPath(path, "hello")
+    Thread.sleep(100)
+
+    val messages = receivedMessages.synchronized { receivedMessages.toList }
+    assertEquals(messages, List("hello"))
+
+    as.shutdownAwait()
+  }
+
+  test("tellPath with string should send message to actor") {
+    val receivedMessages = scala.collection.mutable.ArrayBuffer[String]()
+
+    case class TestActor() extends Actor {
+      override def onMsg: PartialFunction[Any, Any] = { case msg: String =>
+        receivedMessages.synchronized {
+          receivedMessages += msg
+        }
+      }
+    }
+
+    val as    = ActorSystem()
+    val props = ActorProps.props[TestActor](EmptyTuple)
+    as.registerProp(props)
+
+    as.actorOf[TestActor]("myactor")
+
+    as.tellPath("/user/myactor", "hello")
+    Thread.sleep(100)
+
+    val messages = receivedMessages.synchronized { receivedMessages.toList }
+    assertEquals(messages, List("hello"))
+
+    as.shutdownAwait()
+  }
+
+  test("tellPath should fail when actor doesn't exist") {
+    val as   = ActorSystem()
+    val path = ActorPath.user("nonexistent")
+
+    intercept[IllegalArgumentException] {
+      as.tellPath(path, "message")
+    }
+
+    as.shutdownAwait()
+  }
+
+  test("tellPath with string should fail for invalid path") {
+    val as = ActorSystem()
+
+    intercept[IllegalArgumentException] {
+      as.tellPath("", "message")
+    }
+
+    as.shutdownAwait()
+  }
+
+  test("tell with ActorRefId should send message to actor") {
+    val receivedMessages = scala.collection.mutable.ArrayBuffer[String]()
+
+    case class TestActor() extends Actor {
+      override def onMsg: PartialFunction[Any, Any] = { case msg: String =>
+        receivedMessages.synchronized {
+          receivedMessages += msg
+        }
+      }
+    }
+
+    val as    = ActorSystem()
+    val props = ActorProps.props[TestActor](EmptyTuple)
+    as.registerProp(props)
+
+    val refId = as.actorOf[TestActor]("myactor")
+    as.tell(refId, "hello")
+    Thread.sleep(100)
+
+    val messages = receivedMessages.synchronized { receivedMessages.toList }
+    assertEquals(messages, List("hello"))
+
+    as.shutdownAwait()
+  }
+
+  test("Actor hierarchy should be cleaned up on actor termination") {
+    case class TestActor() extends Actor {
+      override def onMsg: PartialFunction[Any, Any] = { case _ => () }
+    }
+
+    val as    = ActorSystem()
+    val props = ActorProps.props[TestActor](EmptyTuple)
+    as.registerProp(props)
+
+    val parentPath = ActorPath.user("parent")
+    val parentRef  = as.actorOf[TestActor](parentPath)
+
+    val childPath = parentPath / "child"
+    as.actorOf[TestActor](childPath)
+
+    // Verify child exists
+    assertEquals(as.getChildren(parentPath).size, 1)
+
+    // Stop the child
+    as.tellPath(childPath, PoisonPill)
+    Thread.sleep(100)
+
+    // Verify child is removed from hierarchy
+    assertEquals(
+      as.getChildren(parentPath).size,
+      0,
+      "Child should be removed from hierarchy"
+    )
+
+    as.shutdownAwait()
+  }
+
+  test("Multi-level hierarchy should work correctly") {
+    case class TestActor() extends Actor {
+      override def onMsg: PartialFunction[Any, Any] = { case _ => () }
+    }
+
+    val as    = ActorSystem()
+    val props = ActorProps.props[TestActor](EmptyTuple)
+    as.registerProp(props)
+
+    // Create 3-level hierarchy: parent -> child -> grandchild
+    val parentPath     = ActorPath.user("parent")
+    val childPath      = parentPath / "child"
+    val grandchildPath = childPath / "grandchild"
+
+    as.actorOf[TestActor](parentPath)
+    as.actorOf[TestActor](childPath)
+    as.actorOf[TestActor](grandchildPath)
+
+    // Verify hierarchy
+    assertEquals(as.getChildren(parentPath).size, 1)
+    assertEquals(as.getChildren(childPath).size, 1)
+    assertEquals(as.getChildren(grandchildPath).size, 0)
+
+    // Verify paths
+    val grandchild = as.actorSelection(grandchildPath)
+    assert(grandchild.isDefined, "Grandchild should exist")
+    assertEquals(grandchild.get.path.toString, "/user/parent/child/grandchild")
+
+    as.shutdownAwait()
+  }
+
+  test("ActorPath should reject invalid child names") {
+    val path = ActorPath.user("parent")
+
+    intercept[IllegalArgumentException] {
+      path / ""
+    }
+
+    intercept[IllegalArgumentException] {
+      path / null
+    }
+
+    intercept[IllegalArgumentException] {
+      path / "invalid/name"
+    }
+  }
+
+  test("ActorPath.user should validate actor name") {
+    intercept[IllegalArgumentException] {
+      ActorPath.user("")
+    }
+
+    intercept[IllegalArgumentException] {
+      ActorPath.user(null)
+    }
+
+    intercept[IllegalArgumentException] {
+      ActorPath.user("invalid/name")
+    }
+  }
 }
