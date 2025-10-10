@@ -7,9 +7,6 @@ import scala.util.{Failure, Success, Try}
 
 /** A standalone WebSocket server that listens on its own port.
   *
-  * This is an alternative to integrating with HttpServer, providing a simpler
-  * and more reliable approach for WebSocket connections.
-  *
   * Example:
   * {{{
   *   val server = new WebSocketServer(9001, new EchoWebSocketHandler())
@@ -23,9 +20,9 @@ import scala.util.{Failure, Success, Try}
   */
 class WebSocketServer(port: Int, handler: WebSocketHandler)(using
     ec: ExecutionContext
-) {
+) extends AutoCloseable {
 
-  @volatile private var running = false
+  @volatile private var running                  = false
   private var serverSocket: Option[ServerSocket] = None
 
   /** Start the WebSocket server
@@ -139,6 +136,7 @@ ${error.getMessage}"""
     }
   }
 
+  override def close(): Unit = stop()
 }
 
 object WebSocketServer {
