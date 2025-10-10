@@ -24,18 +24,24 @@ Extend `EventBus[T]` for your message type:
 object IntEventBus extends EventBus[Int]
 ```
 
-Create subscribers by implementing the `Subscriber[T]` trait or using an anonymous function:
+Create subscribers by implementing the `Subscriber[T]` trait or using the factory method:
 
 ```scala
 // Using a class
 class LoggingSubscriber extends Subscriber[Int] {
-  override def onMsg(msg: EventBusMessage[Int]): Unit = 
+  override def onMsg(msg: EventBusMessage[Int]): Unit =
     println(s"Got message on topic '${msg.topic}': ${msg.payload}")
+
+  // Optional: handle errors in message processing
+  override def onError(error: Throwable, message: EventBusMessage[Int]): Unit =
+    println(s"Error processing message: ${error.getMessage}")
 }
 
-// Using an anonymous function
-IntEventBus.subscribe((msg: EventBusMessage[Int]) => 
-  println(s"Got message: ${msg.payload}"))
+// Using the factory method
+val subscriber = Subscriber[Int] { msg =>
+  println(s"Got message: ${msg.payload}")
+}
+IntEventBus.subscribe(subscriber)
 ```
 
 ### Publishing Messages
@@ -60,12 +66,59 @@ IntEventBus.subscribe(
 )
 ```
 
+### Unsubscribing and Cleanup
+
+```scala
+// Unsubscribe by subscriber instance
+IntEventBus.unsubscribe(subscriber)
+
+// Unsubscribe by subscription ID
+val subId = IntEventBus.subscribe(subscriber)
+IntEventBus.unsubscribe(subId)
+
+// Shutdown the entire event bus (stops all subscribers)
+IntEventBus.shutdown()
+
+// Or use try-with-resources pattern
+object MyEventBus extends EventBus[String]
+
+def example(): Unit = {
+  val subscriber = Subscriber[String](msg => println(msg.payload))
+  MyEventBus.subscribe(subscriber)
+  try {
+    MyEventBus.publish("events", "Hello!")
+  } finally {
+    MyEventBus.close() // AutoCloseable
+  }
+}
+```
+
+### Error Handling
+
+Override `onPublishError` to handle errors during message publishing:
+
+```scala
+object MonitoredEventBus extends EventBus[Int] {
+  override def onPublishError(
+      error: Throwable,
+      message: EventBusMessage[Int],
+      subscriptionId: UUID
+  ): Unit = {
+    logger.warn(s"Failed to publish message to $subscriptionId: ${error.getMessage}")
+    metrics.incrementCounter("eventbus.publish.errors")
+  }
+}
+```
+
 ### Implementation Details
 
 - Each subscriber gets its own message queue and virtual thread for processing
 - Messages are processed asynchronously but in order for each subscriber
-- Subscriber message handling is wrapped in Try to prevent exceptions from crashing the processing thread
-- Subscribers can be unsubscribed using their UUID or subscriber instance
+- Exceptions in `onMsg` are caught and passed to `onError` (defaults to no-op)
+- Exceptions in filters or mailbox operations are caught and passed to `onPublishError`
+- New subscribers may miss in-flight messages
+- Unsubscribing properly shuts down the subscriber's thread
+- EventBus and Subscriber both implement AutoCloseable for resource management
 
 ## ActorSystem
 
