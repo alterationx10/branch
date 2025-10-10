@@ -7,6 +7,8 @@ import java.time.Instant
 import java.util.concurrent.*
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.collection.*
+import scala.concurrent.duration.*
+import scala.concurrent.{Future, Promise}
 import scala.jdk.CollectionConverters.*
 import scala.reflect.ClassTag
 import scala.util.*
@@ -441,6 +443,96 @@ trait ActorSystem {
       throw new IllegalStateException("ActorSystem is shutting down")
 
     actorForName[A](name).put(msg)
+  }
+
+  /** Ask an actor to process a message and return a Future with the response.
+    *
+    * The actor must handle Ask messages and complete the promise with the
+    * result. If the actor doesn't respond within the timeout, the Future will
+    * fail with AskTimeoutException.
+    *
+    * Example:
+    * {{{
+    * case class QueryActor() extends Actor {
+    *   def onMsg: PartialFunction[Any, Any] = {
+    *     case ask: Ask[?] =>
+    *       ask.message match {
+    *         case query: String => ask.complete(processQuery(query))
+    *       }
+    *   }
+    * }
+    *
+    * val system = ActorSystem()
+    * val future = system.ask[QueryActor, String]("myActor", "query", 5.seconds)
+    * future.onComplete {
+    *   case Success(result) => println(result)
+    *   case Failure(e) => println(s"Failed: $e")
+    * }
+    * }}}
+    *
+    * @param name
+    *   The name of the actor to ask
+    * @param msg
+    *   The message to send
+    * @param timeout
+    *   Maximum time to wait for a response (default: 5 seconds)
+    * @tparam A
+    *   The actor type
+    * @tparam R
+    *   The expected response type
+    * @return
+    *   A Future that completes with the response or fails with
+    *   AskTimeoutException
+    */
+  final def ask[A <: Actor: ClassTag, R](
+      name: String,
+      msg: Any,
+      timeout: Duration = 5.seconds
+  ): Future[R] = {
+    require(name != null && name.nonEmpty, "Actor name cannot be null or empty")
+    require(msg != null, "Message cannot be null")
+    require(
+      timeout.isFinite && timeout > Duration.Zero,
+      "Timeout must be positive and finite"
+    )
+
+    if isShuttingDown.get() then
+      throw new IllegalStateException("ActorSystem is shutting down")
+
+    val promise = Promise[R]()
+    val ask     = Ask[R](msg, promise)
+
+    // Send the wrapped message
+    actorForName[A](name).put(ask)
+
+    // Create a timeout task
+    val timeoutTask = new Runnable {
+      def run(): Unit = {
+        promise.tryFailure(
+          new AskTimeoutException(
+            s"Ask timeout after ${timeout} for actor '$name' with message: $msg",
+            name,
+            msg
+          )
+        )
+      }
+    }
+
+    // Schedule the timeout
+    val timeoutFuture = new CompletableFuture[Unit]()
+    CompletableFuture
+      .delayedExecutor(
+        timeout.toMillis,
+        TimeUnit.MILLISECONDS,
+        executorService
+      )
+      .execute(() => {
+        timeoutTask.run()
+        timeoutFuture.complete(())
+      })
+
+    // Return the promise's future
+    promise.future
   }
 
 }

@@ -966,4 +966,289 @@ class ActorSystemSpec extends FunSuite {
       "Should have 0 entries after clear"
     )
   }
+
+  // Ask Pattern Tests
+
+  test("ask should return response when actor handles Ask") {
+    import scala.concurrent.Await
+    import scala.concurrent.duration._
+
+    case class QueryActor() extends Actor {
+      override def onMsg: PartialFunction[Any, Any] = {
+        case ask: Ask[?] =>
+          ask.message match {
+            case query: String => ask.complete(s"Response to: $query")
+            case _             => ()
+          }
+        case _           => ()
+      }
+    }
+
+    val as    = ActorSystem()
+    val props = ActorProps.props[QueryActor](EmptyTuple)
+    as.registerProp(props)
+
+    val future = as.ask[QueryActor, String]("test", "Hello", 2.seconds)
+    val result = Await.result(future, 3.seconds)
+
+    assertEquals(result, "Response to: Hello")
+    as.shutdownAwait()
+  }
+
+  test("ask should timeout when actor doesn't respond") {
+    import scala.concurrent.Await
+
+    case class SlowActor() extends Actor {
+      override def onMsg: PartialFunction[Any, Any] = {
+        case _: Ask[?] =>
+          Thread.sleep(5000) // Never complete the promise
+          ()
+        case _         => ()
+      }
+    }
+
+    val as    = ActorSystem()
+    val props = ActorProps.props[SlowActor](EmptyTuple)
+    as.registerProp(props)
+
+    val future = as.ask[SlowActor, String]("test", "query", 100.millis)
+
+    intercept[AskTimeoutException] {
+      Await.result(future, 1.second)
+    }
+
+    as.shutdownAwait()
+  }
+
+  test("ask should fail when actor throws exception") {
+    import scala.concurrent.Await
+
+    case class FailingActor() extends Actor {
+      override def onMsg: PartialFunction[Any, Any] = {
+        case ask: Ask[?] =>
+          ask.fail(new RuntimeException("Processing failed"))
+        case _           => ()
+      }
+    }
+
+    val as    = ActorSystem()
+    val props = ActorProps.props[FailingActor](EmptyTuple)
+    as.registerProp(props)
+
+    val future = as.ask[FailingActor, String]("test", "query", 2.seconds)
+
+    val exception = intercept[RuntimeException] {
+      Await.result(future, 3.seconds)
+    }
+
+    assertEquals(exception.getMessage, "Processing failed")
+    as.shutdownAwait()
+  }
+
+  test("ask should handle multiple concurrent requests") {
+    import scala.concurrent.Await
+
+    @volatile var counter = 0
+
+    case class CounterActor() extends Actor {
+      override def onMsg: PartialFunction[Any, Any] = {
+        case ask: Ask[?] =>
+          ask.message match {
+            case "increment" =>
+              counter += 1
+              ask.complete(counter)
+            case _           => ()
+          }
+        case _           => ()
+      }
+    }
+
+    val as    = ActorSystem()
+    val props = ActorProps.props[CounterActor](EmptyTuple)
+    as.registerProp(props)
+
+    val future1 = as.ask[CounterActor, Int]("test", "increment", 2.seconds)
+    val future2 = as.ask[CounterActor, Int]("test", "increment", 2.seconds)
+    val future3 = as.ask[CounterActor, Int]("test", "increment", 2.seconds)
+
+    val result1 = Await.result(future1, 3.seconds)
+    val result2 = Await.result(future2, 3.seconds)
+    val result3 = Await.result(future3, 3.seconds)
+
+    // All results should be unique and sequential
+    val results = Set(result1, result2, result3)
+    assertEquals(results.size, 3, "All results should be unique")
+    assertEquals(counter, 3, "Counter should be 3")
+
+    as.shutdownAwait()
+  }
+
+  test("ask should reject null actor name") {
+    case class TestActor() extends Actor {
+      override def onMsg: PartialFunction[Any, Any] = { case _ => () }
+    }
+
+    val as    = ActorSystem()
+    val props = ActorProps.props[TestActor](EmptyTuple)
+    as.registerProp(props)
+
+    intercept[IllegalArgumentException] {
+      as.ask[TestActor, String](null, "message", 1.second)
+    }
+
+    as.shutdownAwait()
+  }
+
+  test("ask should reject empty actor name") {
+    case class TestActor() extends Actor {
+      override def onMsg: PartialFunction[Any, Any] = { case _ => () }
+    }
+
+    val as    = ActorSystem()
+    val props = ActorProps.props[TestActor](EmptyTuple)
+    as.registerProp(props)
+
+    intercept[IllegalArgumentException] {
+      as.ask[TestActor, String]("", "message", 1.second)
+    }
+
+    as.shutdownAwait()
+  }
+
+  test("ask should reject null message") {
+    case class TestActor() extends Actor {
+      override def onMsg: PartialFunction[Any, Any] = { case _ => () }
+    }
+
+    val as    = ActorSystem()
+    val props = ActorProps.props[TestActor](EmptyTuple)
+    as.registerProp(props)
+
+    intercept[IllegalArgumentException] {
+      as.ask[TestActor, String]("test", null, 1.second)
+    }
+
+    as.shutdownAwait()
+  }
+
+  test("ask should reject negative timeout") {
+    case class TestActor() extends Actor {
+      override def onMsg: PartialFunction[Any, Any] = { case _ => () }
+    }
+
+    val as    = ActorSystem()
+    val props = ActorProps.props[TestActor](EmptyTuple)
+    as.registerProp(props)
+
+    intercept[IllegalArgumentException] {
+      as.ask[TestActor, String]("test", "message", -1.second)
+    }
+
+    as.shutdownAwait()
+  }
+
+  test("ask should reject zero timeout") {
+    case class TestActor() extends Actor {
+      override def onMsg: PartialFunction[Any, Any] = { case _ => () }
+    }
+
+    val as    = ActorSystem()
+    val props = ActorProps.props[TestActor](EmptyTuple)
+    as.registerProp(props)
+
+    intercept[IllegalArgumentException] {
+      as.ask[TestActor, String]("test", "message", Duration.Zero)
+    }
+
+    as.shutdownAwait()
+  }
+
+  test("ask should reject infinite timeout") {
+    case class TestActor() extends Actor {
+      override def onMsg: PartialFunction[Any, Any] = { case _ => () }
+    }
+
+    val as    = ActorSystem()
+    val props = ActorProps.props[TestActor](EmptyTuple)
+    as.registerProp(props)
+
+    intercept[IllegalArgumentException] {
+      as.ask[TestActor, String]("test", "message", Duration.Inf)
+    }
+
+    as.shutdownAwait()
+  }
+
+  test("ask should work with different response types") {
+    import scala.concurrent.Await
+
+    case class TypedActor() extends Actor {
+      override def onMsg: PartialFunction[Any, Any] = {
+        case ask: Ask[?] =>
+          ask.message match {
+            case "int"    => ask.complete(42)
+            case "string" => ask.complete("hello")
+            case "list"   => ask.complete(List(1, 2, 3))
+            case _        => ()
+          }
+        case _           => ()
+      }
+    }
+
+    val as    = ActorSystem()
+    val props = ActorProps.props[TypedActor](EmptyTuple)
+    as.registerProp(props)
+
+    val intResult    =
+      Await.result(as.ask[TypedActor, Int]("test", "int", 2.seconds), 3.seconds)
+    val stringResult = Await.result(
+      as.ask[TypedActor, String]("test", "string", 2.seconds),
+      3.seconds
+    )
+    val listResult   = Await.result(
+      as.ask[TypedActor, List[Int]]("test", "list", 2.seconds),
+      3.seconds
+    )
+
+    assertEquals(intResult, 42)
+    assertEquals(stringResult, "hello")
+    assertEquals(listResult, List(1, 2, 3))
+
+    as.shutdownAwait()
+  }
+
+  test("ask timeout exception should contain actor name and message") {
+    import scala.concurrent.Await
+
+    case class IgnoringActor() extends Actor {
+      override def onMsg: PartialFunction[Any, Any] = { case _: Ask[?] =>
+        // Never complete the promise
+        Thread.sleep(5000)
+      }
+    }
+
+    val as    = ActorSystem()
+    val props = ActorProps.props[IgnoringActor](EmptyTuple)
+    as.registerProp(props)
+
+    val future =
+      as.ask[IgnoringActor, String]("myActor", "myMessage", 100.millis)
+
+    val exception = intercept[AskTimeoutException] {
+      Await.result(future, 1.second)
+    }
+
+    assertEquals(exception.actorName, "myActor")
+    assertEquals(exception.originalMessage, "myMessage")
+    assert(
+      exception.getMessage.contains("myActor"),
+      "Exception message should contain actor name"
+    )
+    assert(
+      exception.getMessage.contains("myMessage"),
+      "Exception message should contain original message"
+    )
+
+    as.shutdownAwait()
+  }
 }
