@@ -40,13 +40,12 @@ transparent trait BaseLogger { self =>
     * is added with the [[JsonFormatter]].
     */
   val logger: Logger = {
-    val _logger  = Logger.getLogger(self.getClass.getName)
+    val _logger = Logger.getLogger(self.getClass.getName)
     _logger.setLevel(logLevel)
     _logger.setUseParentHandlers(false)
     _logger.getHandlers.foreach(_logger.removeHandler)
-    val _handler = new ConsoleHandler()
-    _handler.setFormatter(JsonFormatter())
-    _logger.addHandler(_handler)
+    handler.setFormatter(JsonFormatter())
+    _logger.addHandler(handler)
     _logger
   }
 
