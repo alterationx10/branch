@@ -39,7 +39,7 @@ transparent trait BaseLogger { self =>
   /** The logger instance. Existing handlers are removed and a new [[handler]]
     * is added with the [[JsonFormatter]].
     */
-  val logger: Logger = {
+  lazy val logger: Logger = {
     val _logger = Logger.getLogger(self.getClass.getName)
     _logger.setLevel(logLevel)
     _logger.setUseParentHandlers(false)

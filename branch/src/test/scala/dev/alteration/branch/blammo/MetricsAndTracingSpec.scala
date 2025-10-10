@@ -4,9 +4,7 @@ import dev.alteration.branch.friday.Json
 import dev.alteration.branch.friday.Json.*
 import munit.FunSuite
 
-import java.lang.management.ManagementFactory
 import java.util.concurrent.atomic.AtomicLong
-import javax.management.ObjectName
 import scala.util.Try
 
 class MetricsAndTracingSpec extends FunSuite {
@@ -18,28 +16,47 @@ class MetricsAndTracingSpec extends FunSuite {
     val metrics = Metrics("TestModule")
       .gauge("ActiveConnections") { activeConnections.get() }
       .counter("RequestCount") { requestCount.get() }
-      .register()
 
-    assert(metrics.isSuccess)
+    val registration = metrics.register()
+    assert(registration.isSuccess)
 
     // Simulate some activity
     activeConnections.set(5)
     requestCount.incrementAndGet()
     requestCount.incrementAndGet()
 
-    // Read metrics from JMX
-    val mbs  = ManagementFactory.getPlatformMBeanServer()
-    val name =
-      new ObjectName("dev.alteration.branch:type=TestModule,name=Metrics")
-
-    val connections = mbs.getAttribute(name, "ActiveConnections")
-    val requests    = mbs.getAttribute(name, "RequestCount")
+    // Read metrics using the Metrics API
+    val connections = metrics.getGauge("ActiveConnections").get
+    val requests    = metrics.getCounter("RequestCount").get
 
     assertEquals(connections, 5L)
     assertEquals(requests, 2L)
 
     // Cleanup
-    Metrics("TestModule").unregister()
+    metrics.unregister()
+  }
+
+  test("Metrics - read all metrics at once") {
+    val activeConnections = new AtomicLong(3)
+    val requestCount      = new AtomicLong(100)
+    val avgResponseTime   = 42.5
+
+    val metrics = Metrics("AllMetricsTest")
+      .gauge("ActiveConnections") { activeConnections.get() }
+      .counter("RequestCount") { requestCount.get() }
+      .histogram("AvgResponseTime") { avgResponseTime }
+
+    metrics.register()
+
+    val allGauges     = metrics.getAllGauges.get
+    val allCounters   = metrics.getAllCounters.get
+    val allHistograms = metrics.getAllHistograms.get
+
+    assertEquals(allGauges("ActiveConnections"), 3L)
+    assertEquals(allCounters("RequestCount"), 100L)
+    assertEquals(allHistograms("AvgResponseTime"), 42.5)
+
+    metrics.unregister()
   }
 
   test("Metrics - histogram/timing data") {
@@ -47,23 +64,19 @@ class MetricsAndTracingSpec extends FunSuite {
 
     val metrics = Metrics("WebServer")
       .histogram("AvgResponseTime") { avgResponseTime }
-      .register()
 
-    assert(metrics.isSuccess)
+    val registration = metrics.register()
+    assert(registration.isSuccess)
 
     // Simulate response time tracking
     avgResponseTime = 125.5
 
-    val mbs  = ManagementFactory.getPlatformMBeanServer()
-    val name =
-      new ObjectName("dev.alteration.branch:type=WebServer,name=Metrics")
-
-    val responseTime = mbs.getAttribute(name, "AvgResponseTime")
+    val responseTime = metrics.getHistogram("AvgResponseTime").get
 
     assertEquals(responseTime, 125.5)
 
     // Cleanup
-    Metrics("WebServer").unregister()
+    metrics.unregister()
   }
 
   test("Tracer - basic span creation and nesting") {
@@ -157,7 +170,8 @@ class MetricsAndTracingSpec extends FunSuite {
       val metrics = Metrics("IntegratedService")
         .counter("Requests") { requestCount.get() }
         .counter("Errors") { errorCount.get() }
-        .register()
+
+      metrics.register()
 
       def handleRequest(shouldFail: Boolean): Try[String] = {
         requestCount.incrementAndGet()
@@ -184,22 +198,14 @@ class MetricsAndTracingSpec extends FunSuite {
     assert(result2.isFailure)
     assert(result3.isSuccess)
 
-    // Verify metrics
-    val mbs  = ManagementFactory.getPlatformMBeanServer()
-    val name =
-      new ObjectName(
-        "dev.alteration.branch:type=IntegratedService,name=Metrics"
-      )
-
-    val requests = mbs.getAttribute(name, "Requests")
-    val errors   = mbs.getAttribute(name, "Errors")
+    // Verify metrics using the Metrics API
+    val requests = IntegratedService.metrics.getCounter("Requests").get
+    val errors   = IntegratedService.metrics.getCounter("Errors").get
 
     assertEquals(requests, 3L)
     assertEquals(errors, 1L)
 
     // Cleanup
-    IntegratedService.metrics.flatMap(_ =>
-      Metrics("IntegratedService").unregister()
-    )
+    IntegratedService.metrics.unregister()
   }
 }

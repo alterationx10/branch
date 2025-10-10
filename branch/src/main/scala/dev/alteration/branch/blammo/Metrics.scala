@@ -9,24 +9,38 @@ import scala.util.Try
   *
   * Example usage:
   * {{{
+  * // For Branch internal modules
   * val metrics = Metrics("Spider")
   *   .gauge("ActiveConnections") { connectionPool.size }
   *   .counter("RequestCount") { requestCounter.get() }
   *   .histogram("ResponseTime") { avgResponseTime }
   *   .register()
+  *
+  * // For user applications
+  * val userMetrics = Metrics("UserService", domain = "com.me.myapp")
+  *   .counter("LoginAttempts") { loginCounter.get() }
+  *   .register()
   * }}}
   *
   * Metrics will be available at:
-  * `dev.alteration.branch:type=<module>,name=Metrics`
+  * `<domain>:type=<module>,name=Metrics`
+  *
+  * @param module
+  *   The module/component name (e.g., "Spider", "UserService")
+  * @param domain
+  *   The JMX domain namespace (defaults to "dev.alteration.branch")
   */
-case class Metrics(module: String) {
+case class Metrics(
+    module: String,
+    domain: String = "dev.alteration.branch"
+) {
   private val gauges     = mutable.Map.empty[String, () => Any]
   private val counters   = mutable.Map.empty[String, () => Long]
   private val histograms = mutable.Map.empty[String, () => Double]
 
   private val mbs  = ManagementFactory.getPlatformMBeanServer
   private val name = new ObjectName(
-    s"dev.alteration.branch:type=$module,name=Metrics"
+    s"$domain:type=$module,name=Metrics"
   )
 
   /** Add a gauge metric - a value that can go up or down
@@ -172,5 +186,127 @@ case class Metrics(module: String) {
     if (mbs.isRegistered(name)) {
       mbs.unregisterMBean(name)
     }
+  }
+
+  /** Read a counter metric from JMX
+    * @param attributeName
+    *   The name of the counter to read
+    * @return
+    *   The counter value, or Failure if not registered or counter not found
+    */
+  def getCounter(attributeName: String): Try[Long] = Try {
+    if (!mbs.isRegistered(name)) {
+      throw new IllegalStateException(
+        s"Metrics not registered. Call register() first."
+      )
+    }
+    counters.get(attributeName) match {
+      case Some(_) => mbs.getAttribute(name, attributeName).asInstanceOf[Long]
+      case None =>
+        throw new AttributeNotFoundException(s"Counter '$attributeName' not found")
+    }
+  }
+
+  /** Read a histogram metric from JMX
+    * @param attributeName
+    *   The name of the histogram to read
+    * @return
+    *   The histogram value, or Failure if not registered or histogram not found
+    */
+  def getHistogram(attributeName: String): Try[Double] = Try {
+    if (!mbs.isRegistered(name)) {
+      throw new IllegalStateException(
+        s"Metrics not registered. Call register() first."
+      )
+    }
+    histograms.get(attributeName) match {
+      case Some(_) => mbs.getAttribute(name, attributeName).asInstanceOf[Double]
+      case None =>
+        throw new AttributeNotFoundException(
+          s"Histogram '$attributeName' not found"
+        )
+    }
+  }
+
+  /** Read a gauge metric from JMX
+    * @param attributeName
+    *   The name of the gauge to read
+    * @return
+    *   The gauge value, or Failure if not registered or gauge not found
+    */
+  def getGauge(attributeName: String): Try[Any] = Try {
+    if (!mbs.isRegistered(name)) {
+      throw new IllegalStateException(
+        s"Metrics not registered. Call register() first."
+      )
+    }
+    gauges.get(attributeName) match {
+      case Some(_) => mbs.getAttribute(name, attributeName)
+      case None =>
+        throw new AttributeNotFoundException(s"Gauge '$attributeName' not found")
+    }
+  }
+
+  /** Read all counter metrics from JMX
+    * @return
+    *   A map of counter names to their current values, or Failure if not
+    *   registered
+    */
+  def getAllCounters: Try[Map[String, Long]] = Try {
+    if (!mbs.isRegistered(name)) {
+      throw new IllegalStateException(
+        s"Metrics not registered. Call register() first."
+      )
+    }
+
+    val attributes = mbs.getAttributes(name, counters.keys.toArray)
+
+    import scala.jdk.CollectionConverters.*
+    attributes.asList().asScala.map { attr =>
+      val attribute = attr
+      attribute.getName -> attribute.getValue.asInstanceOf[Long]
+    }.toMap
+  }
+
+  /** Read all histogram metrics from JMX
+    * @return
+    *   A map of histogram names to their current values, or Failure if not
+    *   registered
+    */
+  def getAllHistograms: Try[Map[String, Double]] = Try {
+    if (!mbs.isRegistered(name)) {
+      throw new IllegalStateException(
+        s"Metrics not registered. Call register() first."
+      )
+    }
+
+    val attributes = mbs.getAttributes(name, histograms.keys.toArray)
+
+    import scala.jdk.CollectionConverters.*
+    attributes.asList().asScala.map { attr =>
+      val attribute = attr
+      attribute.getName -> attribute.getValue.asInstanceOf[Double]
+    }.toMap
+  }
+
+  /** Read all gauge metrics from JMX
+    * @return
+    *   A map of gauge names to their current values, or Failure if not
+    *   registered
+    */
+  def getAllGauges: Try[Map[String, Any]] = Try {
+    if (!mbs.isRegistered(name)) {
+      throw new IllegalStateException(
+        s"Metrics not registered. Call register() first."
+      )
+    }
+
+    val attributes = mbs.getAttributes(name, gauges.keys.toArray)
+
+    import scala.jdk.CollectionConverters.*
+    attributes.asList().asScala.map { attr =>
+      val attribute = attr
+      attribute.getName -> attribute.getValue
+    }.toMap
   }
 }
