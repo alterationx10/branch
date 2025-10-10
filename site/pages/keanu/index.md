@@ -285,19 +285,193 @@ println(path.isDescendantOf(ActorPath.user("parent"))) // true
 - Type-safe actor props system for constructor arguments
 - Request-response messaging with the ask pattern
 
+### Lifecycle Hooks
+
+Actors can override lifecycle hooks for initialization and cleanup:
+
+```scala
+case class DatabaseActor() extends Actor {
+  private var connection: Connection = null
+
+  override def preStart(): Unit = {
+    // Called when actor starts (before processing any messages)
+    connection = openDatabaseConnection()
+    println("Database connection opened")
+  }
+
+  override def postStop(): Unit = {
+    // Called when actor stops (after PoisonPill or system shutdown)
+    if (connection != null) connection.close()
+    println("Database connection closed")
+  }
+
+  override def preRestart(reason: Throwable): Unit = {
+    // Called before actor restarts (after failure)
+    println(s"Actor restarting due to: ${reason.getMessage}")
+    // Save any state that should survive the restart
+  }
+
+  override def postRestart(reason: Throwable): Unit = {
+    // Called after actor restarts (before processing new messages)
+    println("Actor restarted, reinitializing...")
+    // Restore state or reinitialize resources
+  }
+
+  override def onMsg: PartialFunction[Any, Any] = {
+    case query: String => connection.executeQuery(query)
+  }
+}
+```
+
+### Supervision Strategies
+
+Control what happens when an actor fails by overriding `supervisorStrategy`:
+
+```scala
+import scala.concurrent.duration.*
+
+// Default: restart on failure
+case class SimpleActor() extends Actor {
+  override def supervisorStrategy = RestartStrategy
+  override def onMsg: PartialFunction[Any, Any] = {
+    case msg => processMessage(msg)
+  }
+}
+
+// Stop on failure (don't restart)
+case class CriticalActor() extends Actor {
+  override def supervisorStrategy = StopStrategy
+  override def onMsg: PartialFunction[Any, Any] = {
+    case msg => processMessage(msg)
+  }
+}
+
+// Restart with exponential backoff
+case class ExternalServiceActor() extends Actor {
+  override def supervisorStrategy = RestartWithBackoff(
+    minBackoff = 1.second,      // Start with 1 second delay
+    maxBackoff = 30.seconds,     // Max 30 seconds between retries
+    maxRetries = Some(5),        // Stop after 5 failed restarts
+    resetAfter = Some(1.minute)  // Reset failure count after 1 minute of success
+  )
+
+  override def onMsg: PartialFunction[Any, Any] = {
+    case msg => callExternalService(msg)
+  }
+}
+```
+
+Supervision strategies:
+- `RestartStrategy` - Recreate the actor and continue (default)
+- `StopStrategy` - Remove the actor from the system
+- `RestartWithBackoff` - Restart with exponential backoff and optional retry limits
+
+### Dead Letters
+
+Messages that cannot be delivered are recorded in the dead letter queue:
+
+```scala
+// Messages end up in dead letters when:
+// 1. Actor's onMsg doesn't handle the message type
+case class PickyActor() extends Actor {
+  override def onMsg: PartialFunction[Any, Any] = {
+    case s: String => println(s)
+    // Any other message type will be dead-lettered
+  }
+}
+
+system.registerProp(ActorProps.props[PickyActor]())
+system.tell[PickyActor]("picky", "Hello")  // OK
+system.tell[PickyActor]("picky", 42)       // Dead letter (Int not handled)
+
+// Check dead letters for debugging
+val deadLetters = system.getDeadLetters(limit = 100)
+deadLetters.foreach { dl =>
+  println(s"Dead letter: ${dl.message} -> ${dl.recipient.path} (${dl.reason})")
+}
+```
+
+### Mailbox Types
+
+Configure how actors queue and process messages:
+
+```scala
+// Unbounded mailbox (default) - FIFO, no capacity limit
+ActorProps.props[MyActor]()
+  .withMailbox(UnboundedMailbox)
+
+// Bounded mailbox - limit capacity with overflow strategy
+ActorProps.props[MyActor]()
+  .withMailbox(BoundedMailbox(
+    capacity = 1000,
+    overflowStrategy = DropOldest  // or DropNewest, Fail
+  ))
+
+// Priority mailbox - process high-priority messages first
+case class PriorityMessage(priority: Int, data: String)
+
+val priorityOrdering = Ordering.by[Any, Int] {
+  case PriorityMessage(p, _) => -p  // Negative for highest-first
+  case _                     => 0
+}
+
+ActorProps.props[MyActor]()
+  .withMailbox(PriorityMailbox(priorityOrdering))
+```
+
+### Actor Selection and Creation
+
+Create and find actors using paths:
+
+```scala
+// Create top-level actors
+val supervisor = system.actorOf[SupervisorActor]("supervisor")
+println(supervisor.path)  // /user/supervisor
+
+// Create child actors within a parent
+case class SupervisorActor() extends Actor {
+  override def preStart(): Unit = {
+    // Create children using actorOf
+    val worker1 = context.actorOf[WorkerActor]("worker1")
+    val worker2 = context.actorOf[WorkerActor]("worker2")
+    println(worker1.path)  // /user/supervisor/worker1
+  }
+
+  override def onMsg: PartialFunction[Any, Any] = {
+    case msg => context.children.foreach(child => context.system.tell(child, msg))
+  }
+}
+
+// Find existing actors
+val workerRef = system.actorSelection("/user/supervisor/worker1")
+workerRef.foreach(ref => system.tell(ref, "work"))
+
+// Send to actor by path
+system.tellPath("/user/supervisor/worker1", "work")
+```
+
 ### Lifecycle Management
 
 The ActorSystem provides several lifecycle events and supervision features:
 
-- Actors automatically restart on unhandled exceptions
+- Actors automatically restart on exceptions (based on supervision strategy)
 - PoisonPill message for graceful termination
-- Shutdown coordination with `shutdownAwait()`
-- Various termination states tracked (initialization failure, interruption, etc.)
+- Shutdown coordination with timeout
+- Lifecycle hooks for initialization and cleanup
+- Dead letter queue for undeliverable messages
 
 To shut down the ActorSystem:
 
 ```scala
-system.shutdownAwait()
+// Shutdown with 30 second timeout (default)
+val success = system.shutdownAwait()
+
+// Shutdown with custom timeout
+val success = system.shutdownAwait(timeoutMillis = 60000)
+
+if (!success) {
+  println("Warning: Some actors did not terminate in time")
+}
 ```
 
 This will send PoisonPill to all actors and wait for them to terminate.
