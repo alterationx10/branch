@@ -17,7 +17,8 @@ trait Agent {
 object Agent {
 
   // Private implementation to avoid anonymous class duplication at inline sites
-  private[hollywood] class AgentToolExecutor(agent: Agent) extends ToolExecutor[AgentChatTool] {
+  private[hollywood] class AgentToolExecutor(agent: Agent)
+      extends ToolExecutor[AgentChatTool] {
     override def execute(
         args: dev.alteration.branch.friday.Json
     ): dev.alteration.branch.friday.Json = {

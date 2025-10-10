@@ -378,7 +378,8 @@ class ActorSystemSpec extends FunSuite {
 
   test("Actor with RestartWithBackoff should respect backoff timing") {
     import scala.concurrent.duration.*
-    @volatile var restartTimes = scala.collection.mutable.ArrayBuffer[Long]()
+    val restartTimes: scala.collection.mutable.ArrayBuffer[Long] =
+      scala.collection.mutable.ArrayBuffer.empty[Long]
 
     case class BackoffActor() extends Actor {
       restartTimes.synchronized {
@@ -597,9 +598,9 @@ class ActorSystemSpec extends FunSuite {
           // Block to let mailbox fill up
           Thread.sleep(500)
           receivedMessages.synchronized { receivedMessages += "block" }
+        case "done"    => latch.countDown()
         case s: String =>
           receivedMessages.synchronized { receivedMessages += s }
-        case "done"    => latch.countDown()
       }
     }
 
@@ -1697,6 +1698,10 @@ class ActorSystemSpec extends FunSuite {
     }
   }
 
+  // Reply-to pattern message types (used by context.self test)
+  case class Request(data: String, replyTo: ActorRefId)
+  case class Response(result: String)
+
   // ActorContext Tests
 
   test("context.self should provide actor's own reference") {
@@ -1986,28 +1991,24 @@ class ActorSystemSpec extends FunSuite {
 
     case class RequestActor() extends Actor {
       override def onMsg: PartialFunction[Any, Any] = {
-        case "request"      =>
+        case "request"   =>
           // Send request with self reference for reply
           context.system.tellPath(
             "/user/responder",
             Request("data", context.self)
           )
-        case Response(data) =>
-          reply = Some(data)
+        case r: Response =>
+          reply = Some(r.result)
           latch.countDown()
       }
     }
 
     case class ResponderActor() extends Actor {
-      override def onMsg: PartialFunction[Any, Any] = {
-        case Request(data, replyTo) =>
-          // Reply to the sender
-          context.system.tell(replyTo, Response(s"Processed: $data"))
+      override def onMsg: PartialFunction[Any, Any] = { case req: Request =>
+        // Reply to the sender
+        context.system.tell(req.replyTo, Response(s"Processed: ${req.data}"))
       }
     }
-
-    case class Request(data: String, replyTo: ActorRefId)
-    case class Response(result: String)
 
     val as     = ActorSystem()
     val props1 = ActorProps.props[RequestActor](EmptyTuple)
