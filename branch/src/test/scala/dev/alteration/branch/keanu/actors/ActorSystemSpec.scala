@@ -512,6 +512,14 @@ class ActorSystemSpec extends FunSuite {
       preRestartError.get.getMessage == "Test error",
       "preRestart should receive correct error"
     )
+    assert(
+      postRestartError.isDefined,
+      "postRestart should receive the error"
+    )
+    assert(
+      postRestartError.get.getMessage == "Test error",
+      "postRestart should receive correct error"
+    )
   }
 
   test("postStop should be called on stop strategy") {
