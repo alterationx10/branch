@@ -16,6 +16,30 @@ trait Agent {
 
 object Agent {
 
+  // Private implementation to avoid anonymous class duplication at inline sites
+  private[hollywood] class AgentToolExecutor(agent: Agent)
+      extends ToolExecutor[AgentChatTool] {
+    override def execute(
+        args: dev.alteration.branch.friday.Json
+    ): dev.alteration.branch.friday.Json = {
+      import dev.alteration.branch.friday.Json.*
+      val message = args match {
+        case JsonObject(obj) =>
+          obj.get("message") match {
+            case Some(JsonString(str)) => str
+            case _                     => "No message provided"
+          }
+        case _               => "Invalid arguments"
+      }
+      val result  = Try(agent.chat(message)) match {
+        case Success(value) => JsonString(value)
+        case Failure(e)     =>
+          Json.JsonString(s"Error executing Agent tool: ${e.getMessage}")
+      }
+      result
+    }
+  }
+
   /** Derives a tool that wraps an agent's chat method for agent-to-agent
     * communication
     *
@@ -52,28 +76,8 @@ object Agent {
       )
     )
 
-    // Create the executor - we're ignoring the implementation of AgentChatTool.execute()
-    val executor = new ToolExecutor[AgentChatTool] {
-      override def execute(
-          args: dev.alteration.branch.friday.Json
-      ): dev.alteration.branch.friday.Json = {
-        import dev.alteration.branch.friday.Json.*
-        val message = args match {
-          case JsonObject(obj) =>
-            obj.get("message") match {
-              case Some(JsonString(str)) => str
-              case _                     => "No message provided"
-            }
-          case _               => "Invalid arguments"
-        }
-        val result  = Try(agent.chat(message)) match {
-          case Success(value) => JsonString(value)
-          case Failure(e)     =>
-            Json.JsonString(s"Error executing Agent tool: ${e.getMessage}")
-        }
-        result
-      }
-    }
+    // Create the executor using the private class
+    val executor = new AgentToolExecutor(agent)
 
     (toolSchema, executor)
   }

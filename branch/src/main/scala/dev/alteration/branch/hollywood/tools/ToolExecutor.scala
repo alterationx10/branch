@@ -16,26 +16,32 @@ object ToolExecutor {
     case CallableTool[a] => a
   }
 
+  // Private implementation to avoid anonymous class duplication at inline sites
+  private[tools] class DerivedExecutor[T <: CallableTool[?]](
+      decoder: JsonDecoder[T],
+      encoder: JsonEncoder[ResultType[T]]
+  ) extends ToolExecutor[T] {
+    override def execute(args: Json): Json = {
+      decoder.decode(args) match {
+        case scala.util.Success(tool) =>
+          tool.execute() match {
+            case scala.util.Success(result) =>
+              encoder.encode(result.asInstanceOf[ResultType[T]])
+            case scala.util.Failure(e)      =>
+              Json.JsonString(s"Error executing tool: ${e.getMessage}")
+          }
+        case scala.util.Failure(e)    =>
+          Json.JsonString(s"Error decoding tool arguments: ${e.getMessage}")
+      }
+    }
+  }
+
   inline def derived[T <: CallableTool[?]](using
       m: Mirror.ProductOf[T],
       decoder: JsonDecoder[T],
       encoder: JsonEncoder[ResultType[T]]
   ): ToolExecutor[T] = {
-    new ToolExecutor[T] {
-      override def execute(args: Json): Json = {
-        decoder.decode(args) match {
-          case scala.util.Success(tool) =>
-            tool.execute() match {
-              case scala.util.Success(result) =>
-                encoder.encode(result.asInstanceOf[ResultType[T]])
-              case scala.util.Failure(e)      =>
-                Json.JsonString(s"Error executing tool: ${e.getMessage}")
-            }
-          case scala.util.Failure(e)    =>
-            Json.JsonString(s"Error decoding tool arguments: ${e.getMessage}")
-        }
-      }
-    }
+    new DerivedExecutor[T](decoder, encoder)
   }
 
 }
