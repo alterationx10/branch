@@ -121,13 +121,116 @@ counter(2)
 counter("print")
 ```
 
+### Request-Response Pattern (Ask)
+
+The `ask` method enables request-response communication with actors, returning a `Future` with the response:
+
+```scala
+import scala.concurrent.duration.*
+import scala.concurrent.Await
+
+case class QueryActor() extends Actor {
+  override def onMsg: PartialFunction[Any, Any] = {
+    case ask: Ask[?] =>
+      ask.message match {
+        case "count" => ask.complete(42)
+        case query: String => ask.complete(s"Result for: $query")
+        case _ => ask.fail(new IllegalArgumentException("Unknown message"))
+      }
+  }
+}
+
+// Register the actor
+system.registerProp(ActorProps.props[QueryActor]())
+
+// Ask for a response with a timeout
+val future = system.ask[QueryActor, Int]("query1", "count", 5.seconds)
+val result = Await.result(future, 5.seconds) // result: Int = 42
+
+// Handle responses asynchronously
+system.ask[QueryActor, String]("query1", "search", 5.seconds).foreach { result =>
+  println(s"Got result: $result")
+}
+```
+
+Actors should pattern match on `Ask[?]` to handle request-response messages. Use the `complete` method to send a successful response or `fail` to send an error.
+
+### Actor Hierarchy and Context
+
+Each actor has an `ActorContext` that provides access to its identity, hierarchy, and lifecycle management:
+
+```scala
+case class SupervisorActor() extends Actor {
+  override def onMsg: PartialFunction[Any, Any] = {
+    case "create-workers" =>
+      // Create child actors under this supervisor
+      val worker1 = context.actorOf[WorkerActor]("worker1")
+      val worker2 = context.actorOf[WorkerActor]("worker2")
+
+      println(s"Created workers: ${context.children}")
+
+    case "stop-worker" =>
+      // Stop a specific child
+      context.children.headOption.foreach(child => context.stop(child))
+
+    case msg =>
+      // Send message to all children
+      context.children.foreach(child => context.system.tell(child, msg))
+  }
+}
+
+case class WorkerActor() extends Actor {
+  override def onMsg: PartialFunction[Any, Any] = {
+    case "parent" =>
+      println(s"My parent is: ${context.parent}")
+    case "self" =>
+      println(s"I am: ${context.self}")
+    case msg =>
+      println(s"Worker ${context.self.path.name} processing: $msg")
+  }
+}
+```
+
+The `ActorContext` provides:
+- `self` - Reference to this actor's identity
+- `parent` - Reference to the parent actor (if any)
+- `children` - List of all child actors
+- `actorOf[A](name)` - Create a child actor
+- `stop(child)` - Stop a child actor
+- `system` - Access to the ActorSystem
+
+### Actor Paths
+
+Actors are organized in a hierarchical path structure similar to file systems. All user actors live under the `/user` root:
+
+```scala
+// Top-level actors
+val actor1 = system.actorOf[MyActor](ActorPath.user("myActor"))
+println(actor1.path) // /user/myActor
+
+// Child actors
+val supervisor = system.actorOf[SupervisorActor](ActorPath.user("supervisor"))
+// Inside SupervisorActor:
+// context.actorOf[WorkerActor]("worker1") creates /user/supervisor/worker1
+
+// Path operations
+val path = ActorPath.user("parent") / "child" / "grandchild"
+println(path)                    // /user/parent/child/grandchild
+println(path.name)               // "grandchild"
+println(path.parent)             // Some(/user/parent/child)
+println(path.isChildOf(ActorPath.user("parent")))  // false
+println(path.isDescendantOf(ActorPath.user("parent"))) // true
+```
+
 ### Key Features
 
-- Actors are uniquely identified by name and type
+- Actors are uniquely identified by hierarchical paths
+- Parent-child relationships with supervision
 - Automatic actor restart on failures
 - Message delivery guarantees within a single actor
 - Graceful shutdown with PoisonPill messages
 - Type-safe actor props system for constructor arguments
+- Request-response messaging with the ask pattern
 
 ### Lifecycle Management
 
