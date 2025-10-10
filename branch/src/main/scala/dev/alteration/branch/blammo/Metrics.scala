@@ -22,8 +22,7 @@ import scala.util.Try
   *   .register()
   * }}}
   *
-  * Metrics will be available at:
-  * `<domain>:type=<module>,name=Metrics`
+  * Metrics will be available at: `<domain>:type=<module>,name=Metrics`
   *
   * @param module
   *   The module/component name (e.g., "Spider", "UserService")
@@ -202,8 +201,10 @@ case class Metrics(
     }
     counters.get(attributeName) match {
       case Some(_) => mbs.getAttribute(name, attributeName).asInstanceOf[Long]
-      case None =>
-        throw new AttributeNotFoundException(s"Counter '$attributeName' not found")
+      case None    =>
+        throw new AttributeNotFoundException(
+          s"Counter '$attributeName' not found"
+        )
     }
   }
 
@@ -221,7 +222,7 @@ case class Metrics(
     }
     histograms.get(attributeName) match {
       case Some(_) => mbs.getAttribute(name, attributeName).asInstanceOf[Double]
-      case None =>
+      case None    =>
         throw new AttributeNotFoundException(
           s"Histogram '$attributeName' not found"
         )
@@ -242,8 +243,10 @@ case class Metrics(
     }
     gauges.get(attributeName) match {
       case Some(_) => mbs.getAttribute(name, attributeName)
-      case None =>
-        throw new AttributeNotFoundException(s"Gauge '$attributeName' not found")
+      case None    =>
+        throw new AttributeNotFoundException(
+          s"Gauge '$attributeName' not found"
+        )
     }
   }
 
@@ -262,10 +265,14 @@ case class Metrics(
     val attributes = mbs.getAttributes(name, counters.keys.toArray)
 
     import scala.jdk.CollectionConverters.*
-    attributes.asList().asScala.map { attr =>
-      val attribute = attr
-      attribute.getName -> attribute.getValue.asInstanceOf[Long]
-    }.toMap
+    attributes
+      .asList()
+      .asScala
+      .map { attr =>
+        val attribute = attr
+        attribute.getName -> attribute.getValue.asInstanceOf[Long]
+      }
+      .toMap
   }
 
   /** Read all histogram metrics from JMX
@@ -283,10 +290,14 @@ case class Metrics(
     val attributes = mbs.getAttributes(name, histograms.keys.toArray)
 
     import scala.jdk.CollectionConverters.*
-    attributes.asList().asScala.map { attr =>
-      val attribute = attr
-      attribute.getName -> attribute.getValue.asInstanceOf[Double]
-    }.toMap
+    attributes
+      .asList()
+      .asScala
+      .map { attr =>
+        val attribute = attr
+        attribute.getName -> attribute.getValue.asInstanceOf[Double]
+      }
+      .toMap
   }
 
   /** Read all gauge metrics from JMX
@@ -304,9 +315,13 @@ case class Metrics(
     val attributes = mbs.getAttributes(name, gauges.keys.toArray)
 
     import scala.jdk.CollectionConverters.*
-    attributes.asList().asScala.map { attr =>
-      val attribute = attr
-      attribute.getName -> attribute.getValue
-    }.toMap
+    attributes
+      .asList()
+      .asScala
+      .map { attr =>
+        val attribute = attr
+        attribute.getName -> attribute.getValue
+      }
+      .toMap
   }
 }
