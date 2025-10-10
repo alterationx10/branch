@@ -26,8 +26,8 @@ private[actors] case class ActorRefId(path: ActorPath, propId: String) {
 
 private[actors] object ActorRefId {
 
-  /** Creates an ActorRefId from a type argument and name at the top-level
-    * /user path.
+  /** Creates an ActorRefId from a type argument and name at the top-level /user
+    * path.
     *
     * @param name
     *   The actor name
@@ -58,7 +58,7 @@ private[actors] object ActorRefId {
     id.split(":").toList match {
       case pathStr :: propId :: Nil =>
         ActorPath.fromString(pathStr).map(ActorRefId(_, propId))
-      case _ => None
+      case _                        => None
     }
   }
 }

@@ -4,6 +4,19 @@ package dev.alteration.branch.keanu.actors
   */
 trait Actor extends Product with Serializable {
 
+  /** Internal storage for actor context. Injected by ActorSystem.
+    */
+  private[actors] var _context: ActorContext = scala.compiletime.uninitialized
+
+  /** The actor context - provides access to self, parent, children, and the
+    * actor system.
+    *
+    * This is injected by the ActorSystem when the actor is created. Do not
+    * access this field in the actor's constructor - it will be uninitialized
+    * until after construction completes.
+    */
+  protected def context: ActorContext = _context
+
   /** The method to handle messages sent to the actor.
     */
   def onMsg: PartialFunction[Any, Any]

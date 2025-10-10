@@ -24,7 +24,10 @@ case class ActorPath(segments: List[String]) {
     *   A new ActorPath with the child appended
     */
   def /(child: String): ActorPath = {
-    require(child != null && child.nonEmpty, "Child name cannot be null or empty")
+    require(
+      child != null && child.nonEmpty,
+      "Child name cannot be null or empty"
+    )
     require(!child.contains("/"), "Child name cannot contain '/'")
     ActorPath(segments :+ child)
   }
@@ -63,7 +66,9 @@ case class ActorPath(segments: List[String]) {
     *   true if this path is a descendant of the other path
     */
   def isDescendantOf(other: ActorPath): Boolean =
-    segments.startsWith(other.segments) && segments.length > other.segments.length
+    segments.startsWith(
+      other.segments
+    ) && segments.length > other.segments.length
 
   /** Returns whether this path is a direct child of the given path.
     *
@@ -73,7 +78,9 @@ case class ActorPath(segments: List[String]) {
     *   true if this path is a direct child of the other path
     */
   def isChildOf(other: ActorPath): Boolean =
-    segments.startsWith(other.segments) && segments.length == other.segments.length + 1
+    segments.startsWith(
+      other.segments
+    ) && segments.length == other.segments.length + 1
 }
 
 object ActorPath {

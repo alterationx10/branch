@@ -1354,7 +1354,7 @@ class ActorSystemSpec extends FunSuite {
 
     // Create parent
     val parentPath = ActorPath.user("parent")
-    val parentRef  = as.actorOf[TestActor](parentPath)
+    as.actorOf[TestActor](parentPath)
 
     // Create child
     val childPath = parentPath / "child"
@@ -1614,7 +1614,7 @@ class ActorSystemSpec extends FunSuite {
     as.registerProp(props)
 
     val parentPath = ActorPath.user("parent")
-    val parentRef  = as.actorOf[TestActor](parentPath)
+    as.actorOf[TestActor](parentPath)
 
     val childPath = parentPath / "child"
     as.actorOf[TestActor](childPath)
@@ -1695,5 +1695,372 @@ class ActorSystemSpec extends FunSuite {
     intercept[IllegalArgumentException] {
       ActorPath.user("invalid/name")
     }
+  }
+
+  // ActorContext Tests
+
+  test("context.self should provide actor's own reference") {
+    @volatile var selfRef: Option[ActorRefId] = None
+
+    case class ContextActor() extends Actor {
+      override def onMsg: PartialFunction[Any, Any] = { case "getSelf" =>
+        selfRef = Some(context.self)
+      }
+    }
+
+    val as    = ActorSystem()
+    val props = ActorProps.props[ContextActor](EmptyTuple)
+    as.registerProp(props)
+
+    val refId = as.actorOf[ContextActor]("test")
+    as.tell(refId, "getSelf")
+    Thread.sleep(100)
+
+    as.shutdownAwait()
+
+    assert(selfRef.isDefined, "Should have captured self reference")
+    assertEquals(selfRef.get, refId, "Self reference should match actor refId")
+  }
+
+  test("context.parent should return parent reference") {
+    @volatile var parentRef: Option[ActorRefId] = None
+
+    case class ChildActor() extends Actor {
+      override def onMsg: PartialFunction[Any, Any] = { case "getParent" =>
+        parentRef = context.parent
+      }
+    }
+
+    val as    = ActorSystem()
+    val props = ActorProps.props[ChildActor](EmptyTuple)
+    as.registerProp(props)
+
+    val parent = as.actorOf[ChildActor]("parent")
+    val child  = as.actorOf[ChildActor](ActorPath.user("parent") / "child")
+
+    as.tell(child, "getParent")
+    Thread.sleep(100)
+
+    as.shutdownAwait()
+
+    assert(parentRef.isDefined, "Child should have parent reference")
+    assertEquals(parentRef.get, parent, "Parent reference should be correct")
+  }
+
+  test("context.parent should be None for top-level actors") {
+    @volatile var parentRef: Option[Option[ActorRefId]] = None
+
+    case class TopLevelActor() extends Actor {
+      override def onMsg: PartialFunction[Any, Any] = { case "getParent" =>
+        parentRef = Some(context.parent)
+      }
+    }
+
+    val as    = ActorSystem()
+    val props = ActorProps.props[TopLevelActor](EmptyTuple)
+    as.registerProp(props)
+
+    val actor = as.actorOf[TopLevelActor]("toplevel")
+    as.tell(actor, "getParent")
+    Thread.sleep(100)
+
+    as.shutdownAwait()
+
+    assert(parentRef.isDefined, "Should have checked parent")
+    assert(parentRef.get.isEmpty, "Top-level actor should have no parent")
+  }
+
+  test("context.actorOf should create child actors dynamically") {
+    @volatile var childCreated = false
+    val latch                  = new CountDownLatch(1)
+
+    case class ParentActor() extends Actor {
+      override def onMsg: PartialFunction[Any, Any] = {
+        case "createChild" =>
+          context.actorOf[ChildActor]("worker1")
+          childCreated = true
+          latch.countDown()
+        case _             => ()
+      }
+    }
+
+    case class ChildActor() extends Actor {
+      override def onMsg: PartialFunction[Any, Any] = { case _ => () }
+    }
+
+    val as     = ActorSystem()
+    val props1 = ActorProps.props[ParentActor](EmptyTuple)
+    val props2 = ActorProps.props[ChildActor](EmptyTuple)
+    as.registerProp(props1)
+    as.registerProp(props2)
+
+    val parent = as.actorOf[ParentActor]("parent")
+    as.tell(parent, "createChild")
+    latch.await(2, SECONDS)
+
+    as.shutdownAwait()
+
+    assert(childCreated, "Child should have been created")
+  }
+
+  test("context.actorOf should create actors at correct path") {
+    @volatile var childPath: Option[ActorPath] = None
+    val latch                                  = new CountDownLatch(1)
+
+    case class ParentActor() extends Actor {
+      override def onMsg: PartialFunction[Any, Any] = {
+        case "createChild" =>
+          val childRef = context.actorOf[ChildActor]("worker1")
+          childPath = Some(childRef.path)
+          latch.countDown()
+        case _             => ()
+      }
+    }
+
+    case class ChildActor() extends Actor {
+      override def onMsg: PartialFunction[Any, Any] = { case _ => () }
+    }
+
+    val as     = ActorSystem()
+    val props1 = ActorProps.props[ParentActor](EmptyTuple)
+    val props2 = ActorProps.props[ChildActor](EmptyTuple)
+    as.registerProp(props1)
+    as.registerProp(props2)
+
+    as.actorOf[ParentActor]("parent")
+    as.tellPath("/user/parent", "createChild")
+    latch.await(2, SECONDS)
+
+    as.shutdownAwait()
+
+    assert(childPath.isDefined, "Should have captured child path")
+    assertEquals(
+      childPath.get.toString,
+      "/user/parent/worker1",
+      "Child should be at correct path"
+    )
+  }
+
+  test("context.children should list all child actors") {
+    @volatile var childList: List[ActorRefId] = List.empty
+    val latch                                 = new CountDownLatch(1)
+
+    case class ParentActor() extends Actor {
+      override def onMsg: PartialFunction[Any, Any] = {
+        case "createChildren" =>
+          context.actorOf[ChildActor]("worker1")
+          context.actorOf[ChildActor]("worker2")
+          context.actorOf[ChildActor]("worker3")
+          Thread.sleep(50) // Give time for children to register
+          childList = context.children
+          latch.countDown()
+        case _                => ()
+      }
+    }
+
+    case class ChildActor() extends Actor {
+      override def onMsg: PartialFunction[Any, Any] = { case _ => () }
+    }
+
+    val as     = ActorSystem()
+    val props1 = ActorProps.props[ParentActor](EmptyTuple)
+    val props2 = ActorProps.props[ChildActor](EmptyTuple)
+    as.registerProp(props1)
+    as.registerProp(props2)
+
+    as.actorOf[ParentActor]("parent")
+    as.tellPath("/user/parent", "createChildren")
+    latch.await(2, SECONDS)
+
+    as.shutdownAwait()
+
+    assertEquals(childList.size, 3, "Should have 3 children")
+    val names = childList.map(_.name).toSet
+    assertEquals(
+      names,
+      Set("worker1", "worker2", "worker3"),
+      "Should have all children"
+    )
+  }
+
+  test("context.stop should stop a child actor") {
+    @volatile var childStopped = false
+    val latch                  = new CountDownLatch(1)
+
+    case class ParentActor() extends Actor {
+      override def onMsg: PartialFunction[Any, Any] = {
+        case "createAndStop" =>
+          val child = context.actorOf[ChildActor]("worker1")
+          Thread.sleep(50)  // Let child start
+          context.stop(child)
+          Thread.sleep(100) // Let child stop
+          val remaining = context.children
+          childStopped = remaining.isEmpty
+          latch.countDown()
+        case _               => ()
+      }
+    }
+
+    case class ChildActor() extends Actor {
+      override def onMsg: PartialFunction[Any, Any] = { case _ => () }
+    }
+
+    val as     = ActorSystem()
+    val props1 = ActorProps.props[ParentActor](EmptyTuple)
+    val props2 = ActorProps.props[ChildActor](EmptyTuple)
+    as.registerProp(props1)
+    as.registerProp(props2)
+
+    as.actorOf[ParentActor]("parent")
+    as.tellPath("/user/parent", "createAndStop")
+    latch.await(2, SECONDS)
+
+    as.shutdownAwait()
+
+    assert(childStopped, "Child should have been stopped")
+  }
+
+  test("context.stop should reject non-child actors") {
+    val latch = new CountDownLatch(1)
+
+    case class Actor1() extends Actor {
+      override def onMsg: PartialFunction[Any, Any] = {
+        case refId: ActorRefId =>
+          try {
+            context.stop(refId)
+          } catch {
+            case _: IllegalArgumentException =>
+              latch.countDown() // Expected
+          }
+        case _                 => ()
+      }
+    }
+
+    case class Actor2() extends Actor {
+      override def onMsg: PartialFunction[Any, Any] = { case _ => () }
+    }
+
+    val as     = ActorSystem()
+    val props1 = ActorProps.props[Actor1](EmptyTuple)
+    val props2 = ActorProps.props[Actor2](EmptyTuple)
+    as.registerProp(props1)
+    as.registerProp(props2)
+
+    val actor1 = as.actorOf[Actor1]("actor1")
+    val actor2 = as.actorOf[Actor2]("actor2")
+
+    as.tell(actor1, actor2) // Try to stop actor2 from actor1
+    latch.await(2, SECONDS)
+
+    as.shutdownAwait()
+  }
+
+  test("context.system should provide access to ActorSystem") {
+    @volatile var systemAccessed = false
+    val latch                    = new CountDownLatch(1)
+
+    case class TestActor() extends Actor {
+      override def onMsg: PartialFunction[Any, Any] = { case "checkSystem" =>
+        // Should be able to use the system
+        systemAccessed = context.system != null
+        latch.countDown()
+      }
+    }
+
+    val as    = ActorSystem()
+    val props = ActorProps.props[TestActor](EmptyTuple)
+    as.registerProp(props)
+
+    as.actorOf[TestActor]("test")
+    as.tellPath("/user/test", "checkSystem")
+    latch.await(2, SECONDS)
+
+    as.shutdownAwait()
+
+    assert(systemAccessed, "Should have access to actor system")
+  }
+
+  test("Actors can use context.self for reply-to pattern") {
+    @volatile var reply: Option[String] = None
+    val latch                           = new CountDownLatch(1)
+
+    case class RequestActor() extends Actor {
+      override def onMsg: PartialFunction[Any, Any] = {
+        case "request"      =>
+          // Send request with self reference for reply
+          context.system.tellPath(
+            "/user/responder",
+            Request("data", context.self)
+          )
+        case Response(data) =>
+          reply = Some(data)
+          latch.countDown()
+      }
+    }
+
+    case class ResponderActor() extends Actor {
+      override def onMsg: PartialFunction[Any, Any] = {
+        case Request(data, replyTo) =>
+          // Reply to the sender
+          context.system.tell(replyTo, Response(s"Processed: $data"))
+      }
+    }
+
+    case class Request(data: String, replyTo: ActorRefId)
+    case class Response(result: String)
+
+    val as     = ActorSystem()
+    val props1 = ActorProps.props[RequestActor](EmptyTuple)
+    val props2 = ActorProps.props[ResponderActor](EmptyTuple)
+    as.registerProp(props1)
+    as.registerProp(props2)
+
+    as.actorOf[RequestActor]("requester")
+    as.actorOf[ResponderActor]("responder")
+
+    as.tellPath("/user/requester", "request")
+    latch.await(2, SECONDS)
+
+    as.shutdownAwait()
+
+    assert(reply.isDefined, "Should have received reply")
+    assertEquals(reply.get, "Processed: data")
+  }
+
+  test("Actors can dynamically create worker pools using context") {
+    @volatile var workerCount = 0
+    val latch                 = new CountDownLatch(1)
+
+    case class SupervisorActor() extends Actor {
+      override def onMsg: PartialFunction[Any, Any] = {
+        case "createPool" =>
+          // Create 5 workers
+          (1 to 5).foreach { i =>
+            context.actorOf[WorkerActor](s"worker$i")
+          }
+          Thread.sleep(100) // Let workers register
+          workerCount = context.children.size
+          latch.countDown()
+        case _            => ()
+      }
+    }
+
+    case class WorkerActor() extends Actor {
+      override def onMsg: PartialFunction[Any, Any] = { case _ => () }
+    }
+
+    val as     = ActorSystem()
+    val props1 = ActorProps.props[SupervisorActor](EmptyTuple)
+    val props2 = ActorProps.props[WorkerActor](EmptyTuple)
+    as.registerProp(props1)
+    as.registerProp(props2)
+
+    as.actorOf[SupervisorActor]("supervisor")
+    as.tellPath("/user/supervisor", "createPool")
+    latch.await(2, SECONDS)
+
+    as.shutdownAwait()
+
+    assertEquals(workerCount, 5, "Should have created 5 workers")
   }
 }

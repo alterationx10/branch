@@ -230,6 +230,9 @@ trait ActorSystem {
               }
             currentActor = Some(newActor) // Save for catch block
 
+            // Inject the actor context
+            newActor._context = new ActorContextImpl(refId, this)
+
             // Call lifecycle hooks
             try {
               restartReason match {
@@ -385,7 +388,7 @@ trait ActorSystem {
         case Some(existing) =>
           val updated = existing - path
           if (updated.isEmpty) None else Some(updated)
-        case None => None
+        case None           => None
       }
     }
     // Remove this actor's children set
@@ -526,7 +529,7 @@ trait ActorSystem {
 
     actorSelection(path) match {
       case Some(refId) => tell(refId, msg)
-      case None =>
+      case None        =>
         throw new IllegalArgumentException(s"Actor not found at path: $path")
     }
   }
@@ -544,7 +547,7 @@ trait ActorSystem {
   final def tellPath(pathStr: String, msg: Any): Unit = {
     ActorPath.fromString(pathStr) match {
       case Some(path) => tellPath(path, msg)
-      case None =>
+      case None       =>
         throw new IllegalArgumentException(s"Invalid actor path: $pathStr")
     }
   }
@@ -658,7 +661,9 @@ trait ActorSystem {
     // Check if parent exists (if this is a child actor)
     path.parent.foreach { parent =>
       // Parent must exist for child actors (except for top-level /user actors)
-      if (parent != ActorPath.userRoot && !actors.keys.exists(_.path == parent)) {
+      if (
+        parent != ActorPath.userRoot && !actors.keys.exists(_.path == parent)
+      ) {
         throw new IllegalArgumentException(
           s"Parent actor does not exist: $parent"
         )
