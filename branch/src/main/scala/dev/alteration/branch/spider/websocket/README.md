@@ -14,13 +14,17 @@ Zero-dependency WebSocket implementation for the Spider module, following RFC 64
 
 ## Quick Start
 
-### 1. Create a WebSocket Handler
+### Approach 1: Standalone WebSocket Server (Recommended)
 
-Extend `WebSocketHandler` and override lifecycle methods:
+The standalone approach is simpler and more reliable.
 
 ```scala
 import dev.alteration.branch.spider.websocket._
+import dev.alteration.branch.macaroni.runtimes.BranchExecutors
 
+given scala.concurrent.ExecutionContext = BranchExecutors.executionContext
+
+// Create your handler
 class EchoHandler extends WebSocketHandler {
 
   override def onConnect(connection: WebSocketConnection): Unit = {
@@ -41,11 +45,23 @@ class EchoHandler extends WebSocketHandler {
     println(s"Connection closed: ${statusCode.getOrElse("unknown")}")
   }
 }
+
+// Start the server
+object MyWebSocketServer {
+  def main(args: Array[String]): Unit = {
+    val server = new WebSocketServer(9000, new EchoHandler())
+    println("WebSocket server running on ws://localhost:9000/")
+    server.start()
+  }
+}
 ```
 
-### 2. Register with SpiderApp
+### Approach 2: HttpServer Integration (Requires JVM Flags)
 
-Use `server.createContext()` to register your WebSocket handler:
+**Note**: Due to Java module system restrictions, this approach requires special JVM flags:
+```bash
+--add-opens jdk.httpserver/sun.net.httpserver=ALL-UNNAMED
+```
 
 ```scala
 import dev.alteration.branch.spider.server.SpiderApp
@@ -58,6 +74,11 @@ object MyWebSocketServer extends SpiderApp {
 
   println("WebSocket server running on ws://localhost:9000/echo")
 }
+```
+
+Run with:
+```bash
+sbt -J--add-opens -Jjdk.httpserver/sun.net.httpserver=ALL-UNNAMED run
 ```
 
 ### 3. Connect from a Client
