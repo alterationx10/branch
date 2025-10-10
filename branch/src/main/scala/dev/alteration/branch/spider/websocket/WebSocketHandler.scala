@@ -1,16 +1,17 @@
 package dev.alteration.branch.spider.websocket
 
+import scala.annotation.nowarn
 import scala.util.{Failure, Success}
 
 /** A trait for handling WebSocket connections.
   *
   * Extend this trait and override the lifecycle methods to handle WebSocket
   * events:
-  * - [[onConnect]]: called when a WebSocket connection is established
-  * - [[onMessage]]: called when a message is received
-  * - [[onBinary]]: called when binary data is received
-  * - [[onClose]]: called when the connection is closed
-  * - [[onError]]: called when an error occurs
+  *   - [[onConnect]]: called when a WebSocket connection is established
+  *   - [[onMessage]]: called when a message is received
+  *   - [[onBinary]]: called when binary data is received
+  *   - [[onClose]]: called when the connection is closed
+  *   - [[onError]]: called when an error occurs
   *
   * Example:
   * {{{
@@ -66,23 +67,27 @@ trait WebSocketHandler {
   /** Called when an error occurs
     *
     * @param connection
-    *   the WebSocket connection (may be null if error occurred during handshake)
+    *   the WebSocket connection (may be null if error occurred during
+    *   handshake)
     * @param error
     *   the error
     */
+  @nowarn
   def onError(connection: WebSocketConnection, error: Throwable): Unit = {
     error.printStackTrace()
   }
 
   /** The main message loop for the WebSocket connection.
     *
-    * Receives frames and dispatches to the appropriate callback methods.
-    * Runs until the connection is closed or an error occurs.
+    * Receives frames and dispatches to the appropriate callback methods. Runs
+    * until the connection is closed or an error occurs.
     *
     * @param connection
     *   the WebSocket connection
     */
-  private[websocket] def runMessageLoop(connection: WebSocketConnection): Unit = {
+  private[websocket] def runMessageLoop(
+      connection: WebSocketConnection
+  ): Unit = {
     try {
       while (connection.isOpen) {
         connection.receiveFrame() match {
@@ -98,8 +103,9 @@ trait WebSocketHandler {
                 // Parse close status code and reason
                 val payload = frame.unmaskedPayload
                 if (payload.length >= 2) {
-                  val statusCode = ((payload(0) & 0xFF) << 8) | (payload(1) & 0xFF)
-                  val reason = if (payload.length > 2) {
+                  val statusCode =
+                    ((payload(0) & 0xff) << 8) | (payload(1) & 0xff)
+                  val reason     = if (payload.length > 2) {
                     new String(payload.drop(2), "UTF-8")
                   } else {
                     ""
