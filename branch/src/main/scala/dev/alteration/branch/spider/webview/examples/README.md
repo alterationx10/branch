@@ -27,10 +27,10 @@ val server = WebViewServer()
   .start(port = 8080)
 ```
 
-## Full Counter Example (Manual Setup)
+## Counter Example with Params
 
-A complete example showing how to manually configure HTTP and WebSocket routes.
-Use this when you need more control over the server setup.
+An example showing how to use initial params and DevMode.
+Use this to understand more advanced configuration options.
 
 ### Running the Example
 
@@ -39,21 +39,21 @@ Use this when you need more control over the server setup.
 sbt "runMain dev.alteration.branch.spider.webview.examples.CounterExample"
 ```
 
-Then open your browser to: http://localhost:8080/
+Then open your browser to: http://localhost:8080/counter
 
-### What's Happening
+The counter will start at 10 instead of 0 because of the `params = Map("initial" -> "10")` configuration.
 
-1. **HTTP Server** serves the initial HTML page at `/`
-2. **Resource Server** serves `webview.js` from `src/main/resources/spider/webview/webview.js` at `/js/webview.js`
-3. **WebSocket** connection is established to `/ws/counter`
-4. **WebView** renders on the server, sends HTML updates to the client
-5. **Client events** (button clicks) are sent to the server over WebSocket
-6. **State updates** trigger re-render and DOM updates
+### What's Different
+
+1. **Initial params** - Pass URL query parameters to `mount()`
+2. **DevMode enabled** - Adds DevTools and debug logging
+3. **Same simple API** - Still uses `.withHtmlPages()` for automatic setup
 
 ### File Structure
 
 ```
-CounterExample.scala           # Main application
+SimpleCounterExample.scala     # Simplest example
+CounterExample.scala           # With params and devmode
 CounterWebView.scala           # WebView implementation
 src/main/resources/
   └── spider/
@@ -102,9 +102,9 @@ The `.withHtmlPages()` method automatically:
 - Serves the `webview.js` client library at `/js/webview.js`
 - Sets up the WebSocket connection at `/myview` (same path)
 
-## Creating Your Own WebView (Manual Setup)
+## Creating Your Own WebView
 
-If you need more control, you can manually configure the HTTP and WebSocket routes:
+Now that you've seen the examples, here's how to create your own:
 
 ### 1. Define Your WebView
 
@@ -133,42 +133,23 @@ class MyWebView extends WebView[MyState, MyEvent] {
 }
 ```
 
-### 2. Set Up the Server
+### 2. Start the Server
 
 ```scala
-import dev.alteration.branch.spider.http.{HybridServer, ResourceServer}
 import dev.alteration.branch.spider.webview.*
 
-given ExecutionContext = ...
-val actorSystem = ActorSystem()
+// Simple approach - let WebViewServer handle everything
+WebViewServer()
+  .withRoute("/myview", new MyWebView())
+  .withHtmlPages()  // Automatically serves HTML and JS
+  .start(port = 8080)
 
-// Create handlers
-given EventCodec[MyEvent] = EventCodec.derived
-val webViewHandler = WebViewHandler[MyState, MyEvent](
-  actorSystem = actorSystem,
-  webViewFactory = () => new MyWebView()
-)
-
-val pageHandler = WebViewPageHandler(
-  wsUrl = "ws://localhost:8080/ws/my-view",
-  title = "My WebView"
-)
-
-val resourceServer = ResourceServer("spider/webview")
-
-// Create server
-val server = HybridServer(
-  port = 8080,
-  httpRoutes = Map(
-    "/" -> pageHandler,
-    "/js/webview.js" -> resourceServer
-  ),
-  wsRoutes = Map(
-    "/ws/my-view" -> webViewHandler
-  )
-)
-
-server.start()
+// Or with more options
+WebViewServer()
+  .withRoute("/myview", new MyWebView(), params = Map("initial" -> "Hello!"))
+  .withHtmlPages()
+  .withDevMode(true)  // Enable debug mode
+  .start(port = 8080)
 ```
 
 ### 3. Client-Side Events
@@ -215,35 +196,32 @@ class CustomPageHandler extends HttpHandler {
 You can serve multiple WebViews on different paths:
 
 ```scala
-val server = HybridServer(
-  port = 8080,
-  httpRoutes = Map(
-    "/counter" -> WebViewPageHandler("ws://localhost:8080/ws/counter", "Counter"),
-    "/todo" -> WebViewPageHandler("ws://localhost:8080/ws/todo", "Todo List"),
-    "/js/webview.js" -> resourceServer
-  ),
-  wsRoutes = Map(
-    "/ws/counter" -> counterHandler,
-    "/ws/todo" -> todoHandler
-  )
-)
+WebViewServer()
+  .withRoute("/counter", new CounterWebView())
+  .withRoute("/todo", new TodoWebView())
+  .withRoute("/chat", new ChatWebView())
+  .withHtmlPages()
+  .start(port = 8080)
+
+// Each route automatically gets:
+// - HTML page at the route path (e.g., /counter)
+// - WebSocket connection at the same path
+// - Shared JavaScript at /js/webview.js
 ```
 
 ### Serving Static Assets
 
-Use `ResourceServer` to serve entire directories:
+Use `ResourceServer` with `.withHttpRoute()` to serve entire directories:
 
 ```scala
 // Serve all files from src/main/resources/static/
 val staticServer = ResourceServer("static")
 
-val server = HybridServer(
-  port = 8080,
-  httpRoutes = Map(
-    "/static" -> staticServer  // Serves /static/css/app.css, /static/js/app.js, etc.
-  ),
-  wsRoutes = ...
-)
+WebViewServer()
+  .withRoute("/app", new MyWebView())
+  .withHttpRoute("/static", staticServer)  // Serves /static/css/app.css, etc.
+  .withHtmlPages()
+  .start(port = 8080)
 ```
 
 ## Directory Structure
@@ -268,10 +246,10 @@ src/main/
 
 ## Tips
 
-1. **Development Mode**: Enable debug logging with `debug = true` in `WebViewPageHandler`
+1. **Development Mode**: Enable debug logging with `.withDevMode(true)`
 2. **Hot Reload**: Changes to your WebView's `render()` method take effect on the next state update
 3. **Resource Loading**: Make sure resources are in `src/main/resources/` so they're included in the classpath
-4. **CORS**: The `HybridServer` handles same-origin requests; for cross-origin, you'll need to add CORS headers
+4. **CORS**: WebViewServer handles same-origin requests; for cross-origin, you'll need to add CORS headers
 
 ## Troubleshooting
 

@@ -135,3 +135,21 @@ trait WebSocketHandler {
   }
 
 }
+
+object WebSocketHandler {
+
+  /** Handle a WebSocket connection by calling onConnect and running the message loop.
+    *
+    * This is a public helper method that can be called from outside the websocket package.
+    * It encapsulates the standard pattern of connecting and running the message loop.
+    *
+    * @param handler
+    *   the WebSocket handler
+    * @param connection
+    *   the WebSocket connection
+    */
+  def handleConnection(handler: WebSocketHandler, connection: WebSocketConnection): Unit = {
+    handler.onConnect(connection)
+    handler.runMessageLoop(connection)
+  }
+}

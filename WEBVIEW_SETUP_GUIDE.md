@@ -12,13 +12,14 @@ We've created a complete infrastructure for serving WebView applications with au
 - **`HttpResponse`** - Helper methods for sending HTTP responses (200 OK, 404 Not Found, etc.)
 - **`ResourceServer`** - Serves static files from the classpath/resources directory
 
-### 2. Hybrid Server (`spider/websocket/HybridServer`)
+### 2. WebView Server Integration
 
-- **`HybridServer`** - A server that handles both HTTP and WebSocket connections
+- **Internal Server** - WebViewServer includes an internal server that handles both HTTP and WebSocket connections
 - Routes incoming requests to either HTTP handlers or WebSocket handlers based on the request type
 - Automatically detects WebSocket upgrade requests
+- No need to manually manage HTTP+WebSocket servers
 
-### 3. WebView Integration
+### 3. WebView Components
 
 - **`WebViewPageHandler`** - Generates HTML pages that:
   - Load the `webview.js` client library
@@ -65,7 +66,6 @@ src/main/
 │       │   ├── HttpResponse.scala         # HTTP response helpers
 │       │   └── ResourceServer.scala       # Serves files from classpath
 │       ├── websocket/
-│       │   ├── HybridServer.scala         # HTTP + WebSocket server
 │       │   ├── WebSocketServer.scala      # Pure WebSocket server
 │       │   └── WebSocketHandler.scala     # WebSocket handler trait
 │       └── webview/
@@ -99,22 +99,16 @@ WebViewServer()
 
 Run: `sbt "runMain dev.alteration.branch.spider.webview.examples.SimpleCounterExample"`
 
-### Example 2: Manual Setup (More Control)
+### Example 2: With Initial Params and DevMode
 
 File: `CounterExample.scala`
 
 ```scala
-val server = HybridServer(
-  port = 8080,
-  httpRoutes = Map(
-    "/" -> WebViewPageHandler("ws://localhost:8080/ws/counter"),
-    "/js/webview.js" -> ResourceServer("spider/webview")
-  ),
-  wsRoutes = Map(
-    "/ws/counter" -> counterHandler
-  )
-)
-server.start()
+val server = WebViewServer()
+  .withRoute("/counter", new CounterWebView(), params = Map("initial" -> "10"))
+  .withHtmlPages()
+  .withDevMode(true)
+  .start(port = 8080)
 ```
 
 Run: `sbt "runMain dev.alteration.branch.spider.webview.examples.CounterExample"`
@@ -127,7 +121,7 @@ Run: `sbt "runMain dev.alteration.branch.spider.webview.examples.CounterExample"
 Browser Request
     |
     v
-HybridServer (port 8080)
+WebViewServer (port 8080)
     |
     +-- Is WebSocket? --> WebSocketHandler --> WebView Actor
     |
@@ -225,10 +219,11 @@ Now you can put files in `src/main/resources/static/` and they'll be served:
 
 ## Key Design Decisions
 
-1. **HybridServer in websocket package** - Needs access to `runMessageLoop()` which is package-private
-2. **Automatic HTML generation** - `.withHtmlPages()` creates pages for all routes automatically
-3. **Same path for HTTP and WebSocket** - Simplifies routing (e.g., `/counter` serves both)
-4. **ResourceServer for JavaScript** - Loads `webview.js` from classpath at runtime
+1. **All-in-one WebViewServer** - Single class handles HTTP, WebSocket, and WebView routing
+2. **Internal HTTP+WebSocket server** - No need to manually configure separate servers
+3. **Automatic HTML generation** - `.withHtmlPages()` creates pages for all routes automatically
+4. **Same path for HTTP and WebSocket** - Simplifies routing (e.g., `/counter` serves both)
+5. **ResourceServer for JavaScript** - Loads `webview.js` from classpath at runtime
 
 ## Testing
 
