@@ -4,8 +4,7 @@ import Json.JsonObject
 import dev.alteration.branch.macaroni.meta.Summons.summonHigherListOf
 
 import java.time.Instant
-import scala.collection.*
-import scala.compiletime.*
+import scala.collection.mutable
 import scala.deriving.Mirror
 import scala.util.*
 import dev.alteration.branch.macaroni.meta.Summons.summonListOfValuesAs
@@ -247,11 +246,54 @@ object JsonDecoder {
     }
   }
 
+  /** Decoder for sum types (sealed traits/enums).
+    *
+    * Decodes ADTs using a tagged union with a "type" field:
+    * - Case objects: { "type": "Increment" }
+    * - Case classes: { "type": "SetCount", "value": 42 }
+    */
+  protected class DerivedSumJsonDecoder[A](using
+      decoders: List[JsonDecoder[?]],
+      typeLabels: List[String]
+  ) extends JsonDecoder[A] {
+    def decode(json: Json): Try[A] = {
+      Try {
+        val underlying = json.asInstanceOf[JsonObject].value
+        val typeName = underlying.get("type") match {
+          case Some(Json.JsonString(name)) => name
+          case _ => throw new Exception("Missing or invalid 'type' field in sum type")
+        }
+
+        // Find the decoder for this type
+        typeLabels.indexOf(typeName) match {
+          case -1 =>
+            throw new Exception(
+              s"Unknown type '$typeName' for sum type. Expected one of: ${typeLabels.mkString(", ")}"
+            )
+          case idx =>
+            val decoder = decoders(idx).asInstanceOf[JsonDecoder[Any]]
+            // Remove the "type" field before decoding the value
+            val remainingFields = underlying - "type"
+            val valueJson = if (remainingFields.isEmpty) {
+              // Case object with no fields - use empty object
+              JsonObject(Map.empty)
+            } else {
+              // Case class with fields
+              JsonObject(remainingFields)
+            }
+            // Decode and convert to the target type
+            decoder.decode(valueJson).get.asInstanceOf[A]
+        }
+      }
+    }
+  }
+
   inline given derived[A](using m: Mirror.Of[A]): JsonDecoder[A] = {
     inline m match {
-      case _: Mirror.SumOf[A]     =>
-        error(
-          "Auto derivation is not supported for Sum types. Please create them explicitly as needed."
+      case s: Mirror.SumOf[A] =>
+        new DerivedSumJsonDecoder[A](using
+          summonHigherListOf[s.MirroredElemTypes, JsonDecoder],
+          summonListOfValuesAs[s.MirroredElemLabels, String]
         )
       case p: Mirror.ProductOf[A] =>
         new DerivedJsonDecoder[A](using

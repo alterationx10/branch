@@ -1,6 +1,7 @@
 package dev.alteration.branch.spider.webview.html
 
 import Attr._
+import scala.reflect.ClassTag
 
 /** WebView-specific HTML attributes.
   *
@@ -8,11 +9,21 @@ import Attr._
   * WebView. When a user interacts with an element that has a WebView
   * attribute, an event is sent to the server over WebSocket.
   *
-  * Example:
+  * Example with string events (backward compatible):
   * {{{
   * button(wvClick := "increment")("Click me")
   * input(wvChange := "update-name", value := name)
   * form(wvSubmit := "save")
+  * }}}
+  *
+  * Example with typed events (Phase 4b):
+  * {{{
+  * sealed trait MyEvent
+  * case object Increment extends MyEvent
+  * case class SetCount(n: Int) extends MyEvent
+  *
+  * button(wvClick := Increment)("Click me")
+  * button(wvClick := SetCount(42))("Set to 42")
   * }}}
   *
   * The client-side JavaScript listens for these attributes and automatically
@@ -27,12 +38,29 @@ object WebViewAttributes {
     */
   case class WebViewAttrBuilder(eventType: String) {
 
-    /** Create a WebView event attribute.
+    /** Create a WebView event attribute from a string event name.
       *
       * @param eventName
       *   The name of the event to send to the server
       */
     def :=(eventName: String): Attr = {
+      StringAttr(s"wv-$eventType", eventName)
+    }
+
+    /** Create a WebView event attribute from a typed event.
+      *
+      * This extracts the event type name and uses it as the event identifier.
+      * For case objects, it uses the simple class name.
+      * For case classes, it uses the class name (parameters are sent separately).
+      *
+      * @param event
+      *   The typed event to send to the server
+      */
+    def :=[Event](event: Event)(using ct: ClassTag[Event]): Attr = {
+      // Extract the simple name of the event type
+      // For case objects: "Increment" -> "Increment"
+      // For case classes: "SetCount" -> "SetCount"
+      val eventName = event.getClass.getSimpleName.stripSuffix("$")
       StringAttr(s"wv-$eventType", eventName)
     }
   }

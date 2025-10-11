@@ -30,10 +30,26 @@ package dev.alteration.branch.spider.webview
   *     \"\"\"
   * }}}
   *
+  * Example with typed events (Phase 4b):
+  * {{{
+  * sealed trait CounterEvent derives EventCodec
+  * case object Increment extends CounterEvent
+  * case object Decrement extends CounterEvent
+  *
+  * case class CounterView() extends WebView[CounterState, CounterEvent]:
+  *   override def handleEvent(event: CounterEvent, state: CounterState): CounterState =
+  *     event match
+  *       case Increment => state.copy(count = state.count + 1)
+  *       case Decrement => state.copy(count = state.count - 1)
+  *       // Compiler enforces exhaustiveness!
+  * }}}
+  *
   * @tparam State
   *   The type of state this WebView maintains
+  * @tparam Event
+  *   The type of events this WebView handles (use String for backward compatibility)
   */
-trait WebView[State] {
+trait WebView[State, Event] {
 
   /** Called when a client connects to this WebView.
     *
@@ -52,22 +68,20 @@ trait WebView[State] {
   /** Handle events sent from the client.
     *
     * Events are triggered by user interactions in the browser (clicks, form
-    * changes, etc.) and sent to the server over WebSocket.
+    * changes, etc.) and sent to the server over WebSocket, then decoded
+    * into strongly-typed events.
+    *
+    * The compiler enforces exhaustiveness checking when pattern matching
+    * on sealed trait events, ensuring all event cases are handled.
     *
     * @param event
-    *   The event name (e.g., "click", "change", "submit")
-    * @param payload
-    *   Event payload data (e.g., form values, click coordinates)
+    *   The typed event (e.g., Increment, SetName("Alice"))
     * @param state
     *   The current state
     * @return
     *   The new state
     */
-  def handleEvent(
-      event: String,
-      payload: Map[String, Any],
-      state: State
-  ): State
+  def handleEvent(event: Event, state: State): State
 
   /** Handle info messages from the actor system.
     *

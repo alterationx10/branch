@@ -25,13 +25,15 @@ case class Mount(
 
 /** Event from the client.
   *
+  * This message contains a strongly-typed event that has been decoded
+  * from the client's JSON payload using an EventCodec.
+  *
   * @param event
-  *   Event name (e.g., "click", "change")
-  * @param payload
-  *   Event payload data
+  *   The typed event (e.g., Increment, SetName("Alice"))
+  * @tparam Event
+  *   The event type
   */
-case class ClientEvent(event: String, payload: Map[String, Any])
-    extends WebViewMessage
+case class ClientEvent[Event](event: Event) extends WebViewMessage
 
 /** Message from the actor system (pub/sub, timers, etc.).
   *

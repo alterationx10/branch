@@ -27,7 +27,7 @@ private[webview] case class WebViewActorState[State](
   *
   * This actor manages the lifecycle of a WebView component, handling:
   *   - Connection establishment and mounting
-  *   - Client events and state updates
+  *   - Client events and state updates (with type-safe events)
   *   - Rendering and sending updates to the client
   *   - Clean termination
   *
@@ -37,8 +37,10 @@ private[webview] case class WebViewActorState[State](
   *   The WebView implementation to manage
   * @tparam State
   *   The state type of the WebView
+  * @tparam Event
+  *   The event type of the WebView
   */
-case class WebViewActor[State](webView: WebView[State])
+case class WebViewActor[State, Event](webView: WebView[State, Event])
     extends StatefulActor[WebViewActorState[State], WebViewMessage] {
 
   override def initialState: WebViewActorState[State] =
@@ -69,12 +71,12 @@ case class WebViewActor[State](webView: WebView[State])
           state.copy(connection = Some(connection))
       }
 
-    case ClientEvent(event, payload) if state.mounted =>
-      // Handle client event
+    case ClientEvent(typedEvent: Event @unchecked) if state.mounted =>
+      // Handle client event (now strongly-typed!)
       state.userState match {
         case Some(currentUserState) =>
           Try {
-            val newUserState = webView.handleEvent(event, payload, currentUserState)
+            val newUserState = webView.handleEvent(typedEvent, currentUserState)
             val html         = webView.render(newUserState)
 
             // Send updated HTML to client

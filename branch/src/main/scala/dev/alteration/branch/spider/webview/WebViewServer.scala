@@ -43,7 +43,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
   */
 case class WebViewServer(
     actorSystem: ActorSystem = ActorSystem(),
-    routes: Map[String, WebViewRoute[?]] = Map.empty
+    routes: Map[String, WebViewRoute[?, ?]] = Map.empty
 ) {
 
   /** Add a WebView route to the server.
@@ -56,21 +56,26 @@ case class WebViewServer(
     *   URL query parameters to pass to mount
     * @param session
     *   Session data to pass to mount
+    * @param eventCodec
+    *   Codec for encoding/decoding events (provided implicitly)
     * @tparam State
     *   The state type of the WebView
+    * @tparam Event
+    *   The event type of the WebView
     * @return
     *   A new WebViewServer with the route added
     */
-  def withRoute[State](
+  def withRoute[State, Event](
       path: String,
-      webView: WebView[State],
+      webView: WebView[State, Event],
       params: Map[String, String] = Map.empty,
       session: Session = Session()
-  ): WebViewServer = {
-    val route = WebViewRoute[State](
+  )(using eventCodec: EventCodec[Event]): WebViewServer = {
+    val route = WebViewRoute[State, Event](
       factory = () => webView,
       params = params,
-      session = session
+      session = session,
+      eventCodec = eventCodec
     )
     copy(routes = routes + (path -> route))
   }
@@ -87,21 +92,26 @@ case class WebViewServer(
     *   URL query parameters
     * @param session
     *   Session data
+    * @param eventCodec
+    *   Codec for encoding/decoding events (provided implicitly)
     * @tparam State
     *   The state type of the WebView
+    * @tparam Event
+    *   The event type of the WebView
     * @return
     *   A new WebViewServer with the route added
     */
-  def withRouteFactory[State](
+  def withRouteFactory[State, Event](
       path: String,
-      factory: () => WebView[State],
+      factory: () => WebView[State, Event],
       params: Map[String, String] = Map.empty,
       session: Session = Session()
-  ): WebViewServer = {
-    val route = WebViewRoute[State](
+  )(using eventCodec: EventCodec[Event]): WebViewServer = {
+    val route = WebViewRoute[State, Event](
       factory = factory,
       params = params,
-      session = session
+      session = session,
+      eventCodec = eventCodec
     )
     copy(routes = routes + (path -> route))
   }
@@ -160,11 +170,14 @@ case class WebViewServer(
     *   The route configuration
     * @tparam State
     *   The state type
+    * @tparam Event
+    *   The event type
     * @return
     *   A WebSocketHandler
     */
-  private def createHandler[State](route: WebViewRoute[State]): WebSocketHandler = {
-    WebViewHandler[State](
+  private def createHandler[State, Event](route: WebViewRoute[State, Event]): WebSocketHandler = {
+    given EventCodec[Event] = route.eventCodec
+    WebViewHandler[State, Event](
       actorSystem = actorSystem,
       webViewFactory = route.factory,
       params = route.params,
@@ -181,13 +194,18 @@ case class WebViewServer(
   *   URL query parameters to pass to mount
   * @param session
   *   Session data to pass to mount
+  * @param eventCodec
+  *   Codec for encoding/decoding events
   * @tparam State
   *   The state type of the WebView
+  * @tparam Event
+  *   The event type of the WebView
   */
-case class WebViewRoute[State](
-    factory: () => WebView[State],
+case class WebViewRoute[State, Event](
+    factory: () => WebView[State, Event],
     params: Map[String, String],
-    session: Session
+    session: Session,
+    eventCodec: EventCodec[Event]
 )
 
 /** A running WebView server instance.
@@ -210,7 +228,7 @@ case class RunningWebViewServer(
     wsServer: WebSocketServer,
     port: Int,
     host: String,
-    routes: Map[String, WebViewRoute[?]]
+    routes: Map[String, WebViewRoute[?, ?]]
 ) {
 
   /** Stop the server and cleanup resources. */
