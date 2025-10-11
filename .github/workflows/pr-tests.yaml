@@ -24,35 +24,35 @@ jobs:
         uses: sbt/setup-sbt@v1
 
       - name: blammo tests
-        run: sbt testOnly *blammo*
+        run: sbt "testOnly *blammo*"
 
       - name: friday tests
-        run: sbt testOnly *friday*
+        run: sbt "testOnly *friday*"
 
       - name: hollywood tests
-        run: sbt testOnly *hollywood*
+        run: sbt "testOnly *hollywood*"
 
       - name: keanu tests
-        run: sbt testOnly *keanu*
+        run: sbt "testOnly *keanu*"
 
       - name: lzy tests
-        run: sbt testOnly *lzy*
+        run: sbt "testOnly *lzy*"
 
       - name: macaroni tests
-        run: sbt testOnly *macaroni*
+        run: sbt "testOnly *macaroni*"
 
       - name: mustachio tests
-        run: sbt testOnly *mustachio*
+        run: sbt "testOnly *mustachio*"
 
       - name: piggy tests
-        run: sbt testOnly *piggy*
+        run: sbt "testOnly *piggy*"
 
       - name: spider tests
-        run: sbt testOnly *spider*
+        run: sbt "testOnly *spider*"
 
       - name: ursula tests
-        run: sbt testOnly *ursula*
+        run: sbt "testOnly *ursula*"
 
       - name: veil tests
-        run: sbt testOnly *veil*
+        run: sbt "testOnly *veil*"
 
