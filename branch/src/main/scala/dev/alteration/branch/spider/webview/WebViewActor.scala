@@ -14,13 +14,23 @@ import scala.util.{Failure, Success, Try}
   *   The WebSocket connection (if mounted)
   * @param mounted
   *   Whether the WebView has been mounted
+  * @param errorState
+  *   Current error state (if any)
   * @tparam State
   *   The user's state type
   */
 private[webview] case class WebViewActorState[State](
     userState: Option[State],
     connection: Option[WebSocketConnection],
-    mounted: Boolean
+    mounted: Boolean,
+    errorState: Option[ErrorState] = None
+)
+
+/** Tracks error state for error boundaries. */
+private[webview] case class ErrorState(
+    error: Throwable,
+    phase: ErrorPhase,
+    attemptCount: Int = 0
 )
 
 /** Actor implementation for WebView.
@@ -50,8 +60,8 @@ case class WebViewActor[State, Event](webView: WebView[State, Event])
       : PartialFunction[WebViewMessage, WebViewActorState[State]] = {
 
     case Mount(params, session, connection) if !state.mounted =>
-      // Initialize the WebView
-      Try {
+      // Initialize the WebView with error boundary
+      handleWithErrorBoundary(ErrorPhase.Mount, None, connection) {
         val initialUserState = webView.mount(params, session)
 
         // Call afterMount hook with context
@@ -59,7 +69,13 @@ case class WebViewActor[State, Event](webView: WebView[State, Event])
           context.system,
           msg => context.system.tell(context.self, InfoMessage(msg))
         )
-        webView.afterMount(initialUserState, ctx)
+
+        Try(webView.afterMount(initialUserState, ctx)) match {
+          case Failure(error) =>
+            println(s"Error in afterMount: ${error.getMessage}")
+            // Continue with mount even if afterMount fails
+          case Success(_) => ()
+        }
 
         // Render with beforeRender hook
         val renderState = webView.beforeRender(initialUserState)
@@ -71,50 +87,51 @@ case class WebViewActor[State, Event](webView: WebView[State, Event])
         state.copy(
           userState = Some(initialUserState),
           connection = Some(connection),
-          mounted = true
+          mounted = true,
+          errorState = None
         )
-      } match {
-        case Success(newState) => newState
-        case Failure(error)    =>
-          println(s"Error mounting WebView: ${error.getMessage}")
-          sendError(error.getMessage)
-          state.copy(connection = Some(connection))
       }
 
     case ClientEvent(typedEvent: Event @unchecked) if state.mounted =>
-      // Handle client event (now strongly-typed!)
+      // Handle client event with error boundary
       state.userState match {
         case Some(currentUserState) =>
-          Try {
-            val ctx = WebViewContext(
-              context.system,
-              msg => context.system.tell(context.self, InfoMessage(msg))
-            )
+          state.connection match {
+            case Some(conn) =>
+              handleWithErrorBoundary(ErrorPhase.Event, Some(currentUserState), conn) {
+                val ctx = WebViewContext(
+                  context.system,
+                  msg => context.system.tell(context.self, InfoMessage(msg))
+                )
 
-            // Call beforeUpdate hook
-            webView.beforeUpdate(typedEvent, currentUserState, ctx)
+                // Call beforeUpdate hook
+                Try(webView.beforeUpdate(typedEvent, currentUserState, ctx)) match {
+                  case Failure(error) =>
+                    println(s"Error in beforeUpdate: ${error.getMessage}")
+                  case Success(_) => ()
+                }
 
-            // Process the event
-            val newUserState = webView.handleEvent(typedEvent, currentUserState)
+                // Process the event
+                val newUserState = webView.handleEvent(typedEvent, currentUserState)
 
-            // Call afterUpdate hook
-            webView.afterUpdate(typedEvent, currentUserState, newUserState, ctx)
+                // Call afterUpdate hook
+                Try(webView.afterUpdate(typedEvent, currentUserState, newUserState, ctx)) match {
+                  case Failure(error) =>
+                    println(s"Error in afterUpdate: ${error.getMessage}")
+                  case Success(_) => ()
+                }
 
-            // Render with beforeRender hook
-            val renderState = webView.beforeRender(newUserState)
-            val html = webView.render(renderState)
+                // Render with beforeRender hook
+                val renderState = webView.beforeRender(newUserState)
+                val html = webView.render(renderState)
 
-            // Send updated HTML to client
-            state.connection.foreach { conn =>
-              sendHtml(conn, html)
-            }
+                // Send updated HTML to client
+                sendHtml(conn, html)
 
-            state.copy(userState = Some(newUserState))
-          } match {
-            case Success(newState) => newState
-            case Failure(error)    =>
-              println(s"Error handling event: ${error.getMessage}")
-              sendError(error.getMessage)
+                state.copy(userState = Some(newUserState), errorState = None)
+              }
+            case None =>
+              println("Warning: Connection lost")
               state
           }
 
@@ -124,27 +141,25 @@ case class WebViewActor[State, Event](webView: WebView[State, Event])
       }
 
     case InfoMessage(msg) if state.mounted =>
-      // Handle info message from actor system
+      // Handle info message with error boundary
       state.userState match {
         case Some(currentUserState) =>
-          Try {
-            val newUserState = webView.handleInfo(msg, currentUserState)
+          state.connection match {
+            case Some(conn) =>
+              handleWithErrorBoundary(ErrorPhase.Info, Some(currentUserState), conn) {
+                val newUserState = webView.handleInfo(msg, currentUserState)
 
-            // Render with beforeRender hook
-            val renderState = webView.beforeRender(newUserState)
-            val html = webView.render(renderState)
+                // Render with beforeRender hook
+                val renderState = webView.beforeRender(newUserState)
+                val html = webView.render(renderState)
 
-            // Send updated HTML to client
-            state.connection.foreach { conn =>
-              sendHtml(conn, html)
-            }
+                // Send updated HTML to client
+                sendHtml(conn, html)
 
-            state.copy(userState = Some(newUserState))
-          } match {
-            case Success(newState) => newState
-            case Failure(error)    =>
-              println(s"Error handling info: ${error.getMessage}")
-              sendError(error.getMessage)
+                state.copy(userState = Some(newUserState), errorState = None)
+              }
+            case None =>
+              println("Warning: Connection lost")
               state
           }
 
@@ -164,6 +179,103 @@ case class WebViewActor[State, Event](webView: WebView[State, Event])
       state.connection.foreach(_.close())
       context.system.tell(context.self, PoisonPill)
       state.copy(connection = None, mounted = false)
+  }
+
+  /** Execute a block with error boundary protection.
+    *
+    * @param phase
+    *   The phase where execution is happening
+    * @param currentState
+    *   Current user state (if available)
+    * @param connection
+    *   The WebSocket connection
+    * @param block
+    *   The block to execute
+    * @return
+    *   New actor state
+    */
+  private def handleWithErrorBoundary(
+    phase: ErrorPhase,
+    currentState: Option[State],
+    connection: WebSocketConnection
+  )(block: => WebViewActorState[State]): WebViewActorState[State] = {
+    Try(block) match {
+      case Success(newState) => newState
+
+      case Failure(error) =>
+        println(s"Error in ${phase.name}: ${error.getMessage}")
+        error.printStackTrace()
+
+        // Try to recover using error boundary
+        currentState match {
+          case Some(userState) =>
+            // Call onError hook to attempt recovery
+            Try(webView.onError(error, userState, phase)) match {
+              case Success(Some(recoveredState)) =>
+                println(s"Recovered from error in ${phase.name}")
+                // Render recovered state
+                Try {
+                  val renderState = webView.beforeRender(recoveredState)
+                  val html = webView.render(renderState)
+                  sendHtml(connection, html)
+                } match {
+                  case Success(_) =>
+                    state.copy(userState = Some(recoveredState), errorState = None)
+                  case Failure(renderError) =>
+                    println(s"Error rendering recovered state: ${renderError.getMessage}")
+                    // Fall through to error UI
+                    renderErrorUI(error, phase, connection)
+                }
+
+              case Success(None) | Failure(_) =>
+                // No recovery possible or recovery failed, show error UI
+                renderErrorUI(error, phase, connection)
+
+            }
+
+          case None =>
+            // No state to recover from
+            renderErrorUI(error, phase, connection)
+        }
+    }
+  }
+
+  /** Render and send error UI to the client.
+    *
+    * @param error
+    *   The error that occurred
+    * @param phase
+    *   Where the error occurred
+    * @param connection
+    *   The WebSocket connection
+    * @return
+    *   Actor state with error recorded
+    */
+  private def renderErrorUI(
+    error: Throwable,
+    phase: ErrorPhase,
+    connection: WebSocketConnection
+  ): WebViewActorState[State] = {
+    Try(webView.renderError(error, phase)) match {
+      case Success(errorHtml) =>
+        sendHtml(connection, errorHtml)
+      case Failure(renderError) =>
+        println(s"Error rendering error UI: ${renderError.getMessage}")
+        // Send a basic error message
+        val fallbackHtml = s"""
+          <div style="padding: 20px; background: #fee; color: #c33;">
+            <h2>Critical Error</h2>
+            <p>Multiple errors occurred. Please reload the page.</p>
+            <button onclick="location.reload()">Reload</button>
+          </div>
+        """
+        sendHtml(connection, fallbackHtml)
+    }
+
+    // Update state with error
+    state.copy(
+      errorState = Some(ErrorState(error, phase, state.errorState.map(_.attemptCount + 1).getOrElse(1)))
+    )
   }
 
   /** Send HTML to the client.

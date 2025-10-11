@@ -191,6 +191,89 @@ trait WebView[State, Event] {
     *   The transformed state (or same state if no transformation needed)
     */
   def beforeRender(state: State): State = state
+
+  // ===== Error Boundary Hooks =====
+
+  /** Called when an error occurs during event handling or rendering.
+    *
+    * This allows the WebView to recover from errors gracefully by returning
+    * a new state. Return None to use the current state unchanged.
+    *
+    * Use this for:
+    * - Logging errors with context
+    * - Recovering to a safe state
+    * - Clearing problematic data
+    * - Setting error flags in state
+    *
+    * @param error
+    *   The error that occurred
+    * @param state
+    *   The state when the error occurred
+    * @param phase
+    *   Where the error occurred (Mount, Event, Render, etc.)
+    * @return
+    *   Optional new state to recover to, or None to keep current state
+    */
+  def onError(error: Throwable, state: State, phase: ErrorPhase): Option[State] = None
+
+  /** Render an error UI when an unrecoverable error occurs.
+    *
+    * This is called when onError returns None or when the error boundary
+    * itself throws an error. Override this to provide custom error UI.
+    *
+    * @param error
+    *   The error that occurred
+    * @param phase
+    *   Where the error occurred
+    * @return
+    *   HTML to display the error (defaults to a simple error message)
+    */
+  def renderError(error: Throwable, phase: ErrorPhase): String = {
+    val errorMsg = error.getMessage match {
+      case null => error.getClass.getSimpleName
+      case msg => msg
+    }
+
+    s"""
+    <div style="padding: 20px; margin: 20px; background: #fee; border: 2px solid #c33; border-radius: 8px; font-family: sans-serif;">
+      <h2 style="color: #c33; margin: 0 0 10px 0;">⚠️ Error in ${phase.name}</h2>
+      <p style="margin: 0 0 10px 0; color: #666;">
+        Something went wrong. The error has been logged.
+      </p>
+      <details>
+        <summary style="cursor: pointer; color: #666;">Error details</summary>
+        <pre style="margin: 10px 0 0 0; padding: 10px; background: #f5f5f5; border-radius: 4px; overflow-x: auto; font-size: 0.875rem;">$errorMsg</pre>
+      </details>
+      <button onclick="location.reload()" style="margin-top: 15px; padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem;">
+        🔄 Reload Page
+      </button>
+    </div>
+    """
+  }
+
+  /** Check if the WebView should attempt to retry after an error.
+    *
+    * Override this to implement custom retry logic.
+    *
+    * @param error
+    *   The error that occurred
+    * @param phase
+    *   Where the error occurred
+    * @param attemptCount
+    *   Number of retry attempts so far
+    * @return
+    *   true if should retry, false otherwise
+    */
+  def shouldRetry(error: Throwable, phase: ErrorPhase, attemptCount: Int): Boolean = false
+}
+
+/** Phase where an error occurred in the WebView lifecycle. */
+enum ErrorPhase(val name: String) {
+  case Mount extends ErrorPhase("Mount")
+  case Event extends ErrorPhase("Event Handling")
+  case Info extends ErrorPhase("Info Handling")
+  case Render extends ErrorPhase("Rendering")
+  case Lifecycle extends ErrorPhase("Lifecycle Hook")
 }
 
 /** Represents a client session.
