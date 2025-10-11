@@ -140,28 +140,35 @@ class DevToolsWebView extends WebView[DevToolsUIState, DevToolsEvent] {
     DevToolsUIState()
   }
 
-  override def handleEvent(event: DevToolsEvent, state: DevToolsUIState): DevToolsUIState = event match {
-    case SelectView(viewId) =>
-      state.copy(selectedView = Some(viewId))
+  override def handleEvent(event: DevToolsEvent, state: DevToolsUIState): DevToolsUIState = {
+    println(s"[DevTools] Received event: $event")
+    event match {
+      case SelectView(viewId) =>
+        println(s"[DevTools] Selecting view: $viewId")
+        state.copy(selectedView = Some(viewId))
 
-    case SetFilter(filter) =>
-      state.copy(filter = filter)
+      case SetFilter(filter) =>
+        println(s"[DevTools] Setting filter: $filter")
+        state.copy(filter = filter)
 
-    case ClearTimeline =>
-      state.selectedView match {
-        case Some(viewId) =>
-          state.copy(
-            devToolsStates = state.devToolsStates.updatedWith(viewId) {
-              case Some(devToolsState) => Some(devToolsState.copy(timeline = List.empty))
-              case None => None
-            }
-          )
-        case None => state
-      }
+      case ClearTimeline =>
+        println(s"[DevTools] Clearing timeline")
+        state.selectedView match {
+          case Some(viewId) =>
+            state.copy(
+              devToolsStates = state.devToolsStates.updatedWith(viewId) {
+                case Some(devToolsState) => Some(devToolsState.copy(timeline = List.empty))
+                case None => None
+              }
+            )
+          case None => state
+        }
 
-    case Refresh =>
-      // In a real implementation, this would fetch latest state from actors
-      state
+      case Refresh =>
+        println(s"[DevTools] Refreshing")
+        // In a real implementation, this would fetch latest state from actors
+        state
+    }
   }
 
   override def handleInfo(msg: Any, state: DevToolsUIState): DevToolsUIState = {

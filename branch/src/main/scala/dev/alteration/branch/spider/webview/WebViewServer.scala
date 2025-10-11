@@ -209,7 +209,7 @@ case class WebViewServer(
     // Add DevTools route if devMode is enabled
     val finalRoutes = if (devMode) {
       import dev.alteration.branch.spider.webview.devtools.*
-      given EventCodec[DevToolsEvent] = EventCodec.derived
+      import dev.alteration.branch.spider.webview.devtools.DevToolsEvent.given
 
       val devToolsRoute = WebViewRoute[DevToolsUIState, DevToolsEvent](
         factory = () => new DevToolsWebView(),
