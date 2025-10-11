@@ -2,7 +2,9 @@ package dev.alteration.branch.spider.webview
 
 import dev.alteration.branch.keanu.actors.{PoisonPill, StatefulActor}
 import dev.alteration.branch.spider.websocket.WebSocketConnection
+import dev.alteration.branch.spider.webview.devtools.{DevToolsState, UpdateDevToolsState}
 import scala.util.{Failure, Success, Try}
+import java.util.UUID
 
 /** Internal state for the WebView actor.
   *
@@ -16,6 +18,10 @@ import scala.util.{Failure, Success, Try}
   *   Whether the WebView has been mounted
   * @param errorState
   *   Current error state (if any)
+  * @param devToolsState
+  *   DevTools state for this actor (if devMode enabled)
+  * @param devToolsActorName
+  *   The name of the DevTools actor to send updates to
   * @tparam State
   *   The user's state type
   */
@@ -23,7 +29,9 @@ private[webview] case class WebViewActorState[State](
     userState: Option[State],
     connection: Option[WebSocketConnection],
     mounted: Boolean,
-    errorState: Option[ErrorState] = None
+    errorState: Option[ErrorState] = None,
+    devToolsState: Option[DevToolsState] = None,
+    devToolsActorName: Option[String] = None
 )
 
 /** Tracks error state for error boundaries. */
@@ -59,10 +67,16 @@ case class WebViewActor[State, Event](webView: WebView[State, Event])
   override def statefulOnMsg
       : PartialFunction[WebViewMessage, WebViewActorState[State]] = {
 
-    case Mount(params, session, connection) if !state.mounted =>
+    case Mount(params, session, connection, devToolsActorNameOpt) if !state.mounted =>
       // Initialize the WebView with error boundary
       handleWithErrorBoundary(ErrorPhase.Mount, None, connection) {
         val initialUserState = webView.mount(params, session)
+
+        // Initialize DevTools state if devMode is enabled
+        val viewId = UUID.randomUUID().toString
+        val devToolsState = devToolsActorNameOpt.map { _ =>
+          DevToolsState(viewId).recordMount(initialUserState)
+        }
 
         // Call afterMount hook with context
         val ctx = WebViewContext(
@@ -84,12 +98,19 @@ case class WebViewActor[State, Event](webView: WebView[State, Event])
         // Send initial HTML to client
         sendHtml(connection, html)
 
-        state.copy(
+        val newState = state.copy(
           userState = Some(initialUserState),
           connection = Some(connection),
           mounted = true,
-          errorState = None
+          errorState = None,
+          devToolsState = devToolsState,
+          devToolsActorName = devToolsActorNameOpt
         )
+
+        // Send DevTools update
+        sendDevToolsUpdate(newState)
+
+        newState
       }
 
     case ClientEvent(typedEvent: Event @unchecked) if state.mounted =>
@@ -112,6 +133,7 @@ case class WebViewActor[State, Event](webView: WebView[State, Event])
                 }
 
                 // Process the event
+                val startTime = System.currentTimeMillis()
                 val newUserState = webView.handleEvent(typedEvent, currentUserState)
 
                 // Call afterUpdate hook
@@ -124,11 +146,26 @@ case class WebViewActor[State, Event](webView: WebView[State, Event])
                 // Render with beforeRender hook
                 val renderState = webView.beforeRender(newUserState)
                 val html = webView.render(renderState)
+                val renderTime = System.currentTimeMillis() - startTime
 
                 // Send updated HTML to client
                 sendHtml(conn, html)
 
-                state.copy(userState = Some(newUserState), errorState = None)
+                // Update DevTools state
+                val newDevToolsState = state.devToolsState.map { devTools =>
+                  devTools.recordEvent(typedEvent, currentUserState, newUserState, renderTime)
+                }
+
+                val newState = state.copy(
+                  userState = Some(newUserState),
+                  errorState = None,
+                  devToolsState = newDevToolsState
+                )
+
+                // Send DevTools update
+                sendDevToolsUpdate(newState)
+
+                newState
               }
             case None =>
               println("Warning: Connection lost")
@@ -156,7 +193,21 @@ case class WebViewActor[State, Event](webView: WebView[State, Event])
                 // Send updated HTML to client
                 sendHtml(conn, html)
 
-                state.copy(userState = Some(newUserState), errorState = None)
+                // Update DevTools state
+                val newDevToolsState = state.devToolsState.map { devTools =>
+                  devTools.recordInfo(msg, currentUserState, newUserState)
+                }
+
+                val newState = state.copy(
+                  userState = Some(newUserState),
+                  errorState = None,
+                  devToolsState = newDevToolsState
+                )
+
+                // Send DevTools update
+                sendDevToolsUpdate(newState)
+
+                newState
               }
             case None =>
               println("Warning: Connection lost")
@@ -310,6 +361,32 @@ case class WebViewActor[State, Event](webView: WebView[State, Event])
     }
   }
 
+  /** Send DevTools update if devMode is enabled.
+    *
+    * @param actorState
+    *   Current actor state containing DevTools state
+    */
+  private def sendDevToolsUpdate(actorState: WebViewActorState[State]): Unit = {
+    for {
+      devToolsActorName <- actorState.devToolsActorName
+      devToolsState <- actorState.devToolsState
+    } {
+      Try {
+        // Use tellPath to send to the DevTools actor by path
+        val actorPath = s"/user/$devToolsActorName"
+        context.system.tellPath(
+          actorPath,
+          InfoMessage(UpdateDevToolsState(devToolsState.viewId, devToolsState))
+        )
+      } match {
+        case Failure(error) =>
+          // DevTools actor might not exist yet if DevTools page isn't open
+          // This is expected behavior, so we just silently ignore
+          ()
+        case Success(_) => ()
+      }
+    }
+  }
 
   override def postStop(): Unit = {
     super.postStop()

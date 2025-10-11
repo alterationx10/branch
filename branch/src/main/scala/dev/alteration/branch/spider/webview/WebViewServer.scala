@@ -224,8 +224,17 @@ case class WebViewServer(
     }
 
     // Create handlers for all routes
+    // For DevTools route, we'll use a shared actor name that all WebViews can send updates to
+    val devToolsActorName = if (devMode) Some("__devtools-actor") else None
+
     val wsHandlers = finalRoutes.map { case (path, route) =>
-      path -> createHandler(route)
+      if (path == "/__devtools") {
+        // DevTools handler: use shared actor name, don't send updates to self
+        path -> createHandler(route, devToolsActorName = None, useSharedActorName = devToolsActorName)
+      } else {
+        // Regular WebView handler: send updates to DevTools
+        path -> createHandler(route, devToolsActorName = devToolsActorName, useSharedActorName = None)
+      }
     }
 
     // Build HTTP routes if HTML serving is enabled
@@ -294,6 +303,8 @@ case class WebViewServer(
     *
     * @param route
     *   The route configuration
+    * @param devToolsActorName
+    *   Optional DevTools actor name for integration
     * @tparam State
     *   The state type
     * @tparam Event
@@ -301,13 +312,20 @@ case class WebViewServer(
     * @return
     *   A WebSocketHandler
     */
-  private def createHandler[State, Event](route: WebViewRoute[State, Event]): WebSocketHandler = {
+  private def createHandler[State, Event](
+      route: WebViewRoute[State, Event],
+      devToolsActorName: Option[String] = None,
+      useSharedActorName: Option[String] = None
+  ): WebSocketHandler = {
     given EventCodec[Event] = route.eventCodec
-    WebViewHandler[State, Event](
+
+    new WebViewHandler[State, Event](
       actorSystem = actorSystem,
       webViewFactory = route.factory,
       params = route.params,
-      session = route.session
+      session = route.session,
+      devToolsActorName = devToolsActorName,
+      useExistingActor = useSharedActorName
     )
   }
 }

@@ -43,7 +43,9 @@ class WebViewHandler[State, Event](
     actorSystem: ActorSystem,
     webViewFactory: () => WebView[State, Event],
     params: Map[String, String] = Map.empty,
-    session: Session = Session()
+    session: Session = Session(),
+    devToolsActorName: Option[String] = None,
+    useExistingActor: Option[String] = None
 )(using eventCodec: EventCodec[Event]) extends WebSocketHandler {
 
   // Map to store actor names by connection (using object identity)
@@ -51,29 +53,53 @@ class WebViewHandler[State, Event](
     new ConcurrentHashMap[WebSocketConnection, String]()
 
   override def onConnect(connection: WebSocketConnection): Unit = {
-    // Generate unique actor name for this connection
-    val actorId = UUID.randomUUID().toString
-
     try {
-      // Create the WebView instance
-      val webView = webViewFactory()
+      val actorName = useExistingActor match {
+        case Some(existingActorName) =>
+          // Check if actor already exists, create if not
+          val webView = webViewFactory()
 
-      // Register actor props (for actor creation)
-      actorSystem.registerProp(
-        dev.alteration.branch.keanu.actors.ActorProps.props[WebViewActor[State, Event]](
-          Tuple1(webView)
-        )
-      )
+          try {
+            // Try to create the actor - this will fail if it already exists
+            actorSystem.registerProp(
+              dev.alteration.branch.keanu.actors.ActorProps.props[WebViewActor[State, Event]](
+                Tuple1(webView)
+              )
+            )
+            actorSystem.actorOf[WebViewActor[State, Event]](existingActorName)
+            println(s"Created shared actor: $existingActorName")
+          } catch {
+            case _: Exception =>
+              // Actor already exists, that's fine
+              println(s"Reusing existing actor: $existingActorName")
+          }
+          existingActorName
 
-      // Spawn the actor
-      val actorName = s"webview-$actorId"
-      actorSystem.actorOf[WebViewActor[State, Event]](actorName)
+        case None =>
+          // Generate unique actor name for this connection
+          val actorId = UUID.randomUUID().toString
+
+          // Create the WebView instance
+          val webView = webViewFactory()
+
+          // Register actor props (for actor creation)
+          actorSystem.registerProp(
+            dev.alteration.branch.keanu.actors.ActorProps.props[WebViewActor[State, Event]](
+              Tuple1(webView)
+            )
+          )
+
+          // Spawn the actor
+          val actorName = s"webview-$actorId"
+          actorSystem.actorOf[WebViewActor[State, Event]](actorName)
+          actorName
+      }
 
       // Store actor name mapped to connection
       connectionActors.put(connection, actorName)
 
-      // Send mount message to initialize (includes connection)
-      actorSystem.tell[WebViewActor[State, Event]](actorName, Mount(params, session, connection))
+      // Send mount message to initialize (includes connection and devTools actor)
+      actorSystem.tell[WebViewActor[State, Event]](actorName, Mount(params, session, connection, devToolsActorName))
 
     } catch {
       case error: Throwable =>
@@ -187,7 +213,9 @@ object WebViewHandler {
       actorSystem: ActorSystem,
       webViewFactory: () => WebView[State, Event],
       params: Map[String, String] = Map.empty,
-      session: Session = Session()
+      session: Session = Session(),
+      devToolsActorName: Option[String] = None,
+      useExistingActor: Option[String] = None
   )(using eventCodec: EventCodec[Event]): WebViewHandler[State, Event] =
-    new WebViewHandler(actorSystem, webViewFactory, params, session)
+    new WebViewHandler(actorSystem, webViewFactory, params, session, devToolsActorName, useExistingActor)
 }

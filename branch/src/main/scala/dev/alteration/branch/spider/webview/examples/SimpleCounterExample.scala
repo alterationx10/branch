@@ -19,10 +19,11 @@ import dev.alteration.branch.spider.webview.*
   */
 object SimpleCounterExample extends App {
 
-  // Create a WebView server with automatic HTML serving
+  // Create a WebView server with automatic HTML serving and DevTools
   val server = WebViewServer()
     .withRoute("/counter", new CounterWebView())
     .withHtmlPages()  // Enable automatic HTML page generation
+    .withDevMode(true) // Enable DevTools for debugging
     .start(port = 8080)
 
   println()

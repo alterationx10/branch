@@ -16,11 +16,14 @@ sealed trait WebViewMessage
   *   Session data
   * @param connection
   *   The WebSocket connection
+  * @param devToolsActorName
+  *   Optional actor name for DevTools integration
   */
 case class Mount(
     params: Map[String, String],
     session: Session,
-    connection: dev.alteration.branch.spider.websocket.WebSocketConnection
+    connection: dev.alteration.branch.spider.websocket.WebSocketConnection,
+    devToolsActorName: Option[String] = None
 ) extends WebViewMessage
 
 /** Event from the client.

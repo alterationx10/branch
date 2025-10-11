@@ -86,11 +86,50 @@ object TimelineFilter {
 }
 
 /** Events for the DevTools UI. */
-sealed trait DevToolsEvent derives EventCodec
+sealed trait DevToolsEvent
 case class SelectView(viewId: String) extends DevToolsEvent
 case class SetFilter(filter: TimelineFilter) extends DevToolsEvent
 case object ClearTimeline extends DevToolsEvent
 case object Refresh extends DevToolsEvent
+
+object DevToolsEvent {
+  given EventCodec[DevToolsEvent] = EventCodec.from[DevToolsEvent](
+    encodeFunc = event => {
+      import dev.alteration.branch.friday.Json
+      event match {
+        case SelectView(viewId) => Json.obj("type" -> Json.JsonString("SelectView"), "viewId" -> Json.JsonString(viewId))
+        case SetFilter(filter) => Json.obj("type" -> Json.JsonString("SetFilter"), "filter" -> Json.JsonString(filter.toString))
+        case ClearTimeline => Json.obj("type" -> Json.JsonString("ClearTimeline"))
+        case Refresh => Json.obj("type" -> Json.JsonString("Refresh"))
+      }
+    },
+    decodeFunc = json => scala.util.Try {
+      throw new RuntimeException("Server-side decode not implemented")
+    },
+    decodeClientFunc = (eventName, payload) => scala.util.Try {
+      // Handle event names like "select-view-abc123", "set-filter-all", "clear-timeline"
+      if (eventName.startsWith("select-view-")) {
+        val viewId = eventName.stripPrefix("select-view-")
+        SelectView(viewId)
+      } else if (eventName.startsWith("set-filter-")) {
+        val filterType = eventName.stripPrefix("set-filter-")
+        filterType match {
+          case "all" => SetFilter(TimelineFilter.All)
+          case "events" => SetFilter(TimelineFilter.OnlyEvents)
+          case "state" => SetFilter(TimelineFilter.OnlyStateChanges)
+          case "info" => SetFilter(TimelineFilter.OnlyInfo)
+          case _ => throw new RuntimeException(s"Unknown filter type: $filterType")
+        }
+      } else if (eventName == "clear-timeline") {
+        ClearTimeline
+      } else if (eventName == "refresh") {
+        Refresh
+      } else {
+        throw new RuntimeException(s"Unknown DevTools event: $eventName")
+      }
+    }
+  )
+}
 
 /** DevTools WebView implementation. */
 class DevToolsWebView extends WebView[DevToolsUIState, DevToolsEvent] {
