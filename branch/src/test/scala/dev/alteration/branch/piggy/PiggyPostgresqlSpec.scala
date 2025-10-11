@@ -3,11 +3,13 @@ package dev.alteration.branch.piggy
 import dev.alteration.branch.macaroni.runtimes.BranchExecutors
 import dev.alteration.branch.testkit.testcontainers.PGContainerSuite
 import Sql.*
+import PreparedStatementSetter.given
 
 import java.time.Instant
 import java.util.UUID
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.Duration
+import scala.language.implicitConversions
 import scala.util.Try
 
 class PiggyPostgresqlSpec extends PGContainerSuite {

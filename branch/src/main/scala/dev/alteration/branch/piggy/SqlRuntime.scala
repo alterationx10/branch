@@ -103,27 +103,51 @@ object SqlRuntime extends SqlRuntime {
           statement.getUpdateCount
         }
       case Sql.PreparedExec(sqlFn, args)        =>
-        Using.Manager { use =>
-          val helpers               = args.map(sqlFn)
-          val ps: PreparedStatement =
-            use(connection.prepareStatement(helpers.head.psStr))
-          helpers.foreach(_.setAndExecute(ps))
+        if (args.isEmpty) {
+          Failure(
+            new IllegalArgumentException(
+              "PreparedExec requires at least one argument"
+            )
+          )
+        } else {
+          Using.Manager { use =>
+            val helpers               = args.map(sqlFn)
+            val ps: PreparedStatement =
+              use(connection.prepareStatement(helpers.head.psStr))
+            helpers.foreach(_.setAndExecute(ps))
+          }
         }
       case Sql.PreparedUpdate(sqlFn, args)      =>
-        Using.Manager { use =>
-          val helpers               = args.map(sqlFn)
-          val ps: PreparedStatement =
-            use(connection.prepareStatement(helpers.head.psStr))
-          val counts: Seq[Int]      = helpers.map(_.setAndExecuteUpdate(ps))
-          counts.foldLeft(0)(_ + _)
+        if (args.isEmpty) {
+          Failure(
+            new IllegalArgumentException(
+              "PreparedUpdate requires at least one argument"
+            )
+          )
+        } else {
+          Using.Manager { use =>
+            val helpers               = args.map(sqlFn)
+            val ps: PreparedStatement =
+              use(connection.prepareStatement(helpers.head.psStr))
+            val counts: Seq[Int]      = helpers.map(_.setAndExecuteUpdate(ps))
+            counts.foldLeft(0)(_ + _)
+          }
         }
       case Sql.PreparedQuery(sqlFn, rsFn, args) =>
-        Using.Manager { use =>
-          val helpers               = args.map(sqlFn)
-          val ps: PreparedStatement =
-            use(connection.prepareStatement(helpers.head.psStr))
-          helpers.flatMap { h =>
-            rsFn(h.setAndExecuteQuery(ps))
+        if (args.isEmpty) {
+          Failure(
+            new IllegalArgumentException(
+              "PreparedQuery requires at least one argument"
+            )
+          )
+        } else {
+          Using.Manager { use =>
+            val helpers               = args.map(sqlFn)
+            val ps: PreparedStatement =
+              use(connection.prepareStatement(helpers.head.psStr))
+            helpers.flatMap { h =>
+              rsFn(h.setAndExecuteQuery(ps))
+            }
           }
         }
       case Sql.Fail(e)                          =>

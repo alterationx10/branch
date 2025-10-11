@@ -35,12 +35,34 @@ object Sql {
   /** A Helper type equivalent to X => PsArgHolder */
   type PsArg[X] = X => PsArgHolder
 
+  /** A type-erased wrapper for a prepared statement argument that maintains
+    * type safety through the PreparedStatementSetter type class.
+    */
+  trait PreparedStatementArg {
+    def set(ps: PreparedStatement, index: Int): Unit
+  }
+
+  object PreparedStatementArg {
+
+    /** Implicit conversion from any type A to PreparedStatementArg, provided
+      * there is a PreparedStatementSetter[A] in scope.
+      */
+    given [A](using
+        setter: PreparedStatementSetter[A]
+    ): Conversion[A, PreparedStatementArg] with {
+      def apply(value: A): PreparedStatementArg = new PreparedStatementArg {
+        def set(ps: PreparedStatement, index: Int): Unit =
+          setter.set(ps)(index)(value)
+      }
+    }
+  }
+
   extension (sc: StringContext) {
 
     /** A string interpolator for creating prepared statements by capturing
       * arguments to aPsArgHolder.
       */
-    def ps(args: Any*): PsArgHolder = PsArgHolder(
+    def ps(args: PreparedStatementArg*): PsArgHolder = PsArgHolder(
       sc.s(args.map(_ => "?")*),
       args*
     )
@@ -115,19 +137,12 @@ object Sql {
     */
   final case class PsArgHolder(
       psStr: String,
-      psArgs: Any*
+      psArgs: PreparedStatementArg*
   ) {
 
     private def set(preparedStatement: PreparedStatement): Unit = {
-      psArgs.zipWithIndex.map({ case (a, i) => a -> (i + 1) }).foreach {
-        case (a: Int, i)     => preparedStatement.setInt(i, a)
-        case (a: Long, i)    => preparedStatement.setLong(i, a)
-        case (a: Float, i)   => preparedStatement.setFloat(i, a)
-        case (a: Double, i)  => preparedStatement.setDouble(i, a)
-        case (a: String, i)  => preparedStatement.setString(i, a)
-        case (a: Boolean, i) => preparedStatement.setBoolean(i, a)
-        case (u, _)          =>
-          throw new IllegalArgumentException(s"Unsupported type $u")
+      psArgs.zipWithIndex.foreach { case (arg, i) =>
+        arg.set(preparedStatement, i + 1)
       }
     }
 
