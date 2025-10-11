@@ -172,6 +172,50 @@ object ResultSetGetter {
     }
   }
 
+  /** `ResultSetGetter` instance for `java.time.LocalDate` values. */
+  given ResultSetGetter[java.time.LocalDate] with {
+    override def get(rs: ResultSet, col: String | Int): java.time.LocalDate = {
+      col match {
+        case label: String => rs.getDate(label).toLocalDate
+        case index: Int    => rs.getDate(index).toLocalDate
+      }
+    }
+  }
+
+  /** `ResultSetGetter` instance for `java.time.LocalDateTime` values. */
+  given ResultSetGetter[java.time.LocalDateTime] with {
+    override def get(rs: ResultSet, col: String | Int): java.time.LocalDateTime = {
+      col match {
+        case label: String => rs.getTimestamp(label).toLocalDateTime
+        case index: Int    => rs.getTimestamp(index).toLocalDateTime
+      }
+    }
+  }
+
+  /** `ResultSetGetter` instance for `java.time.ZonedDateTime` values.
+    * Uses system default timezone for conversion.
+    */
+  given ResultSetGetter[java.time.ZonedDateTime] with {
+    override def get(rs: ResultSet, col: String | Int): java.time.ZonedDateTime = {
+      col match {
+        case label: String =>
+          rs.getTimestamp(label).toInstant.atZone(java.time.ZoneId.systemDefault())
+        case index: Int    =>
+          rs.getTimestamp(index).toInstant.atZone(java.time.ZoneId.systemDefault())
+      }
+    }
+  }
+
+  /** `ResultSetGetter` instance for `java.math.BigInteger` values. */
+  given ResultSetGetter[java.math.BigInteger] with {
+    override def get(rs: ResultSet, col: String | Int): java.math.BigInteger = {
+      col match {
+        case label: String => rs.getBigDecimal(label).toBigInteger
+        case index: Int    => rs.getBigDecimal(index).toBigInteger
+      }
+    }
+  }
+
   /** `ResultSetGetter` instance for `Option[A]` values that handles NULL.
     * Returns None if the column is NULL, otherwise Some(value).
     */

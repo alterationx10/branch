@@ -66,6 +66,32 @@ object Sql {
       sc.s(args.map(_ => "?")*),
       args*
     )
+
+    /** A string interpolator for creating UPDATE/INSERT/DELETE statements that
+      * returns the number of affected rows. For single-use statements.
+      * @example
+      *   {{{
+      *   psUpdate"INSERT INTO users (name, email) VALUES ($name, $email)"
+      *   }}}
+      */
+    def psUpdate(args: PreparedStatementArg*): Sql[Int] = {
+      val holder = PsArgHolder(sc.s(args.map(_ => "?")*), args*)
+      Sql.PreparedUpdate(_ => holder, Seq(()))
+    }
+
+    /** A string interpolator for creating SELECT statements that returns a
+      * sequence of parsed results. For single-use queries.
+      * @example
+      *   {{{
+      *   psQuery[User]"SELECT * FROM users WHERE active = $active"
+      *   }}}
+      */
+    inline def psQuery[R](args: PreparedStatementArg*)(using
+        parser: ResultSetParser[R]
+    ): Sql[Seq[R]] = {
+      val holder = PsArgHolder(sc.s(args.map(_ => "?")*), args*)
+      Sql.PreparedQuery[Any, Unit, R](_ => holder, rs => rs.parsedList[R], Seq(()))
+    }
   }
 
   extension [A](a: Sql[A]) {
@@ -75,13 +101,12 @@ object Sql {
       */
     def execute(using
         connection: Connection
-    ): Try[A] = {
+    ): Try[A] =
       SqlRuntime.execute(a)
 
-      /** Execute this Sql operation using the given Connection, returning the
-        * result as a Future. See [[SqlRuntime.executeAsync]].
-        */
-    }
+    /** Execute this Sql operation using the given Connection, returning the
+      * result as a Future. See [[SqlRuntime.executeAsync]].
+      */
     def executeAsync(using
         connection: Connection,
         executionContext: ExecutionContext
