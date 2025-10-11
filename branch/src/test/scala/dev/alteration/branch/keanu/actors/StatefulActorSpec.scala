@@ -21,7 +21,8 @@ class StatefulActorSpec extends FunSuite {
         extends StatefulActor[CounterState, CounterMessage] {
       override def initialState: CounterState = CounterState(0)
 
-      override def receive: PartialFunction[CounterMessage, CounterState] = {
+      override def statefulOnMsg
+          : PartialFunction[CounterMessage, CounterState] = {
         case Increment   => state.copy(count = state.count + 1)
         case Decrement   => state.copy(count = state.count - 1)
         case GetCount(l) =>
@@ -60,7 +61,7 @@ class StatefulActorSpec extends FunSuite {
     case class TestActor() extends StatefulActor[MyState, Message] {
       override def initialState: MyState = MyState("initial", 42)
 
-      override def receive: PartialFunction[Message, MyState] = {
+      override def statefulOnMsg: PartialFunction[Message, MyState] = {
         case GetInitial =>
           capturedState = Some(state)
           latch.countDown()
@@ -99,7 +100,7 @@ class StatefulActorSpec extends FunSuite {
     case class TodoActor() extends StatefulActor[TodoState, TodoMessage] {
       override def initialState: TodoState = TodoState(List.empty, Set.empty, 0)
 
-      override def receive: PartialFunction[TodoMessage, TodoState] = {
+      override def statefulOnMsg: PartialFunction[TodoMessage, TodoState] = {
         case AddItem(item)      =>
           state.copy(
             items = state.items :+ item,
@@ -156,7 +157,7 @@ class StatefulActorSpec extends FunSuite {
     case class RestartActor() extends StatefulActor[CounterState, Message] {
       override def initialState: CounterState = CounterState(0)
 
-      override def receive: PartialFunction[Message, CounterState] = {
+      override def statefulOnMsg: PartialFunction[Message, CounterState] = {
         case Increment   => state.copy(count = state.count + 1)
         case Fail        => throw new RuntimeException("Intentional failure")
         case GetCount(l) =>
@@ -213,7 +214,7 @@ class StatefulActorSpec extends FunSuite {
       override def initialState: CounterState =
         StateStorage.savedState.getOrElse(CounterState(0))
 
-      override def receive: PartialFunction[Message, CounterState] = {
+      override def statefulOnMsg: PartialFunction[Message, CounterState] = {
         case Increment   => state.copy(count = state.count + 1)
         case Fail        => throw new RuntimeException("Intentional failure")
         case GetCount(l) =>
@@ -257,7 +258,7 @@ class StatefulActorSpec extends FunSuite {
     case class ParentActor() extends StatefulActor[MyState, Message] {
       override def initialState: MyState = MyState(0)
 
-      override def receive: PartialFunction[Message, MyState] = {
+      override def statefulOnMsg: PartialFunction[Message, MyState] = {
         case CreateChild      =>
           context.actorOf[ChildActor](s"child${state.childCount}")
           state.copy(childCount = state.childCount + 1)
@@ -304,10 +305,10 @@ class StatefulActorSpec extends FunSuite {
     case class LifecycleActor() extends StatefulActor[MyState, Message] {
       override def initialState: MyState = MyState(0)
 
-      override def preStart(): Unit                           = preStartCalled = true
-      override def postStop(): Unit                           = postStopCalled = true
-      override def preRestart(reason: Throwable): Unit        = preRestartCalled = true
-      override def receive: PartialFunction[Message, MyState] = {
+      override def preStart(): Unit                                 = preStartCalled = true
+      override def postStop(): Unit                                 = postStopCalled = true
+      override def preRestart(reason: Throwable): Unit              = preRestartCalled = true
+      override def statefulOnMsg: PartialFunction[Message, MyState] = {
         case Increment => state.copy(value = state.value + 1)
       }
     }
@@ -338,7 +339,7 @@ class StatefulActorSpec extends FunSuite {
     case class SelectiveActor() extends StatefulActor[MyState, Message] {
       override def initialState: MyState = MyState(List.empty)
 
-      override def receive: PartialFunction[Message, MyState] = {
+      override def statefulOnMsg: PartialFunction[Message, MyState] = {
         case Handled(v) =>
           val newState = state.copy(handled = state.handled :+ v)
           if (v == "done") {
@@ -389,7 +390,7 @@ class StatefulActorSpec extends FunSuite {
     case class QueryActor() extends StatefulActor[MyState, Any] {
       override def initialState: MyState = MyState(42)
 
-      override def receive: PartialFunction[Any, MyState] = {
+      override def statefulOnMsg: PartialFunction[Any, MyState] = {
         case ask: Ask[?] =>
           ask.message match {
             case GetCounter => ask.complete(state.counter)
@@ -426,7 +427,7 @@ class StatefulActorSpec extends FunSuite {
       override def initialState: SessionState =
         SessionState(authenticated = false, None)
 
-      override def receive: PartialFunction[Message, SessionState] = {
+      override def statefulOnMsg: PartialFunction[Message, SessionState] = {
         case Login(username) =>
           state.copy(authenticated = true, username = Some(username))
         case Logout          =>
@@ -466,7 +467,7 @@ class StatefulActorSpec extends FunSuite {
     case class TestActor() extends StatefulActor[MyState, Message] {
       override def initialState: MyState = MyState(0)
 
-      override def receive: PartialFunction[Message, MyState] = {
+      override def statefulOnMsg: PartialFunction[Message, MyState] = {
         case Increment   => state.copy(value = state.value + 1)
         case GetState(l) =>
           returnedValue = Some(state.value)

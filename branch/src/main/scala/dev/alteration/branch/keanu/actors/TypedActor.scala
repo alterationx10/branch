@@ -29,17 +29,18 @@ trait TypedActor[M] extends Actor {
   /** Bridge to untyped Actor interface. This method is final and cannot be
     * overridden. Instead, implement typedOnMsg to handle typed messages.
     */
-  final override def onMsg: PartialFunction[Any, Any] = new PartialFunction[Any, Any] {
-    def isDefinedAt(x: Any): Boolean =
-      try {
-        typedOnMsg.isDefinedAt(x.asInstanceOf[M])
-      } catch {
-        case _: ClassCastException => false
-      }
+  final override def onMsg: PartialFunction[Any, Any] =
+    new PartialFunction[Any, Any] {
+      def isDefinedAt(x: Any): Boolean =
+        try {
+          typedOnMsg.isDefinedAt(x.asInstanceOf[M])
+        } catch {
+          case _: ClassCastException => false
+        }
 
-    def apply(x: Any): Any =
-      typedOnMsg(x.asInstanceOf[M])
-  }
+      def apply(x: Any): Any =
+        typedOnMsg(x.asInstanceOf[M])
+    }
 
   /** The typed message handler. Implement this method to handle messages of
     * type M.

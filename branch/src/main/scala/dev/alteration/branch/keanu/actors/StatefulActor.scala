@@ -4,7 +4,7 @@ package dev.alteration.branch.keanu.actors
   *
   * StatefulActor extends TypedActor to provide both type-safe message handling
   * and managed state. The state is maintained internally and updated through
-  * the receive method, which returns a new state for each message.
+  * the statefulOnMsg method, which returns a new state for each message.
   *
   * Example:
   * {{{
@@ -50,8 +50,8 @@ trait StatefulActor[State, Msg] extends TypedActor[Msg] {
     */
   protected def state: State = _state
 
-  /** Provide the initial state for this actor. Called when the actor starts
-    * and when it restarts after a failure.
+  /** Provide the initial state for this actor. Called when the actor starts and
+    * when it restarts after a failure.
     *
     * If you need to preserve state across restarts, save it in preRestart and
     * restore it here:
@@ -79,17 +79,17 @@ trait StatefulActor[State, Msg] extends TypedActor[Msg] {
     * @return
     *   A partial function that takes a message and returns new state
     */
-  def receive: PartialFunction[Msg, State]
+  def statefulOnMsg: PartialFunction[Msg, State]
 
   /** Bridge to TypedActor. This method is final and updates internal state
-    * based on the receive method.
+    * based on the statefulOnMsg method.
     */
   final override def typedOnMsg: PartialFunction[Msg, Any] =
     new PartialFunction[Msg, Any] {
-      def isDefinedAt(x: Msg): Boolean = receive.isDefinedAt(x)
+      def isDefinedAt(x: Msg): Boolean = statefulOnMsg.isDefinedAt(x)
 
       def apply(x: Msg): Any = {
-        _state = receive(x)
+        _state = statefulOnMsg(x)
         _state
       }
     }

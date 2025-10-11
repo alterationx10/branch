@@ -9,9 +9,9 @@ class TypedActorSpec extends FunSuite {
 
   // Test message types
   sealed trait CounterMessage
-  case object Increment extends CounterMessage
-  case object Decrement extends CounterMessage
-  case class AddValue(value: Int) extends CounterMessage
+  case object Increment                      extends CounterMessage
+  case object Decrement                      extends CounterMessage
+  case class AddValue(value: Int)            extends CounterMessage
   case class GetValue(latch: CountDownLatch) extends CounterMessage
 
   test("TypedActor should handle typed messages") {
@@ -20,13 +20,13 @@ class TypedActorSpec extends FunSuite {
 
     case class TestActor() extends TypedActor[CounterMessage] {
       override def typedOnMsg: PartialFunction[CounterMessage, Any] = {
-        case Increment         =>
+        case Increment       =>
           counter += 1
-        case Decrement         =>
+        case Decrement       =>
           counter -= 1
-        case AddValue(value)   =>
+        case AddValue(value) =>
           counter += value
-        case GetValue(l)       =>
+        case GetValue(l)     =>
           l.countDown()
       }
     }
@@ -88,7 +88,7 @@ class TypedActorSpec extends FunSuite {
 
     sealed trait Command
     case class DoA(value: String) extends Command
-    case class DoB(value: Int) extends Command
+    case class DoB(value: Int)    extends Command
     case class DoC(flag: Boolean) extends Command
 
     case class TestActor() extends TypedActor[Command] {
@@ -127,7 +127,7 @@ class TypedActorSpec extends FunSuite {
     val receivedMessages = scala.collection.mutable.ArrayBuffer[String]()
 
     sealed trait Message
-    case class Handled(value: String) extends Message
+    case class Handled(value: String)   extends Message
     case class Unhandled(value: String) extends Message
 
     case class SelectiveActor() extends TypedActor[Message] {
@@ -151,7 +151,11 @@ class TypedActorSpec extends FunSuite {
     as.shutdownAwait()
 
     val messages = receivedMessages.synchronized { receivedMessages.toList }
-    assertEquals(messages, List("processed"), "Should only handle matched cases")
+    assertEquals(
+      messages,
+      List("processed"),
+      "Should only handle matched cases"
+    )
 
     val deadLetters = as.getDeadLetters(10)
     assert(
@@ -202,9 +206,9 @@ class TypedActorSpec extends FunSuite {
     case object Done extends TestMessage
 
     case class LifecycleActor() extends TypedActor[TestMessage] {
-      override def preStart(): Unit                        = startCalled = true
-      override def postStop(): Unit                        = stopCalled = true
-      override def postRestart(reason: Throwable): Unit    = restartCalled = true
+      override def preStart(): Unit                              = startCalled = true
+      override def postStop(): Unit                              = stopCalled = true
+      override def postRestart(reason: Throwable): Unit          = restartCalled = true
       override def typedOnMsg: PartialFunction[TestMessage, Any] = {
         case Fail => throw new RuntimeException("Intentional failure")
         case Done => latch.countDown()
@@ -236,8 +240,8 @@ class TypedActorSpec extends FunSuite {
 
     case class SupervisedActor() extends TypedActor[TestMessage] {
       restartCount += 1
-      override def supervisorStrategy: SupervisionStrategy = RestartStrategy
-      override def typedOnMsg: PartialFunction[TestMessage, Any]     = {
+      override def supervisorStrategy: SupervisionStrategy       = RestartStrategy
+      override def typedOnMsg: PartialFunction[TestMessage, Any] = {
         case Fail => throw new RuntimeException("Fail")
         case Done => latch.countDown()
       }
@@ -263,12 +267,11 @@ class TypedActorSpec extends FunSuite {
     case class Query(value: String) extends QueryMessage
 
     case class QueryActor() extends TypedActor[Any] {
-      override def typedOnMsg: PartialFunction[Any, Any] = {
-        case ask: Ask[?] =>
-          ask.message match {
-            case Query(v) => ask.complete(s"Response: $v")
-            case _        => ()
-          }
+      override def typedOnMsg: PartialFunction[Any, Any] = { case ask: Ask[?] =>
+        ask.message match {
+          case Query(v) => ask.complete(s"Response: $v")
+          case _        => ()
+        }
       }
     }
 
@@ -291,8 +294,8 @@ class TypedActorSpec extends FunSuite {
 
     sealed trait PriorityMessage
     case class Priority(value: Int) extends PriorityMessage
-    case object Start extends PriorityMessage
-    case object Done extends PriorityMessage
+    case object Start               extends PriorityMessage
+    case object Done                extends PriorityMessage
 
     case class PriorityActor() extends TypedActor[PriorityMessage] {
       override def typedOnMsg: PartialFunction[PriorityMessage, Any] = {
@@ -312,10 +315,11 @@ class TypedActorSpec extends FunSuite {
 
     given Ordering[Any] = new Ordering[Any] {
       def compare(x: Any, y: Any): Int = (x, y) match {
-        case (Priority(a), Priority(b)) => b.compare(a) // Reverse order (higher is higher priority)
-        case (Start, _)                 => -1           // Process Start first
+        case (Priority(a), Priority(b)) =>
+          b.compare(a) // Reverse order (higher is higher priority)
+        case (Start, _)                 => -1 // Process Start first
         case (_, Start)                 => 1
-        case (Done, _)                  => 1            // Process Done last
+        case (Done, _)                  => 1  // Process Done last
         case (_, Done)                  => -1
         case _                          => 0
       }
