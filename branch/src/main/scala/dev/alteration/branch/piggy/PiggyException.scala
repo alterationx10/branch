@@ -83,4 +83,17 @@ object PiggyException {
   ) extends PiggyException(
         s"$operation requires at least one argument"
       )
+
+  /** Exception thrown when required named parameters are missing.
+    * @param sql
+    *   the SQL template with named parameters
+    * @param missingParams
+    *   the names of missing parameters
+    */
+  final case class MissingNamedParametersException(
+      sql: String,
+      missingParams: Seq[String]
+  ) extends PiggyException(
+        s"Missing named parameters: ${missingParams.mkString(", ")}\nSQL: $sql"
+      )
 }

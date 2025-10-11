@@ -245,4 +245,157 @@ class PiggyPostgresqlSpec extends PGContainerSuite {
     assert(result.get.map(_.name).distinct.size == 10000)
   }
 
+  test("Named parameters - INSERT") {
+    given pool: PgConnectionPool = pgPool
+
+    val result = {
+      for {
+        _ <- Sql.statement(ddl)
+        _ <- Sql.statement("truncate table person")
+        n <- psNamed"INSERT INTO person (name, age) VALUES (:name, :age)"
+               .bindUpdate(
+                 "name" -> "Named User",
+                 "age"  -> 42
+               )
+      } yield n
+    }.executePool
+
+    assert(result.isSuccess)
+    assertEquals(result.get, 1)
+  }
+
+  test("Named parameters - SELECT") {
+    given pool: PgConnectionPool = pgPool
+
+    val result = {
+      for {
+        _      <- Sql.statement(ddl)
+        _      <- Sql.statement("truncate table person")
+        _      <-
+          psUpdate"INSERT INTO person (name, age) VALUES (${"Named Test"}, ${35})"
+        people <- psNamed"SELECT * FROM person WHERE name = :name"
+                    .bindQuery[Person]("name" -> "Named Test")
+      } yield people
+    }.executePool
+
+    assert(result.isSuccess)
+    assertEquals(result.get.size, 1)
+    assertEquals(result.get.head.name, "Named Test")
+    assertEquals(result.get.head.age, 35)
+  }
+
+  test("Named parameters - parameter order independence") {
+    given pool: PgConnectionPool = pgPool
+
+    val result1 = {
+      for {
+        _ <- Sql.statement(ddl)
+        _ <- Sql.statement("truncate table person")
+        n <- psNamed"INSERT INTO person (name, age) VALUES (:name, :age)"
+               .bindUpdate("name" -> "Order1", "age" -> 25)
+      } yield n
+    }.executePool
+
+    val result2 = {
+      for {
+        n <- psNamed"INSERT INTO person (name, age) VALUES (:name, :age)"
+               .bindUpdate("age" -> 26, "name" -> "Order2") // Different order
+      } yield n
+    }.executePool
+
+    assert(result1.isSuccess)
+    assert(result2.isSuccess)
+    assertEquals(result1.get, 1)
+    assertEquals(result2.get, 1)
+
+    val allPeople =
+      Sql
+        .statement("SELECT * FROM person ORDER BY age", _.parsedList[Person])
+        .executePool
+    assertEquals(allPeople.get.size, 2)
+    assertEquals(allPeople.get(0).age, 25)
+    assertEquals(allPeople.get(1).age, 26)
+  }
+
+  test("Named parameters - missing parameter throws exception") {
+    given pool: PgConnectionPool = pgPool
+
+    val result = {
+      for {
+        _ <- Sql.statement(ddl)
+        n <- psNamed"INSERT INTO person (name, age) VALUES (:name, :age)"
+               .bindUpdate("name" -> "Incomplete") // Missing :age
+      } yield n
+    }.executePool
+
+    assert(result.isFailure)
+    assert(
+      result.toEither.left.exists(
+        _.isInstanceOf[PiggyException.MissingNamedParametersException]
+      )
+    )
+  }
+
+  test("Named parameters - multiple uses of same parameter") {
+    given pool: PgConnectionPool = pgPool
+
+    val result = {
+      for {
+        _      <- Sql.statement(ddl)
+        _      <- Sql.statement("truncate table person")
+        _      <-
+          psUpdate"INSERT INTO person (name, age) VALUES (${"Duplicate"}, ${30})"
+        people <-
+          psNamed"SELECT * FROM person WHERE name = :name OR age = (SELECT age FROM person WHERE name = :name)"
+            .bindQuery[Person]("name" -> "Duplicate")
+      } yield people
+    }.executePool
+
+    assert(result.isSuccess)
+    assertEquals(result.get.size, 1)
+  }
+
+  test("Named parameters - ignore parameters in string literals") {
+    given pool: PgConnectionPool = pgPool
+
+    val result = {
+      for {
+        _      <- Sql.statement(ddl)
+        _      <- Sql.statement("truncate table person")
+        _      <-
+          psUpdate"INSERT INTO person (name, age) VALUES (${"User:Test"}, ${40})"
+        people <-
+          psNamed"SELECT * FROM person WHERE name = :name AND name ILIKE '%:test%'"
+            .bindQuery[Person]("name" -> "User:Test")
+      } yield people
+    }.executePool
+
+    assert(result.isSuccess)
+    assertEquals(result.get.size, 1)
+    assertEquals(result.get.head.name, "User:Test")
+  }
+
+  test("Named parameters - complex query with multiple parameters") {
+    given pool: PgConnectionPool = pgPool
+
+    val result = {
+      for {
+        _      <- Sql.statement(ddl)
+        _      <- Sql.statement("truncate table person")
+        _      <- Sql.prepareUpdate(ins, tenPeople*)
+        people <-
+          psNamed"SELECT * FROM person WHERE age >= :minAge AND age <= :maxAge AND name LIKE :pattern"
+            .bindQuery[Person](
+              "minAge"  -> 15,
+              "maxAge"  -> 25,
+              "pattern" -> "Mark-%"
+            )
+      } yield people
+    }.executePool
+
+    assert(result.isSuccess)
+    assert(result.get.nonEmpty)
+    assert(result.get.forall(p => p.age >= 15 && p.age <= 25))
+  }
+
 }

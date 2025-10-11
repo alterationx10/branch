@@ -90,39 +90,45 @@ object SqlRuntime extends SqlRuntime {
   ): Try[A] = {
     sql match {
       case Sql.StatementRs(sql, fn)             =>
-        Using.Manager { use =>
-          val statement = use(connection.createStatement())
-          statement.execute(sql)
-          val rs        = use(statement.getResultSet)
-          fn(rs)
-        }.recoverWith { case e: Throwable =>
-          Failure(PiggyException.SqlExecutionException(sql, e))
-        }
+        Using
+          .Manager { use =>
+            val statement = use(connection.createStatement())
+            statement.execute(sql)
+            val rs        = use(statement.getResultSet)
+            fn(rs)
+          }
+          .recoverWith { case e: Throwable =>
+            Failure(PiggyException.SqlExecutionException(sql, e))
+          }
       case Sql.StatementCount(sql)              =>
-        Using.Manager { use =>
-          val statement = use(connection.createStatement())
-          statement.execute(sql)
-          statement.getUpdateCount
-        }.recoverWith { case e: Throwable =>
-          Failure(PiggyException.SqlExecutionException(sql, e))
-        }
+        Using
+          .Manager { use =>
+            val statement = use(connection.createStatement())
+            statement.execute(sql)
+            statement.getUpdateCount
+          }
+          .recoverWith { case e: Throwable =>
+            Failure(PiggyException.SqlExecutionException(sql, e))
+          }
       case Sql.PreparedExec(sqlFn, args)        =>
         if (args.isEmpty) {
           Failure(PiggyException.EmptyArgumentException("PreparedExec"))
         } else {
           val helpers = args.map(sqlFn)
           val sql     = helpers.head.psStr
-          Using.Manager { use =>
-            val ps: PreparedStatement = use(connection.prepareStatement(sql))
-            helpers.foreach { h =>
-              h.set(ps)
-              ps.addBatch()
+          Using
+            .Manager { use =>
+              val ps: PreparedStatement = use(connection.prepareStatement(sql))
+              helpers.foreach { h =>
+                h.set(ps)
+                ps.addBatch()
+              }
+              ps.executeBatch()
+              () // Return Unit
             }
-            ps.executeBatch()
-            () // Return Unit
-          }.recoverWith { case e: Throwable =>
-            Failure(PiggyException.BatchExecutionException(sql, args.size, e))
-          }
+            .recoverWith { case e: Throwable =>
+              Failure(PiggyException.BatchExecutionException(sql, args.size, e))
+            }
         }
       case Sql.PreparedUpdate(sqlFn, args)      =>
         if (args.isEmpty) {
@@ -130,17 +136,19 @@ object SqlRuntime extends SqlRuntime {
         } else {
           val helpers = args.map(sqlFn)
           val sql     = helpers.head.psStr
-          Using.Manager { use =>
-            val ps: PreparedStatement = use(connection.prepareStatement(sql))
-            helpers.foreach { h =>
-              h.set(ps)
-              ps.addBatch()
+          Using
+            .Manager { use =>
+              val ps: PreparedStatement = use(connection.prepareStatement(sql))
+              helpers.foreach { h =>
+                h.set(ps)
+                ps.addBatch()
+              }
+              val counts: Array[Int]    = ps.executeBatch()
+              counts.sum
             }
-            val counts: Array[Int]    = ps.executeBatch()
-            counts.sum
-          }.recoverWith { case e: Throwable =>
-            Failure(PiggyException.BatchExecutionException(sql, args.size, e))
-          }
+            .recoverWith { case e: Throwable =>
+              Failure(PiggyException.BatchExecutionException(sql, args.size, e))
+            }
         }
       case Sql.PreparedQuery(sqlFn, rsFn, args) =>
         if (args.isEmpty) {
@@ -148,18 +156,20 @@ object SqlRuntime extends SqlRuntime {
         } else {
           val helpers = args.map(sqlFn)
           val sql     = helpers.head.psStr
-          Using.Manager { use =>
-            val ps: PreparedStatement = use(connection.prepareStatement(sql))
-            helpers.flatMap { h =>
-              Using.resource(h.setAndExecuteQuery(ps)) { rs =>
-                rsFn(rs)
+          Using
+            .Manager { use =>
+              val ps: PreparedStatement = use(connection.prepareStatement(sql))
+              helpers.flatMap { h =>
+                Using.resource(h.setAndExecuteQuery(ps)) { rs =>
+                  rsFn(rs)
+                }
               }
             }
-          }.recoverWith { case e: Throwable =>
-            Failure(
-              PiggyException.PreparedStatementException(sql, helpers.size, e)
-            )
-          }
+            .recoverWith { case e: Throwable =>
+              Failure(
+                PiggyException.PreparedStatementException(sql, helpers.size, e)
+              )
+            }
         }
       case Sql.Fail(e)                          =>
         Failure(e)

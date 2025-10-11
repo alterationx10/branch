@@ -136,8 +136,8 @@ object PreparedStatementSetter {
       ps.setBigDecimal(index, new java.math.BigDecimal(value))
   }
 
-  /** A PreparedStatementSetter for Option[A] that handles NULL.
-    * Sets NULL if None, otherwise sets the value using the underlying setter.
+  /** A PreparedStatementSetter for Option[A] that handles NULL. Sets NULL if
+    * None, otherwise sets the value using the underlying setter.
     */
   given [A](using
       setter: PreparedStatementSetter[A]

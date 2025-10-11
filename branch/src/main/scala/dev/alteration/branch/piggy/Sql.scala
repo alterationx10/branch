@@ -90,7 +90,194 @@ object Sql {
         parser: ResultSetParser[R]
     ): Sql[Seq[R]] = {
       val holder = PsArgHolder(sc.s(args.map(_ => "?")*), args*)
-      Sql.PreparedQuery[Any, Unit, R](_ => holder, rs => rs.parsedList[R], Seq(()))
+      Sql.PreparedQuery[Any, Unit, R](
+        _ => holder,
+        rs => rs.parsedList[R],
+        Seq(())
+      )
+    }
+
+    /** A string interpolator for creating SQL with named parameters. Returns a
+      * builder that requires calling .bindUpdate() or .bindQuery() to provide
+      * parameter values. Do not use ${} interpolation - use :paramName
+      * placeholders instead.
+      * @example
+      *   {{{
+      *   psNamed"SELECT * FROM users WHERE name = :name AND age > :age"
+      *     .bindQuery[User](
+      *       "name" -> "John",
+      *       "age" -> 25
+      *     )
+      *   }}}
+      */
+    def psNamed(args: Any*): NamedSqlBuilder = {
+      if (args.nonEmpty) {
+        throw new IllegalArgumentException(
+          "psNamed does not support ${} interpolation. Use :paramName placeholders and .bindUpdate()/.bindQuery() instead."
+        )
+      }
+      val sql = sc.parts.mkString
+      new NamedSqlBuilder(sql)
+    }
+  }
+
+  /** Builder for SQL statements with named parameters. Use .bindUpdate() for
+    * INSERT/UPDATE/DELETE or .bindQuery() for SELECT statements.
+    */
+  class NamedSqlBuilder(sqlTemplate: String) {
+
+    /** Bind named parameters for an UPDATE/INSERT/DELETE query.
+      * @param params
+      *   Tuple of (paramName, value) pairs
+      * @return
+      *   Sql[Int] representing the number of affected rows
+      * @example
+      *   {{{
+      *   psNamed"INSERT INTO users (name, age) VALUES (:name, :age)"
+      *     .bindUpdate(
+      *       "name" -> "John",
+      *       "age" -> 30
+      *     )
+      *   }}}
+      */
+    def bindUpdate(params: (String, PreparedStatementArg)*): Sql[Int] = {
+      val namedParams = params.toMap
+      val holder      = NamedParameterParser.toPsArgHolder(sqlTemplate, namedParams)
+      Sql.PreparedUpdate(_ => holder, Seq(()))
+    }
+
+    /** Bind named parameters for a SELECT query.
+      * @param params
+      *   Tuple of (paramName, value) pairs
+      * @return
+      *   Sql[Seq[R]] representing the query results
+      * @example
+      *   {{{
+      *   psNamed"SELECT * FROM users WHERE name = :name"
+      *     .bindQuery[User]("name" -> "John")
+      *   }}}
+      */
+    inline def bindQuery[R](params: (String, PreparedStatementArg)*)(using
+        parser: ResultSetParser[R]
+    ): Sql[Seq[R]] = {
+      val namedParams = params.toMap
+      val holder      = NamedParameterParser.toPsArgHolder(sqlTemplate, namedParams)
+      Sql.PreparedQuery[Any, Unit, R](
+        _ => holder,
+        rs => rs.parsedList[R],
+        Seq(())
+      )
+    }
+  }
+
+  /** Parser for SQL with named parameters (e.g., :paramName). Converts named
+    * parameters to positional JDBC placeholders (?).
+    */
+  object NamedParameterParser {
+
+    /** Parse SQL with named parameters, returning (SQL with ?, parameter names
+      * in order). Handles string literals to avoid false positives.
+      * @param sql
+      *   SQL string with :paramName placeholders
+      * @return
+      *   Tuple of (SQL with ?, Seq of parameter names in order)
+      */
+    def parse(sql: String): (String, Seq[String]) = {
+      val result     = new StringBuilder
+      val paramNames = scala.collection.mutable.ListBuffer[String]()
+      var i          = 0
+      var inString   = false
+      var stringChar = '\u0000'
+
+      while (i < sql.length) {
+        val c = sql(i)
+
+        // Track string literals (both single and double quotes)
+        if (!inString && (c == '\'' || c == '"')) {
+          inString = true
+          stringChar = c
+          result += c
+          i += 1
+        } else if (inString && c == stringChar) {
+          // Check for escaped quotes ('' or "")
+          if (i + 1 < sql.length && sql(i + 1) == stringChar) {
+            result += c
+            result += stringChar
+            i += 2
+          } else {
+            inString = false
+            result += c
+            i += 1
+          }
+        }
+        // Parse named parameter (only outside strings)
+        else if (
+          !inString && c == ':' && i + 1 < sql.length && (sql(
+            i + 1
+          ).isLetter || sql(
+            i + 1
+          ) == '_')
+        ) {
+          // Extract parameter name
+          val start     = i + 1
+          var end       = start
+          while (
+            end < sql.length && (sql(end).isLetterOrDigit || sql(end) == '_')
+          ) {
+            end += 1
+          }
+          val paramName = sql.substring(start, end)
+          paramNames += paramName
+          result += '?'
+          i = end
+        } else {
+          result += c
+          i += 1
+        }
+      }
+
+      (result.toString, paramNames.toSeq)
+    }
+
+    /** Convert SQL with named parameters to a PsArgHolder with positional
+      * parameters.
+      * @param sqlTemplate
+      *   SQL string with :paramName placeholders
+      * @param namedParams
+      *   Map of parameter names to values
+      * @return
+      *   PsArgHolder with positional parameters
+      */
+    def toPsArgHolder(
+        sqlTemplate: String,
+        namedParams: Map[String, PreparedStatementArg]
+    ): PsArgHolder = {
+      val (sql, paramNames) = parse(sqlTemplate)
+
+      // Validate all parameters are provided
+      val missing = paramNames.toSet.diff(namedParams.keySet)
+      if (missing.nonEmpty) {
+        throw PiggyException.MissingNamedParametersException(
+          sqlTemplate,
+          missing.toSeq
+        )
+      }
+
+      // Warn about unused parameters (could be removed in production)
+      val extra = namedParams.keySet.diff(paramNames.toSet)
+      if (extra.nonEmpty) {
+        // Log warning - in production you might want to throw or ignore
+        System.err.println(
+          s"Warning: Unused named parameters: ${extra.mkString(", ")}"
+        )
+      }
+
+      // Map named parameters to positional order
+      val positionalArgs = paramNames.map { name =>
+        namedParams(name) // Safe because we validated above
+      }
+
+      PsArgHolder(sql, positionalArgs*)
     }
   }
 

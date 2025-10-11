@@ -184,7 +184,10 @@ object ResultSetGetter {
 
   /** `ResultSetGetter` instance for `java.time.LocalDateTime` values. */
   given ResultSetGetter[java.time.LocalDateTime] with {
-    override def get(rs: ResultSet, col: String | Int): java.time.LocalDateTime = {
+    override def get(
+        rs: ResultSet,
+        col: String | Int
+    ): java.time.LocalDateTime = {
       col match {
         case label: String => rs.getTimestamp(label).toLocalDateTime
         case index: Int    => rs.getTimestamp(index).toLocalDateTime
@@ -192,16 +195,23 @@ object ResultSetGetter {
     }
   }
 
-  /** `ResultSetGetter` instance for `java.time.ZonedDateTime` values.
-    * Uses system default timezone for conversion.
+  /** `ResultSetGetter` instance for `java.time.ZonedDateTime` values. Uses
+    * system default timezone for conversion.
     */
   given ResultSetGetter[java.time.ZonedDateTime] with {
-    override def get(rs: ResultSet, col: String | Int): java.time.ZonedDateTime = {
+    override def get(
+        rs: ResultSet,
+        col: String | Int
+    ): java.time.ZonedDateTime = {
       col match {
         case label: String =>
-          rs.getTimestamp(label).toInstant.atZone(java.time.ZoneId.systemDefault())
+          rs.getTimestamp(label)
+            .toInstant
+            .atZone(java.time.ZoneId.systemDefault())
         case index: Int    =>
-          rs.getTimestamp(index).toInstant.atZone(java.time.ZoneId.systemDefault())
+          rs.getTimestamp(index)
+            .toInstant
+            .atZone(java.time.ZoneId.systemDefault())
       }
     }
   }
