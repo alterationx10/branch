@@ -56,7 +56,7 @@ case class WebSocketFrame(
           payload.zipWithIndex.map { case (byte, i) =>
             (byte ^ key(i % 4)).toByte
           }
-        case None =>
+        case None      =>
           payload
       }
     }
@@ -118,13 +118,16 @@ object WebSocketFrame {
     * @return
     *   a WebSocketFrame
     */
-  def close(statusCode: Option[Int] = None, reason: String = ""): WebSocketFrame = {
+  def close(
+      statusCode: Option[Int] = None,
+      reason: String = ""
+  ): WebSocketFrame = {
     val payload = statusCode match {
       case Some(code) =>
         val codeBytes   = Array((code >> 8).toByte, code.toByte)
         val reasonBytes = reason.getBytes("UTF-8")
         codeBytes ++ reasonBytes
-      case None =>
+      case None       =>
         Array.empty[Byte]
     }
 

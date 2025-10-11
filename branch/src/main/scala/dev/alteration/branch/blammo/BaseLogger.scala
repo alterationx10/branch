@@ -23,17 +23,19 @@ transparent trait BaseLogger { self =>
   /** The default log level. Default value set from [[Veil.runtimeEnv]]
     * {{{
     *   Veil.runtimeEnv match {
-    *       case DEV  => Level.ALL
-    *       case TEST => Level.INFO
-    *       case PROD => Level.WARNING
+    *       case DEV     => Level.ALL
+    *       case TEST    => Level.INFO
+    *       case STAGING => Level.INFO
+    *       case PROD    => Level.WARNING
     *     }
     * }}}
     */
   val logLevel: Level =
     Veil.runtimeEnv match {
-      case DEV  => Level.ALL
-      case TEST => Level.INFO
-      case PROD => Level.WARNING
+      case DEV     => Level.ALL
+      case TEST    => Level.INFO
+      case STAGING => Level.INFO
+      case PROD    => Level.WARNING
     }
 
   /** The logger instance. Existing handlers are removed and a new [[handler]]

@@ -16,10 +16,10 @@ enum WebSocketConnectionState {
 /** Manages a WebSocket connection after the handshake is complete.
   *
   * Handles frame-level communication, including:
-  * - Sending and receiving frames
-  * - Automatically responding to ping frames
-  * - Managing connection state and lifecycle
-  * - Handling message fragmentation
+  *   - Sending and receiving frames
+  *   - Automatically responding to ping frames
+  *   - Managing connection state and lifecycle
+  *   - Handling message fragmentation
   *
   * @param socket
   *   the underlying TCP socket
@@ -34,7 +34,8 @@ class WebSocketConnection(
     outputStream: OutputStream
 ) {
 
-  @volatile private var state: WebSocketConnectionState = WebSocketConnectionState.Open
+  @volatile private var state: WebSocketConnectionState =
+    WebSocketConnectionState.Open
   private val writeLock                                 = new Object()
   private val fragmentBuffer                            = mutable.ArrayBuffer.empty[Array[Byte]]
   private var fragmentOpCode: Option[WebSocketOpCode]   = None
@@ -133,7 +134,10 @@ class WebSocketConnection(
     * @return
     *   Success if sent successfully, Failure otherwise
     */
-  def close(statusCode: Option[Int] = Some(1000), reason: String = ""): Try[Unit] = {
+  def close(
+      statusCode: Option[Int] = Some(1000),
+      reason: String = ""
+  ): Try[Unit] = {
     if (state == WebSocketConnectionState.Closed) {
       return Success(())
     }
@@ -152,9 +156,9 @@ class WebSocketConnection(
   /** Receive a frame from the connection
     *
     * Blocks until a frame is received. Automatically handles:
-    * - Ping frames (responds with pong)
-    * - Close frames (responds and closes connection)
-    * - Fragmentation (assembles fragmented messages)
+    *   - Ping frames (responds with pong)
+    *   - Close frames (responds and closes connection)
+    *   - Fragmentation (assembles fragmented messages)
     *
     * @return
     *   Success with the received frame, or Failure on error
@@ -247,7 +251,7 @@ class WebSocketConnection(
         // We received a close frame first, send close frame back
         val payload = frame.unmaskedPayload
         if (payload.length >= 2) {
-          val statusCode = ((payload(0) & 0xFF) << 8) | (payload(1) & 0xFF)
+          val statusCode = ((payload(0) & 0xff) << 8) | (payload(1) & 0xff)
           sendFrame(WebSocketFrame.close(Some(statusCode), ""))
         } else {
           sendFrame(WebSocketFrame.close(None, ""))

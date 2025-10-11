@@ -70,61 +70,66 @@ class WebSocketServer(port: Int, handler: WebSocketHandler)(using
     */
   private def handleConnection(socket: Socket): Unit = {
     Try {
-      val in  = new BufferedReader(new InputStreamReader(socket.getInputStream))
-      val out = new PrintWriter(socket.getOutputStream, true)
+      scala.util.boundary {
 
-      // Read HTTP headers
-      val headers     = scala.collection.mutable.Map.empty[String, List[String]]
-      var requestLine = in.readLine()
+        val in  =
+          new BufferedReader(new InputStreamReader(socket.getInputStream))
+        val out = new PrintWriter(socket.getOutputStream, true)
 
-      if (requestLine == null || !requestLine.startsWith("GET")) {
-        socket.close()
-        return
-      }
+        // Read HTTP headers
+        val headers     = scala.collection.mutable.Map.empty[String, List[String]]
+        val requestLine = in.readLine()
 
-      // Read headers until empty line
-      var line = in.readLine()
-      while (line != null && line.nonEmpty) {
-        val colonIndex = line.indexOf(':')
-        if (colonIndex > 0) {
-          val key   = line.substring(0, colonIndex).trim
-          val value = line.substring(colonIndex + 1).trim
-          headers.updateWith(key) {
-            case Some(values) => Some(values :+ value)
-            case None         => Some(List(value))
-          }
+        if (requestLine == null || !requestLine.startsWith("GET")) {
+          socket.close()
+          scala.util.boundary.break()
         }
-        line = in.readLine()
-      }
 
-      // Validate WebSocket handshake
-      WebSocketHandshake.validateHandshake(headers.toMap) match {
-        case Success(secWebSocketKey) =>
-          // Send 101 Switching Protocols response
-          val responseBytes =
-            WebSocketHandshake.createRawHandshakeResponse(secWebSocketKey)
-          socket.getOutputStream.write(responseBytes)
-          socket.getOutputStream.flush()
+        // Read headers until empty line
+        var line = in.readLine()
+        while (line != null && line.nonEmpty) {
+          val colonIndex = line.indexOf(':')
+          if (colonIndex > 0) {
+            val key   = line.substring(0, colonIndex).trim
+            val value = line.substring(colonIndex + 1).trim
+            headers.updateWith(key) {
+              case Some(values) => Some(values :+ value)
+              case None         => Some(List(value))
+            }
+          }
+          line = in.readLine()
+        }
 
-          // Create WebSocket connection
-          val wsConnection = WebSocketConnection(socket)
+        // Validate WebSocket handshake
+        WebSocketHandshake.validateHandshake(headers.toMap) match {
+          case Success(secWebSocketKey) =>
+            // Send 101 Switching Protocols response
+            val responseBytes =
+              WebSocketHandshake.createRawHandshakeResponse(secWebSocketKey)
+            socket.getOutputStream.write(responseBytes)
+            socket.getOutputStream.flush()
 
-          // Call onConnect
-          handler.onConnect(wsConnection)
+            // Create WebSocket connection
+            val wsConnection = WebSocketConnection(socket)
 
-          // Run message loop (blocks until connection closes)
-          handler.runMessageLoop(wsConnection)
+            // Call onConnect
+            handler.onConnect(wsConnection)
 
-        case Failure(error) =>
-          // Send 400 Bad Request
-          val errorResponse = s"""HTTP/1.1 400 Bad Request\r
+            // Run message loop (blocks until connection closes)
+            handler.runMessageLoop(wsConnection)
+
+          case Failure(error) =>
+            // Send 400 Bad Request
+            val errorResponse =
+              s"""HTTP/1.1 400 Bad Request\r
 Content-Type: text/plain\r
 Content-Length: ${error.getMessage.length}\r
 \r
 ${error.getMessage}"""
-          out.print(errorResponse)
-          out.flush()
-          socket.close()
+            out.print(errorResponse)
+            out.flush()
+            socket.close()
+        }
       }
     } match {
       case Success(_)     =>

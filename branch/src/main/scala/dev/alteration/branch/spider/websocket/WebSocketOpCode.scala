@@ -3,12 +3,12 @@ package dev.alteration.branch.spider.websocket
 /** WebSocket frame opcodes as defined in RFC 6455.
   *
   * Opcodes define the interpretation of the payload data:
-  * - Continuation: continuation of a fragmented message
-  * - Text: UTF-8 text data
-  * - Binary: arbitrary binary data
-  * - Close: connection close control frame
-  * - Ping: heartbeat/keepalive ping
-  * - Pong: response to ping
+  *   - Continuation: continuation of a fragmented message
+  *   - Text: UTF-8 text data
+  *   - Binary: arbitrary binary data
+  *   - Close: connection close control frame
+  *   - Ping: heartbeat/keepalive ping
+  *   - Pong: response to ping
   */
 enum WebSocketOpCode(val code: Byte) {
   case Continuation extends WebSocketOpCode(0x0)
@@ -16,7 +16,7 @@ enum WebSocketOpCode(val code: Byte) {
   case Binary       extends WebSocketOpCode(0x2)
   case Close        extends WebSocketOpCode(0x8)
   case Ping         extends WebSocketOpCode(0x9)
-  case Pong         extends WebSocketOpCode(0xA)
+  case Pong         extends WebSocketOpCode(0xa)
 }
 
 object WebSocketOpCode {
@@ -33,7 +33,7 @@ object WebSocketOpCode {
     case 0x2 => Some(Binary)
     case 0x8 => Some(Close)
     case 0x9 => Some(Ping)
-    case 0xA => Some(Pong)
+    case 0xa => Some(Pong)
     case _   => None
   }
 

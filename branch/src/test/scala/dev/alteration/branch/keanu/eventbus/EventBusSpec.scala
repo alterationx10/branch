@@ -1,6 +1,7 @@
 package dev.alteration.branch.keanu.eventbus
 
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.duration._
 
 class EventBusSpec extends munit.FunSuite {
@@ -10,15 +11,15 @@ class EventBusSpec extends munit.FunSuite {
     var counter = 0
     val latch   = new CountDownLatch(5)
 
-    object TestEventBus extends EventBus[Int]
+    val testEventBus = new EventBus[Int] {}
 
-    TestEventBus.subscribe((msg: EventBusMessage[Int]) => {
+    testEventBus.subscribe((msg: EventBusMessage[Int]) => {
       counter += msg.payload
       latch.countDown()
     })
 
     for (i <- 1 to 5) {
-      TestEventBus.publishNoTopic(i)
+      testEventBus.publishNoTopic(i)
     }
 
     latch.await()
@@ -32,9 +33,9 @@ class EventBusSpec extends munit.FunSuite {
 
     val latch = new CountDownLatch(2)
 
-    object TestEventBus extends EventBus[Int]
+    val testEventBus = new EventBus[Int] {}
 
-    TestEventBus.subscribe(
+    testEventBus.subscribe(
       (msg: EventBusMessage[Int]) => {
         counter += msg.payload
         latch.countDown()
@@ -44,7 +45,7 @@ class EventBusSpec extends munit.FunSuite {
 
     for (i <- 1 to 5) {
       val topic = if i % 2 == 0 then "a" else "b"
-      TestEventBus.publish(topic, i)
+      testEventBus.publish(topic, i)
     }
 
     latch.await()
@@ -56,7 +57,8 @@ class EventBusSpec extends munit.FunSuite {
     var counter = 0
     val latch   = new CountDownLatch(1)
 
-    object TestEventBus extends EventBus[Int]
+    // Use a fresh instance to avoid state leakage between tests
+    val testEventBus = new EventBus[Int] {}
 
     val subscriber = new Subscriber[Int] {
       override def onMsg(msg: EventBusMessage[Int]): Unit = {
@@ -65,13 +67,16 @@ class EventBusSpec extends munit.FunSuite {
       }
     }
 
-    TestEventBus.subscribe(subscriber)
+    testEventBus.subscribe(subscriber)
 
-    TestEventBus.publishNoTopic(1)
-    TestEventBus.unsubscribe(subscriber)
-    TestEventBus.publishNoTopic(2)
+    testEventBus.publishNoTopic(1)
+    latch.await(1, SECONDS) // Wait for first message to be processed
+    testEventBus.unsubscribe(subscriber)
+    testEventBus.publishNoTopic(2)
 
-    latch.await(1, SECONDS)
+    Thread.sleep(
+      100
+    ) // Give time for any potential (unwanted) message processing
     assertEquals(counter, 1)
   }
 
@@ -80,18 +85,22 @@ class EventBusSpec extends munit.FunSuite {
     var counter = 0
     val latch   = new CountDownLatch(1)
 
-    object TestEventBus extends EventBus[Int]
+    // Use a fresh instance to avoid state leakage between tests
+    val testEventBus = new EventBus[Int] {}
 
-    val subId = TestEventBus.subscribe((msg: EventBusMessage[Int]) => {
+    val subId = testEventBus.subscribe((msg: EventBusMessage[Int]) => {
       counter += msg.payload
       latch.countDown()
     })
 
-    TestEventBus.publishNoTopic(1)
-    TestEventBus.unsubscribe(subId)
-    TestEventBus.publishNoTopic(2)
+    testEventBus.publishNoTopic(1)
+    latch.await(1, SECONDS) // Wait for first message to be processed
+    testEventBus.unsubscribe(subId)
+    testEventBus.publishNoTopic(2)
 
-    latch.await(1, SECONDS)
+    Thread.sleep(
+      100
+    ) // Give time for any potential (unwanted) message processing
     assertEquals(counter, 1)
   }
 
@@ -102,20 +111,20 @@ class EventBusSpec extends munit.FunSuite {
     var counter2 = 0
     val latch    = new CountDownLatch(4)
 
-    object TestEventBus extends EventBus[Int]
+    val testEventBus = new EventBus[Int] {}
 
-    TestEventBus.subscribe((msg: EventBusMessage[Int]) => {
+    testEventBus.subscribe((msg: EventBusMessage[Int]) => {
       counter1 += msg.payload
       latch.countDown()
     })
 
-    TestEventBus.subscribe((msg: EventBusMessage[Int]) => {
+    testEventBus.subscribe((msg: EventBusMessage[Int]) => {
       counter2 += msg.payload * 2
       latch.countDown()
     })
 
-    TestEventBus.publishNoTopic(1)
-    TestEventBus.publishNoTopic(2)
+    testEventBus.publishNoTopic(1)
+    testEventBus.publishNoTopic(2)
 
     latch.await()
     assertEquals(counter1, 3)
@@ -127,29 +136,28 @@ class EventBusSpec extends munit.FunSuite {
     var counter = 0
     val latch   = new CountDownLatch(2)
 
-    object TestEventBus extends EventBus[Int]
+    val testEventBus = new EventBus[Int] {}
 
     // First subscriber throws an exception
-    TestEventBus.subscribe((_: EventBusMessage[Int]) => {
+    testEventBus.subscribe((_: EventBusMessage[Int]) => {
       throw new RuntimeException("Test exception")
     })
 
     // Second subscriber should still receive messages
-    TestEventBus.subscribe((msg: EventBusMessage[Int]) => {
+    testEventBus.subscribe((msg: EventBusMessage[Int]) => {
       counter += msg.payload
       latch.countDown()
     })
 
-    TestEventBus.publishNoTopic(1)
-    TestEventBus.publishNoTopic(2)
+    testEventBus.publishNoTopic(1)
+    testEventBus.publishNoTopic(2)
 
     latch.await()
     assertEquals(counter, 3)
   }
 
   test("shutdown cleans up all subscribers") {
-    @volatile
-    var counter      = 0
+    val counter      = new AtomicInteger(0)
     val messageLatch = new CountDownLatch(2)
     val readyLatch   = new CountDownLatch(2)
 
@@ -162,7 +170,7 @@ class EventBusSpec extends munit.FunSuite {
         if (msg.payload == 0) {
           readyLatch.countDown()
         } else {
-          counter += msg.payload
+          counter.addAndGet(msg.payload)
           messageLatch.countDown()
         }
       }
@@ -174,7 +182,7 @@ class EventBusSpec extends munit.FunSuite {
         if (msg.payload == 0) {
           readyLatch.countDown()
         } else {
-          counter += msg.payload * 2
+          counter.addAndGet(msg.payload * 2)
           messageLatch.countDown()
         }
       }
@@ -190,18 +198,18 @@ class EventBusSpec extends munit.FunSuite {
     // Now publish the real message
     testEventBus.publishNoTopic(1)
     messageLatch.await()
-    assertEquals(counter, 3)
+    assertEquals(counter.get(), 3)
 
     // Shutdown the event bus
     testEventBus.shutdown()
 
     // Messages published after shutdown should not be processed
-    val oldCounter = counter
+    val oldCounter = counter.get()
     testEventBus.publishNoTopic(10)
     Thread.sleep(100) // Give time for any potential message processing
 
     assertEquals(
-      counter,
+      counter.get(),
       oldCounter,
       "No messages should be processed after shutdown"
     )
@@ -280,10 +288,8 @@ class EventBusSpec extends munit.FunSuite {
   }
 
   test("onPublishError does not block other subscribers") {
-    @volatile
-    var errorCount     = 0
-    @volatile
-    var successCounter = 0
+    val errorCount     = new AtomicInteger(0)
+    val successCounter = new AtomicInteger(0)
     val latch          = new CountDownLatch(2)
 
     val testEventBus = new EventBus[Int] {
@@ -292,7 +298,7 @@ class EventBusSpec extends munit.FunSuite {
           message: EventBusMessage[Int],
           subscriptionId: java.util.UUID
       ): Unit = {
-        errorCount += 1
+        errorCount.incrementAndGet()
       }
     }
 
@@ -304,22 +310,26 @@ class EventBusSpec extends munit.FunSuite {
 
     // Second subscriber that should still receive messages
     testEventBus.subscribe(Subscriber[Int] { msg =>
-      successCounter += msg.payload
+      successCounter.addAndGet(msg.payload)
       latch.countDown()
     })
 
     // Third subscriber that should also receive messages
     testEventBus.subscribe(Subscriber[Int] { msg =>
-      successCounter += msg.payload * 2
+      successCounter.addAndGet(msg.payload * 2)
       latch.countDown()
     })
 
     testEventBus.publishNoTopic(1)
     latch.await()
 
-    assertEquals(errorCount, 1, "Should have one error from failing filter")
     assertEquals(
-      successCounter,
+      errorCount.get(),
+      1,
+      "Should have one error from failing filter"
+    )
+    assertEquals(
+      successCounter.get(),
       3,
       "Other subscribers should still receive messages"
     )

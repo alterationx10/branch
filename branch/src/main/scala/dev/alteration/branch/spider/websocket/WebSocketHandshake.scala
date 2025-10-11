@@ -6,8 +6,8 @@ import scala.util.Try
 
 /** WebSocket handshake handler according to RFC 6455.
   *
-  * The WebSocket handshake involves an HTTP Upgrade request from the client
-  * and a 101 Switching Protocols response from the server.
+  * The WebSocket handshake involves an HTTP Upgrade request from the client and
+  * a 101 Switching Protocols response from the server.
   */
 object WebSocketHandshake {
 
@@ -35,10 +35,10 @@ object WebSocketHandshake {
   /** Validate a WebSocket upgrade request
     *
     * Checks that required headers are present:
-    * - Upgrade: websocket
-    * - Connection: Upgrade (or contains "upgrade")
-    * - Sec-WebSocket-Key: present and non-empty
-    * - Sec-WebSocket-Version: 13
+    *   - Upgrade: websocket
+    *   - Connection: Upgrade (or contains "upgrade")
+    *   - Sec-WebSocket-Key: present and non-empty
+    *   - Sec-WebSocket-Version: 13
     *
     * @param headers
     *   the request headers (case-insensitive)
@@ -78,7 +78,9 @@ object WebSocketHandshake {
 
       // Check Sec-WebSocket-Version
       val version = getHeader("sec-websocket-version").getOrElse {
-        throw new IllegalArgumentException("Missing Sec-WebSocket-Version header")
+        throw new IllegalArgumentException(
+          "Missing Sec-WebSocket-Version header"
+        )
       }
       if (version != "13") {
         throw new IllegalArgumentException(
@@ -105,7 +107,9 @@ object WebSocketHandshake {
     * @return
     *   the response headers map
     */
-  def createHandshakeResponse(secWebSocketKey: String): Map[String, List[String]] = {
+  def createHandshakeResponse(
+      secWebSocketKey: String
+  ): Map[String, List[String]] = {
     val acceptKey = computeAcceptKey(secWebSocketKey)
 
     Map(
@@ -123,8 +127,8 @@ object WebSocketHandshake {
     *   the raw HTTP response as a byte array
     */
   def createRawHandshakeResponse(secWebSocketKey: String): Array[Byte] = {
-    val acceptKey  = computeAcceptKey(secWebSocketKey)
-    val response   = s"""HTTP/1.1 101 Switching Protocols\r
+    val acceptKey = computeAcceptKey(secWebSocketKey)
+    val response  = s"""HTTP/1.1 101 Switching Protocols\r
 Upgrade: websocket\r
 Connection: Upgrade\r
 Sec-WebSocket-Accept: $acceptKey\r

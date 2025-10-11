@@ -3,6 +3,7 @@ package dev.alteration.branch.macaroni.poolers
 import java.util.concurrent.{ConcurrentLinkedQueue, Semaphore}
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.util.{Success, Try}
+import scala.util.control.NonFatal
 
 /** A ResourcePool is a pool of resources that can be acquired and released. The
   * pool has a fixed size and will block if no resources are available.
@@ -75,11 +76,17 @@ trait ResourcePool[R] {
     *   if the pool is shutting down
     */
   private def borrowResource: R = {
-    if isShuttingDown.get() then
-      throw new IllegalStateException("ResourcePool is shutting down")
     gate.acquire()
-    // Lazily fill the pool
-    Option(pool.poll()).getOrElse(acquire)
+    try {
+      if isShuttingDown.get() then
+        throw new IllegalStateException("ResourcePool is shutting down")
+      // Lazily fill the pool
+      Option(pool.poll()).getOrElse(acquire)
+    } catch {
+      case e: Exception =>
+        gate.release()
+        throw e
+    }
   }
 
   /** Return a resource to the pool. If the resource fails the [[test]], it is
@@ -116,28 +123,36 @@ trait ResourcePool[R] {
     // Wait until all resources are returned
     gate.acquire(poolSize)
     // Release all resources
-    pool.iterator().forEachRemaining { r =>
-      release(r)
-      pool.remove(r)
+    while (!pool.isEmpty) {
+      Option(pool.poll()).foreach(release)
     }
     // Release the gate
     gate.release(poolSize)
   }
+
+  /** Shutdown hook to ensure clean shutdown on JVM exit.
+    */
+  private final val shutdownHook: Thread = new Thread(() => {
+    if !isShuttingDown.get() then shutdown()
+  })
+
+  Runtime.getRuntime.addShutdownHook(shutdownHook)
 
   /** Shutdown the pool, draining the pool and preventing new resources from
     * being acquired. the ResourcePool cannot be used after this method is
     * called.
     */
   def shutdown(): Unit = {
-    // Prevent new resources from being acquired
-    isShuttingDown.set(true)
-    drainPool()
-  }
-
-  Runtime.getRuntime.addShutdownHook {
-    new Thread(() => {
-      if !isShuttingDown.get() then shutdown()
-    })
+    // Prevent new resources from being acquired (idempotent)
+    if isShuttingDown.compareAndSet(false, true) then {
+      // Remove shutdown hook to prevent memory leak
+      try {
+        Runtime.getRuntime.removeShutdownHook(shutdownHook)
+      } catch {
+        case NonFatal(_) => // Hook may have already run or not be registered
+      }
+      drainPool()
+    }
   }
 
 }
