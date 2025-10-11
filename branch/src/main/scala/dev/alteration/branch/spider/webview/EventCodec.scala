@@ -105,7 +105,7 @@ object EventCodec {
     * This class exists to avoid duplicating anonymous class definitions
     * at each inline site where the derived given is used.
     */
-  private class DerivedEventCodec[Event](jsonCodec: JsonCodec[Event]) extends EventCodec[Event] {
+  class DerivedEventCodec[Event](jsonCodec: JsonCodec[Event]) extends EventCodec[Event] {
     def encode(event: Event): Json = jsonCodec.encode(event)
 
     def decode(json: Json): Try[Event] = jsonCodec.decode(json)

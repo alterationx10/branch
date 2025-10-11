@@ -1,5 +1,7 @@
 package dev.alteration.branch.spider.webview
 
+import dev.alteration.branch.keanu.actors.ActorSystem
+
 /** Core trait for defining a WebView component.
   *
   * A WebView is a stateful, reactive UI component that lives on the server and
@@ -120,6 +122,75 @@ trait WebView[State, Event] {
     *   The final state
     */
   def terminate(reason: Option[Throwable], state: State): Unit = {}
+
+  // ===== Lifecycle Hooks (Phoenix LiveView-style) =====
+
+  /** Called immediately after the WebView is mounted with initial state.
+    *
+    * Use this to run side effects like:
+    * - Subscribing to pub/sub topics
+    * - Starting timers
+    * - Loading additional data asynchronously
+    *
+    * This hook has access to the WebView context, allowing you to send
+    * messages to self or interact with the actor system.
+    *
+    * @param state
+    *   The initial state after mount
+    * @param context
+    *   The WebView context for sending messages and interacting with actors
+    */
+  def afterMount(state: State, context: WebViewContext): Unit = {}
+
+  /** Called before an event is processed.
+    *
+    * Use this for:
+    * - Logging/debugging events
+    * - Authorization checks
+    * - Pre-processing event data
+    *
+    * @param event
+    *   The event about to be processed
+    * @param state
+    *   The current state before the event is applied
+    * @param context
+    *   The WebView context
+    */
+  def beforeUpdate(event: Event, state: State, context: WebViewContext): Unit = {}
+
+  /** Called after an event has been processed and state has been updated.
+    *
+    * Use this for:
+    * - Side effects based on state changes
+    * - Triggering async operations
+    * - Broadcasting updates to other actors
+    *
+    * @param event
+    *   The event that was processed
+    * @param oldState
+    *   The state before the event was applied
+    * @param newState
+    *   The state after the event was applied
+    * @param context
+    *   The WebView context
+    */
+  def afterUpdate(event: Event, oldState: State, newState: State, context: WebViewContext): Unit = {}
+
+  /** Called before rendering, allowing state transformation.
+    *
+    * Use this for:
+    * - Adding computed/derived fields for rendering
+    * - Transforming state for display
+    * - Temporary view-specific state modifications
+    *
+    * Note: This should NOT have side effects. Only transform state for rendering.
+    *
+    * @param state
+    *   The current state
+    * @return
+    *   The transformed state (or same state if no transformation needed)
+    */
+  def beforeRender(state: State): State = state
 }
 
 /** Represents a client session.
@@ -135,4 +206,43 @@ case class Session(data: Map[String, Any] = Map.empty) {
 
   def remove(key: String): Session =
     copy(data = data - key)
+}
+
+/** Context provided to lifecycle hooks.
+  *
+  * Allows WebViews to interact with the actor system during lifecycle events.
+  * This enables patterns like pub/sub subscriptions and sending messages to
+  * other actors.
+  *
+  * @param system
+  *   The ActorSystem
+  * @param sendSelfMsg
+  *   Function to send a message to this WebView (will be received via handleInfo)
+  */
+case class WebViewContext(
+    system: ActorSystem,
+    private val sendSelfMsg: Any => Unit
+) {
+
+  /** Send a message to this WebView actor.
+    *
+    * The message will be received via handleInfo.
+    *
+    * @param msg
+    *   The message to send
+    */
+  def sendSelf(msg: Any): Unit = {
+    sendSelfMsg(msg)
+  }
+
+  /** Send a message to an actor by path.
+    *
+    * @param path
+    *   The actor path (e.g., "/user/myactor")
+    * @param msg
+    *   The message to send
+    */
+  def tellPath(path: String, msg: Any): Unit = {
+    system.tellPath(path, msg)
+  }
 }

@@ -53,7 +53,17 @@ case class WebViewActor[State, Event](webView: WebView[State, Event])
       // Initialize the WebView
       Try {
         val initialUserState = webView.mount(params, session)
-        val html             = webView.render(initialUserState)
+
+        // Call afterMount hook with context
+        val ctx = WebViewContext(
+          context.system,
+          msg => context.system.tell(context.self, InfoMessage(msg))
+        )
+        webView.afterMount(initialUserState, ctx)
+
+        // Render with beforeRender hook
+        val renderState = webView.beforeRender(initialUserState)
+        val html = webView.render(renderState)
 
         // Send initial HTML to client
         sendHtml(connection, html)
@@ -76,8 +86,23 @@ case class WebViewActor[State, Event](webView: WebView[State, Event])
       state.userState match {
         case Some(currentUserState) =>
           Try {
+            val ctx = WebViewContext(
+              context.system,
+              msg => context.system.tell(context.self, InfoMessage(msg))
+            )
+
+            // Call beforeUpdate hook
+            webView.beforeUpdate(typedEvent, currentUserState, ctx)
+
+            // Process the event
             val newUserState = webView.handleEvent(typedEvent, currentUserState)
-            val html         = webView.render(newUserState)
+
+            // Call afterUpdate hook
+            webView.afterUpdate(typedEvent, currentUserState, newUserState, ctx)
+
+            // Render with beforeRender hook
+            val renderState = webView.beforeRender(newUserState)
+            val html = webView.render(renderState)
 
             // Send updated HTML to client
             state.connection.foreach { conn =>
@@ -104,7 +129,10 @@ case class WebViewActor[State, Event](webView: WebView[State, Event])
         case Some(currentUserState) =>
           Try {
             val newUserState = webView.handleInfo(msg, currentUserState)
-            val html         = webView.render(newUserState)
+
+            // Render with beforeRender hook
+            val renderState = webView.beforeRender(newUserState)
+            val html = webView.render(renderState)
 
             // Send updated HTML to client
             state.connection.foreach { conn =>
