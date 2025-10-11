@@ -2,7 +2,6 @@ package dev.alteration.branch.piggy
 
 import java.sql.ResultSet
 import java.util.UUID
-import scala.compiletime.summonInline
 
 /** Trait for getting values from a `ResultSet` by column name or index.
   * @tparam A
@@ -44,9 +43,17 @@ object ResultSetGetter {
     }
   }
 
-  /** `ResultSetGetter` instance for `UUID` values. */
-  inline given ResultSetGetter[UUID] =
-    summonInline[ResultSetGetter[String]].map(UUID.fromString)
+  /** `ResultSetGetter` instance for `UUID` values.
+    */
+  given ResultSetGetter[UUID] with {
+    override def get(rs: ResultSet, col: String | Int): UUID = {
+      val str = col match {
+        case label: String => rs.getString(label)
+        case index: Int    => rs.getString(index)
+      }
+      if (str == null) null else UUID.fromString(str)
+    }
+  }
 
   /** `ResultSetGetter` instance for `Int` values. */
   given ResultSetGetter[Int] with {
@@ -128,9 +135,17 @@ object ResultSetGetter {
     }
   }
 
-  /** `ResultSetGetter` instance for `java.time.Instant` values. */
-  inline given ResultSetGetter[java.time.Instant] =
-    summonInline[ResultSetGetter[java.sql.Timestamp]].map(_.toInstant)
+  /** `ResultSetGetter` instance for `java.time.Instant` values.
+    */
+  given ResultSetGetter[java.time.Instant] with {
+    override def get(rs: ResultSet, col: String | Int): java.time.Instant = {
+      val sqlTimestamp = col match {
+        case label: String => rs.getTimestamp(label)
+        case index: Int    => rs.getTimestamp(index)
+      }
+      if (sqlTimestamp == null) null else sqlTimestamp.toInstant
+    }
+  }
 
   /** `ResultSetGetter` instance for `java.sql.Time` values. */
   given ResultSetGetter[java.sql.Time] with {
@@ -169,6 +184,72 @@ object ResultSetGetter {
         case label: String => rs.getByte(label)
         case index: Int    => rs.getByte(index)
       }
+    }
+  }
+
+  /** `ResultSetGetter` instance for `java.time.LocalDate` values.
+    */
+  given ResultSetGetter[java.time.LocalDate] with {
+    override def get(rs: ResultSet, col: String | Int): java.time.LocalDate = {
+      val sqlDate = col match {
+        case label: String => rs.getDate(label)
+        case index: Int    => rs.getDate(index)
+      }
+      if (sqlDate == null) null else sqlDate.toLocalDate
+    }
+  }
+
+  /** `ResultSetGetter` instance for `java.time.LocalDateTime` values.
+    */
+  given ResultSetGetter[java.time.LocalDateTime] with {
+    override def get(
+        rs: ResultSet,
+        col: String | Int
+    ): java.time.LocalDateTime = {
+      val sqlTimestamp = col match {
+        case label: String => rs.getTimestamp(label)
+        case index: Int    => rs.getTimestamp(index)
+      }
+      if (sqlTimestamp == null) null else sqlTimestamp.toLocalDateTime
+    }
+  }
+
+  /** `ResultSetGetter` instance for `java.time.ZonedDateTime` values. Uses
+    * system default timezone for conversion.
+    */
+  given ResultSetGetter[java.time.ZonedDateTime] with {
+    override def get(
+        rs: ResultSet,
+        col: String | Int
+    ): java.time.ZonedDateTime = {
+      val sqlTimestamp = col match {
+        case label: String => rs.getTimestamp(label)
+        case index: Int    => rs.getTimestamp(index)
+      }
+      if (sqlTimestamp == null) null
+      else sqlTimestamp.toInstant.atZone(java.time.ZoneId.systemDefault())
+    }
+  }
+
+  /** `ResultSetGetter` instance for `java.math.BigInteger` values.
+    */
+  given ResultSetGetter[java.math.BigInteger] with {
+    override def get(rs: ResultSet, col: String | Int): java.math.BigInteger = {
+      val bigDecimal = col match {
+        case label: String => rs.getBigDecimal(label)
+        case index: Int    => rs.getBigDecimal(index)
+      }
+      if (bigDecimal == null) null else bigDecimal.toBigInteger
+    }
+  }
+
+  /** `ResultSetGetter` instance for `Option[A]` values that handles NULL.
+    * Returns None if the column is NULL, otherwise Some(value).
+    */
+  given [A](using getter: ResultSetGetter[A]): ResultSetGetter[Option[A]] with {
+    override def get(rs: ResultSet, col: String | Int): Option[A] = {
+      val value = getter.get(rs, col)
+      if (rs.wasNull()) None else Some(value)
     }
   }
 

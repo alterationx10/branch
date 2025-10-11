@@ -43,6 +43,12 @@ object PreparedStatementSetter {
       ps.setString(index, value)
   }
 
+  /** A PreparedStatementSetter for java.util.UUID */
+  given PreparedStatementSetter[java.util.UUID] with {
+    def set(ps: PreparedStatement)(index: Int)(value: java.util.UUID): Unit =
+      ps.setObject(index, value)
+  }
+
   /** A PreparedStatementSetter for Boolean */
   given PreparedStatementSetter[Boolean] with {
     def set(ps: PreparedStatement)(index: Int)(value: Boolean): Unit =
@@ -91,6 +97,62 @@ object PreparedStatementSetter {
   given PreparedStatementSetter[Byte] with {
     def set(ps: PreparedStatement)(index: Int)(value: Byte): Unit =
       ps.setByte(index, value)
+  }
+
+  /** A PreparedStatementSetter for java.time.LocalDate */
+  given PreparedStatementSetter[java.time.LocalDate] with {
+    def set(ps: PreparedStatement)(index: Int)(
+        value: java.time.LocalDate
+    ): Unit =
+      ps.setDate(index, java.sql.Date.valueOf(value))
+  }
+
+  /** A PreparedStatementSetter for java.time.LocalDateTime */
+  given PreparedStatementSetter[java.time.LocalDateTime] with {
+    def set(ps: PreparedStatement)(index: Int)(
+        value: java.time.LocalDateTime
+    ): Unit =
+      ps.setTimestamp(index, java.sql.Timestamp.valueOf(value))
+  }
+
+  /** A PreparedStatementSetter for java.time.ZonedDateTime */
+  given PreparedStatementSetter[java.time.ZonedDateTime] with {
+    def set(ps: PreparedStatement)(index: Int)(
+        value: java.time.ZonedDateTime
+    ): Unit =
+      ps.setTimestamp(
+        index,
+        java.sql.Timestamp.from(value.toInstant)
+      )
+  }
+
+  /** A PreparedStatementSetter for java.time.Instant */
+  given PreparedStatementSetter[java.time.Instant] with {
+    def set(ps: PreparedStatement)(index: Int)(
+        value: java.time.Instant
+    ): Unit =
+      ps.setTimestamp(index, java.sql.Timestamp.from(value))
+  }
+
+  /** A PreparedStatementSetter for java.math.BigInteger */
+  given PreparedStatementSetter[java.math.BigInteger] with {
+    def set(ps: PreparedStatement)(index: Int)(
+        value: java.math.BigInteger
+    ): Unit =
+      ps.setBigDecimal(index, new java.math.BigDecimal(value))
+  }
+
+  /** A PreparedStatementSetter for Option[A] that handles NULL. Sets NULL if
+    * None, otherwise sets the value using the underlying setter.
+    */
+  given [A](using
+      setter: PreparedStatementSetter[A]
+  ): PreparedStatementSetter[Option[A]] with {
+    def set(ps: PreparedStatement)(index: Int)(value: Option[A]): Unit =
+      value match {
+        case Some(v) => setter.set(ps)(index)(v)
+        case None    => ps.setObject(index, null)
+      }
   }
 
 }

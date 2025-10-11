@@ -35,15 +35,139 @@ object Sql {
   /** A Helper type equivalent to X => PsArgHolder */
   type PsArg[X] = X => PsArgHolder
 
+  /** A type-erased wrapper for a prepared statement argument that maintains
+    * type safety through the PreparedStatementSetter type class.
+    */
+  trait PreparedStatementArg {
+    def set(ps: PreparedStatement, index: Int): Unit
+  }
+
+  object PreparedStatementArg {
+
+    /** Implicit conversion from any type A to PreparedStatementArg, provided
+      * there is a PreparedStatementSetter[A] in scope.
+      */
+    given [A](using
+        setter: PreparedStatementSetter[A]
+    ): Conversion[A, PreparedStatementArg] with {
+      def apply(value: A): PreparedStatementArg = new PreparedStatementArg {
+        def set(ps: PreparedStatement, index: Int): Unit =
+          setter.set(ps)(index)(value)
+      }
+    }
+  }
+
   extension (sc: StringContext) {
 
     /** A string interpolator for creating prepared statements by capturing
       * arguments to aPsArgHolder.
       */
-    def ps(args: Any*): PsArgHolder = PsArgHolder(
+    def ps(args: PreparedStatementArg*): PsArgHolder = PsArgHolder(
       sc.s(args.map(_ => "?")*),
       args*
     )
+
+    /** A string interpolator for creating UPDATE/INSERT/DELETE statements that
+      * returns the number of affected rows. For single-use statements.
+      * @example
+      *   {{{
+      *   psUpdate"INSERT INTO users (name, email) VALUES ($name, $email)"
+      *   }}}
+      */
+    def psUpdate(args: PreparedStatementArg*): Sql[Int] = {
+      val holder = PsArgHolder(sc.s(args.map(_ => "?")*), args*)
+      Sql.PreparedUpdate(_ => holder, Seq(()))
+    }
+
+    /** A string interpolator for creating SELECT statements that returns a
+      * sequence of parsed results. For single-use queries.
+      * @example
+      *   {{{
+      *   psQuery[User]"SELECT * FROM users WHERE active = $active"
+      *   }}}
+      */
+    inline def psQuery[R](args: PreparedStatementArg*)(using
+        parser: ResultSetParser[R]
+    ): Sql[Seq[R]] = {
+      val holder = PsArgHolder(sc.s(args.map(_ => "?")*), args*)
+      Sql.PreparedQuery[Any, Unit, R](
+        _ => holder,
+        rs => rs.parsedList[R],
+        Seq(())
+      )
+    }
+
+    /** A string interpolator for creating SQL with named parameters. Returns a
+      * builder that requires calling .bindUpdate() or .bindQuery() to provide
+      * parameter values. Do not use ${} interpolation - use :paramName
+      * placeholders instead.
+      * @example
+      *   {{{
+      *   psNamed"SELECT * FROM users WHERE name = :name AND age > :age"
+      *     .bindQuery[User](
+      *       "name" -> "John",
+      *       "age" -> 25
+      *     )
+      *   }}}
+      */
+    def psNamed(args: Any*): NamedSqlBuilder = {
+      if (args.nonEmpty) {
+        throw new IllegalArgumentException(
+          "psNamed does not support ${} interpolation. Use :paramName placeholders and .bindUpdate()/.bindQuery() instead."
+        )
+      }
+      val sql = sc.parts.mkString
+      new NamedSqlBuilder(sql)
+    }
+  }
+
+  /** Builder for SQL statements with named parameters. Use .bindUpdate() for
+    * INSERT/UPDATE/DELETE or .bindQuery() for SELECT statements.
+    */
+  class NamedSqlBuilder(sqlTemplate: String) {
+
+    /** Bind named parameters for an UPDATE/INSERT/DELETE query.
+      * @param params
+      *   Tuple of (paramName, value) pairs
+      * @return
+      *   Sql[Int] representing the number of affected rows
+      * @example
+      *   {{{
+      *   psNamed"INSERT INTO users (name, age) VALUES (:name, :age)"
+      *     .bindUpdate(
+      *       "name" -> "John",
+      *       "age" -> 30
+      *     )
+      *   }}}
+      */
+    def bindUpdate(params: (String, PreparedStatementArg)*): Sql[Int] = {
+      val namedParams = params.toMap
+      val holder      = NamedParameterParser.toPsArgHolder(sqlTemplate, namedParams)
+      Sql.PreparedUpdate(_ => holder, Seq(()))
+    }
+
+    /** Bind named parameters for a SELECT query.
+      * @param params
+      *   Tuple of (paramName, value) pairs
+      * @return
+      *   Sql[Seq[R]] representing the query results
+      * @example
+      *   {{{
+      *   psNamed"SELECT * FROM users WHERE name = :name"
+      *     .bindQuery[User]("name" -> "John")
+      *   }}}
+      */
+    inline def bindQuery[R](params: (String, PreparedStatementArg)*)(using
+        parser: ResultSetParser[R]
+    ): Sql[Seq[R]] = {
+      val namedParams = params.toMap
+      val holder      = NamedParameterParser.toPsArgHolder(sqlTemplate, namedParams)
+      Sql.PreparedQuery[Any, Unit, R](
+        _ => holder,
+        rs => rs.parsedList[R],
+        Seq(())
+      )
+    }
   }
 
   extension [A](a: Sql[A]) {
@@ -53,13 +177,12 @@ object Sql {
       */
     def execute(using
         connection: Connection
-    ): Try[A] = {
+    ): Try[A] =
       SqlRuntime.execute(a)
 
-      /** Execute this Sql operation using the given Connection, returning the
-        * result as a Future. See [[SqlRuntime.executeAsync]].
-        */
-    }
+    /** Execute this Sql operation using the given Connection, returning the
+      * result as a Future. See [[SqlRuntime.executeAsync]].
+      */
     def executeAsync(using
         connection: Connection,
         executionContext: ExecutionContext
@@ -115,19 +238,14 @@ object Sql {
     */
   final case class PsArgHolder(
       psStr: String,
-      psArgs: Any*
+      psArgs: PreparedStatementArg*
   ) {
 
-    private def set(preparedStatement: PreparedStatement): Unit = {
-      psArgs.zipWithIndex.map({ case (a, i) => a -> (i + 1) }).foreach {
-        case (a: Int, i)     => preparedStatement.setInt(i, a)
-        case (a: Long, i)    => preparedStatement.setLong(i, a)
-        case (a: Float, i)   => preparedStatement.setFloat(i, a)
-        case (a: Double, i)  => preparedStatement.setDouble(i, a)
-        case (a: String, i)  => preparedStatement.setString(i, a)
-        case (a: Boolean, i) => preparedStatement.setBoolean(i, a)
-        case (u, _)          =>
-          throw new IllegalArgumentException(s"Unsupported type $u")
+    /** Set the arguments on the given PreparedStatement.
+      */
+    def set(preparedStatement: PreparedStatement): Unit = {
+      psArgs.zipWithIndex.foreach { case (arg, i) =>
+        arg.set(preparedStatement, i + 1)
       }
     }
 
