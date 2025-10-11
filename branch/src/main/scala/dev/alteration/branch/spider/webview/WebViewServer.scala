@@ -1,7 +1,8 @@
 package dev.alteration.branch.spider.webview
 
 import dev.alteration.branch.keanu.actors.ActorSystem
-import dev.alteration.branch.spider.websocket.{WebSocketServer, WebSocketHandler}
+import dev.alteration.branch.spider.websocket.{WebSocketServer, WebSocketHandler, HybridServer}
+import dev.alteration.branch.spider.http.{HttpHandler, ResourceServer}
 import scala.concurrent.ExecutionContext.Implicits.global
 
 /** Fluent builder API for setting up Branch WebView servers.
@@ -55,7 +56,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
 case class WebViewServer(
     actorSystem: ActorSystem = ActorSystem(),
     routes: Map[String, WebViewRoute[?, ?]] = Map.empty,
-    devMode: Boolean = false
+    devMode: Boolean = false,
+    httpRoutes: Map[String, HttpHandler] = Map.empty,
+    serveHtml: Boolean = false
 ) {
 
   /** Add a WebView route to the server.
@@ -142,9 +145,46 @@ case class WebViewServer(
     copy(devMode = enabled)
   }
 
+  /** Enable automatic HTML page serving for WebView routes.
+    *
+    * When enabled, creates HTTP endpoints that serve HTML pages with
+    * the WebView client JavaScript for each WebView route.
+    *
+    * Example: If you have a route at "/counter", this will create:
+    * - HTTP GET /counter - Serves HTML page
+    * - WebSocket /ws/counter - WebView WebSocket endpoint
+    * - HTTP GET /js/webview.js - Serves the WebView client library
+    *
+    * @param enabled
+    *   Whether to enable HTML serving (default: true)
+    * @return
+    *   A new WebViewServer with HTML serving enabled/disabled
+    */
+  def withHtmlPages(enabled: Boolean = true): WebViewServer = {
+    copy(serveHtml = enabled)
+  }
+
+  /** Add a custom HTTP route.
+    *
+    * This allows you to serve custom pages, static files, or APIs
+    * alongside your WebView routes.
+    *
+    * @param path
+    *   The HTTP path (e.g., "/api/data")
+    * @param handler
+    *   The HTTP handler
+    * @return
+    *   A new WebViewServer with the HTTP route added
+    */
+  def withHttpRoute(path: String, handler: HttpHandler): WebViewServer = {
+    copy(httpRoutes = httpRoutes + (path -> handler))
+  }
+
   /** Start the WebView server on the specified port.
     *
     * This creates a WebSocket server and registers all routes.
+    * If HTML serving is enabled or HTTP routes are configured,
+    * a HybridServer will be used to handle both HTTP and WebSocket.
     *
     * @param port
     *   The port to listen on
@@ -177,29 +217,70 @@ case class WebViewServer(
       routes
     }
 
-    println(s"Starting Branch WebView server on $host:$port")
-    if (devMode) {
-      println(s"[DevMode] DevTools available at ws://$host:$port/__devtools")
-    }
-    println(s"Routes:")
-    finalRoutes.keys.foreach(path => println(s"  ws://$host:$port$path"))
-
     // Create handlers for all routes
-    val handlers = finalRoutes.map { case (path, route) =>
+    val wsHandlers = finalRoutes.map { case (path, route) =>
       path -> createHandler(route)
     }
 
-    // Start the WebSocket server with multiple routes
-    val wsServer = WebSocketServer.startWithRoutes(port, handlers)
+    // Build HTTP routes if HTML serving is enabled
+    val finalHttpRoutes = if (serveHtml) {
+      // Create HTML page handlers for each WebView route
+      val pageHandlers = finalRoutes.map { case (path, _) =>
+        val wsPath = if (path.startsWith("/")) path else s"/$path"
+        path -> WebViewPageHandler(
+          wsUrl = s"ws://$host:$port$wsPath",
+          title = s"WebView - ${path.stripPrefix("/")}",
+          jsPath = "/js/webview.js",
+          debug = devMode
+        )
+      }
+
+      // Add resource server for webview.js
+      // Strip "/js/" prefix so "/js/webview.js" looks up "spider/webview/webview.js"
+      val resourceServer = ResourceServer("spider/webview", stripPrefix = Some("/js"))
+
+      httpRoutes ++ pageHandlers + ("/js" -> resourceServer)
+    } else {
+      httpRoutes
+    }
+
+    println(s"Starting Branch WebView server on $host:$port")
+
+    // Decide whether to use HybridServer or pure WebSocket server
+    val server: AutoCloseable = if (finalHttpRoutes.nonEmpty) {
+      println("HTTP routes:")
+      finalHttpRoutes.keys.foreach(path => println(s"  http://$host:$port$path"))
+      println("WebSocket routes:")
+      finalRoutes.keys.foreach(path => println(s"  ws://$host:$port$path"))
+
+      if (devMode) {
+        println(s"[DevMode] DevTools available at ws://$host:$port/__devtools")
+      }
+
+      val hybrid = HybridServer(port, finalHttpRoutes, wsHandlers)
+      scala.concurrent.Future { hybrid.start() }
+      Thread.sleep(100) // Give it a moment to start
+      hybrid
+    } else {
+      println("WebSocket routes:")
+      finalRoutes.keys.foreach(path => println(s"  ws://$host:$port$path"))
+
+      if (devMode) {
+        println(s"[DevMode] DevTools available at ws://$host:$port/__devtools")
+      }
+
+      WebSocketServer.startWithRoutes(port, wsHandlers)
+    }
 
     // Return running server
     RunningWebViewServer(
       actorSystem = actorSystem,
-      wsServer = wsServer,
+      server = server,
       port = port,
       host = host,
       routes = finalRoutes,
-      devMode = devMode
+      devMode = devMode,
+      httpEnabled = finalHttpRoutes.nonEmpty
     )
   }
 
@@ -253,8 +334,8 @@ case class WebViewRoute[State, Event](
   *
   * @param actorSystem
   *   The actor system
-  * @param wsServer
-  *   The underlying WebSocket server
+  * @param server
+  *   The underlying server (WebSocket or Hybrid)
   * @param port
   *   The port the server is listening on
   * @param host
@@ -263,20 +344,23 @@ case class WebViewRoute[State, Event](
   *   The routes that were registered
   * @param devMode
   *   Whether dev mode is enabled
+  * @param httpEnabled
+  *   Whether HTTP routes are enabled
   */
 case class RunningWebViewServer(
     actorSystem: ActorSystem,
-    wsServer: WebSocketServer,
+    server: AutoCloseable,
     port: Int,
     host: String,
     routes: Map[String, WebViewRoute[?, ?]],
-    devMode: Boolean = false
+    devMode: Boolean = false,
+    httpEnabled: Boolean = false
 ) {
 
   /** Stop the server and cleanup resources. */
   def stop(): Unit = {
     println("Stopping WebView server...")
-    wsServer.stop()
+    server.close()
     actorSystem.shutdownAwait()
     println("WebView server stopped.")
   }
