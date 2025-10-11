@@ -172,47 +172,52 @@ object ResultSetGetter {
     }
   }
 
-  /** `ResultSetGetter` instance for `java.time.LocalDate` values. */
+  /** `ResultSetGetter` instance for `java.time.LocalDate` values. Note: Returns
+    * null for NULL database values, which works correctly with
+    * Option[LocalDate].
+    */
   given ResultSetGetter[java.time.LocalDate] with {
     override def get(rs: ResultSet, col: String | Int): java.time.LocalDate = {
-      col match {
-        case label: String => rs.getDate(label).toLocalDate
-        case index: Int    => rs.getDate(index).toLocalDate
+      val sqlDate = col match {
+        case label: String => rs.getDate(label)
+        case index: Int    => rs.getDate(index)
       }
+      if (sqlDate == null) null else sqlDate.toLocalDate
     }
   }
 
-  /** `ResultSetGetter` instance for `java.time.LocalDateTime` values. */
+  /** `ResultSetGetter` instance for `java.time.LocalDateTime` values. Note:
+    * Returns null for NULL database values, which works correctly with
+    * Option[LocalDateTime].
+    */
   given ResultSetGetter[java.time.LocalDateTime] with {
     override def get(
         rs: ResultSet,
         col: String | Int
     ): java.time.LocalDateTime = {
-      col match {
-        case label: String => rs.getTimestamp(label).toLocalDateTime
-        case index: Int    => rs.getTimestamp(index).toLocalDateTime
+      val sqlTimestamp = col match {
+        case label: String => rs.getTimestamp(label)
+        case index: Int    => rs.getTimestamp(index)
       }
+      if (sqlTimestamp == null) null else sqlTimestamp.toLocalDateTime
     }
   }
 
   /** `ResultSetGetter` instance for `java.time.ZonedDateTime` values. Uses
-    * system default timezone for conversion.
+    * system default timezone for conversion. Note: Returns null for NULL
+    * database values, which works correctly with Option[ZonedDateTime].
     */
   given ResultSetGetter[java.time.ZonedDateTime] with {
     override def get(
         rs: ResultSet,
         col: String | Int
     ): java.time.ZonedDateTime = {
-      col match {
-        case label: String =>
-          rs.getTimestamp(label)
-            .toInstant
-            .atZone(java.time.ZoneId.systemDefault())
-        case index: Int    =>
-          rs.getTimestamp(index)
-            .toInstant
-            .atZone(java.time.ZoneId.systemDefault())
+      val sqlTimestamp = col match {
+        case label: String => rs.getTimestamp(label)
+        case index: Int    => rs.getTimestamp(index)
       }
+      if (sqlTimestamp == null) null
+      else sqlTimestamp.toInstant.atZone(java.time.ZoneId.systemDefault())
     }
   }
 

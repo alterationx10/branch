@@ -5,7 +5,7 @@ import dev.alteration.branch.testkit.testcontainers.PGContainerSuite
 import Sql.*
 import PreparedStatementSetter.given
 
-import java.time.Instant
+import java.time.{Instant, LocalDate, LocalDateTime, ZonedDateTime, ZoneId}
 import java.util.UUID
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.Duration
@@ -396,6 +396,459 @@ class PiggyPostgresqlSpec extends PGContainerSuite {
     assert(result.isSuccess)
     assert(result.get.nonEmpty)
     assert(result.get.forall(p => p.age >= 15 && p.age <= 25))
+  }
+
+  test("Option support - nullable columns with None") {
+    given pool: PgConnectionPool = pgPool
+
+    val ddlWithNullable = """
+      CREATE TABLE IF NOT EXISTS person_with_email (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        age INT NOT NULL,
+        email TEXT
+      )
+    """
+
+    case class PersonWithEmail(
+        id: Int,
+        name: String,
+        age: Int,
+        email: Option[String]
+    ) derives ResultSetParser
+
+    val result = {
+      for {
+        _      <- Sql.statement(ddlWithNullable)
+        _      <- Sql.statement("truncate table person_with_email")
+        n      <-
+          psUpdate"INSERT INTO person_with_email (name, age, email) VALUES (${"John"}, ${30}, ${None: Option[String]})"
+        people <- Sql.statement(
+                    "SELECT * FROM person_with_email WHERE name = 'John'",
+                    _.parsedList[PersonWithEmail]
+                  )
+      } yield (n, people)
+    }.executePool
+
+    assert(result.isSuccess)
+    assertEquals(result.get._1, 1)
+    assertEquals(result.get._2.size, 1)
+    assertEquals(result.get._2.head.email, None)
+  }
+
+  test("Option support - nullable columns with Some") {
+    given pool: PgConnectionPool = pgPool
+
+    val ddlWithNullable = """
+      CREATE TABLE IF NOT EXISTS person_with_email (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        age INT NOT NULL,
+        email TEXT
+      )
+    """
+
+    case class PersonWithEmail(
+        id: Int,
+        name: String,
+        age: Int,
+        email: Option[String]
+    ) derives ResultSetParser
+
+    val result = {
+      for {
+        _      <- Sql.statement(ddlWithNullable)
+        _      <- Sql.statement("truncate table person_with_email")
+        n      <-
+          psUpdate"INSERT INTO person_with_email (name, age, email) VALUES (${"Jane"}, ${25}, ${Some("jane@example.com")})"
+        people <-
+          Sql.statement(
+            "SELECT * FROM person_with_email WHERE name = 'Jane'",
+            _.parsedList[PersonWithEmail]
+          )
+      } yield (n, people)
+    }.executePool
+
+    assert(result.isSuccess)
+    assertEquals(result.get._1, 1)
+    assertEquals(result.get._2.size, 1)
+    assertEquals(result.get._2.head.email, Some("jane@example.com"))
+  }
+
+  test("Option support - batch insert with mixed None and Some") {
+    given pool: PgConnectionPool = pgPool
+
+    val ddlWithNullable = """
+      CREATE TABLE IF NOT EXISTS person_with_email (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        age INT NOT NULL,
+        email TEXT
+      )
+    """
+
+    case class PersonWithEmail(
+        id: Int,
+        name: String,
+        age: Int,
+        email: Option[String]
+    ) derives ResultSetParser
+
+    val insertPerson = (p: PersonWithEmail) =>
+      ps"INSERT INTO person_with_email (name, age, email) VALUES (${p.name}, ${p.age}, ${p.email})"
+
+    val testPeople = Seq(
+      PersonWithEmail(0, "Alice", 30, Some("alice@example.com")),
+      PersonWithEmail(0, "Bob", 25, None),
+      PersonWithEmail(0, "Charlie", 35, Some("charlie@example.com"))
+    )
+
+    val result = {
+      for {
+        _      <- Sql.statement(ddlWithNullable)
+        _      <- Sql.statement("truncate table person_with_email")
+        n      <- Sql.prepareUpdate(insertPerson, testPeople*)
+        people <-
+          Sql.statement(
+            "SELECT * FROM person_with_email ORDER BY name",
+            _.parsedList[PersonWithEmail]
+          )
+      } yield (n, people)
+    }.executePool
+
+    assert(result.isSuccess)
+    assertEquals(result.get._1, 3)
+    assertEquals(result.get._2.size, 3)
+    assertEquals(result.get._2(0).email, Some("alice@example.com"))
+    assertEquals(result.get._2(1).email, None)
+    assertEquals(result.get._2(2).email, Some("charlie@example.com"))
+  }
+
+  test("Empty arguments - prepareUpdate throws EmptyArgumentException") {
+    given pool: PgConnectionPool = pgPool
+
+    val result = {
+      for {
+        _ <- Sql.statement(ddl)
+        n <- Sql.prepareUpdate(ins, Seq.empty*)
+      } yield n
+    }.executePool
+
+    assert(result.isFailure)
+    assert(
+      result.toEither.left
+        .exists(_.isInstanceOf[PiggyException.EmptyArgumentException])
+    )
+    assert(
+      result.toEither.left
+        .exists(
+          _.getMessage.contains("PreparedUpdate requires at least one argument")
+        )
+    )
+  }
+
+  test("Empty arguments - prepareQuery throws EmptyArgumentException") {
+    given pool: PgConnectionPool = pgPool
+
+    val result = {
+      for {
+        _      <- Sql.statement(ddl)
+        people <- Sql.prepareQuery[String, Person](find, Seq.empty*)
+      } yield people
+    }.executePool
+
+    assert(result.isFailure)
+    assert(
+      result.toEither.left
+        .exists(_.isInstanceOf[PiggyException.EmptyArgumentException])
+    )
+    assert(
+      result.toEither.left
+        .exists(
+          _.getMessage.contains("PreparedQuery requires at least one argument")
+        )
+    )
+  }
+
+  test("Empty arguments - prepare throws EmptyArgumentException") {
+    given pool: PgConnectionPool = pgPool
+
+    val exec = (p: Person) =>
+      ps"INSERT INTO person (name, age) VALUES (${p.name}, ${p.age})"
+
+    val result = {
+      for {
+        _ <- Sql.statement(ddl)
+        _ <- Sql.prepare(exec, Seq.empty*)
+      } yield ()
+    }.executePool
+
+    assert(result.isFailure)
+    assert(
+      result.toEither.left
+        .exists(_.isInstanceOf[PiggyException.EmptyArgumentException])
+    )
+    assert(
+      result.toEither.left
+        .exists(
+          _.getMessage.contains("PreparedExec requires at least one argument")
+        )
+    )
+  }
+
+  test("java.time.LocalDate - insert and query") {
+    given pool: PgConnectionPool = pgPool
+
+    val ddlWithDate = """
+      CREATE TABLE IF NOT EXISTS events (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        event_date DATE NOT NULL
+      )
+    """
+
+    case class Event(id: Int, name: String, eventDate: LocalDate)
+        derives ResultSetParser
+
+    val testDate = LocalDate.of(2025, 10, 11)
+
+    val result = {
+      for {
+        _      <- Sql.statement(ddlWithDate)
+        _      <- Sql.statement("truncate table events")
+        n      <-
+          psUpdate"INSERT INTO events (name, event_date) VALUES (${"Conference"}, ${testDate})"
+        events <- Sql.statement(
+                    "SELECT * FROM events WHERE name = 'Conference'",
+                    _.parsedList[Event]
+                  )
+      } yield (n, events)
+    }.executePool
+
+    assert(result.isSuccess)
+    assertEquals(result.get._1, 1)
+    assertEquals(result.get._2.size, 1)
+    assertEquals(result.get._2.head.eventDate, testDate)
+  }
+
+  test("java.time.LocalDateTime - insert and query") {
+    given pool: PgConnectionPool = pgPool
+
+    val ddlWithTimestamp = """
+      CREATE TABLE IF NOT EXISTS log_entries (
+        id SERIAL PRIMARY KEY,
+        message TEXT NOT NULL,
+        logged_at TIMESTAMP NOT NULL
+      )
+    """
+
+    case class LogEntry(id: Int, message: String, loggedAt: LocalDateTime)
+        derives ResultSetParser
+
+    val testDateTime = LocalDateTime.of(2025, 10, 11, 14, 30, 45)
+
+    val result = {
+      for {
+        _       <- Sql.statement(ddlWithTimestamp)
+        _       <- Sql.statement("truncate table log_entries")
+        n       <-
+          psUpdate"INSERT INTO log_entries (message, logged_at) VALUES (${"Test log"}, ${testDateTime})"
+        entries <-
+          Sql.statement(
+            "SELECT * FROM log_entries WHERE message = 'Test log'",
+            _.parsedList[LogEntry]
+          )
+      } yield (n, entries)
+    }.executePool
+
+    assert(result.isSuccess)
+    assertEquals(result.get._1, 1)
+    assertEquals(result.get._2.size, 1)
+    assertEquals(result.get._2.head.loggedAt, testDateTime)
+  }
+
+  test("java.time.ZonedDateTime - insert and query") {
+    given pool: PgConnectionPool = pgPool
+
+    val ddlWithTimestamp = """
+      CREATE TABLE IF NOT EXISTS scheduled_tasks (
+        id SERIAL PRIMARY KEY,
+        task_name TEXT NOT NULL,
+        scheduled_at TIMESTAMP NOT NULL
+      )
+    """
+
+    case class ScheduledTask(
+        id: Int,
+        taskName: String,
+        scheduledAt: ZonedDateTime
+    ) derives ResultSetParser
+
+    val testZonedDateTime =
+      ZonedDateTime.of(2025, 10, 11, 14, 30, 45, 0, ZoneId.systemDefault())
+
+    val result = {
+      for {
+        _     <- Sql.statement(ddlWithTimestamp)
+        _     <- Sql.statement("truncate table scheduled_tasks")
+        n     <-
+          psUpdate"INSERT INTO scheduled_tasks (task_name, scheduled_at) VALUES (${"Daily backup"}, ${testZonedDateTime})"
+        tasks <-
+          Sql.statement(
+            "SELECT * FROM scheduled_tasks WHERE task_name = 'Daily backup'",
+            _.parsedList[ScheduledTask]
+          )
+      } yield (n, tasks)
+    }.executePool
+
+    assert(result.isSuccess)
+    assertEquals(result.get._1, 1)
+    assertEquals(result.get._2.size, 1)
+    // Compare instants since ZonedDateTime might differ in zone representation
+    assertEquals(
+      result.get._2.head.scheduledAt.toInstant,
+      testZonedDateTime.toInstant
+    )
+  }
+
+  test("java.time types - batch insert with mixed dates") {
+    given pool: PgConnectionPool = pgPool
+
+    val ddlWithDates = """
+      CREATE TABLE IF NOT EXISTS appointments (
+        id SERIAL PRIMARY KEY,
+        title TEXT NOT NULL,
+        appointment_date DATE NOT NULL,
+        created_at TIMESTAMP NOT NULL
+      )
+    """
+
+    case class Appointment(
+        id: Int,
+        title: String,
+        appointmentDate: LocalDate,
+        createdAt: LocalDateTime
+    ) derives ResultSetParser
+
+    val insertAppointment = (a: Appointment) =>
+      ps"INSERT INTO appointments (title, appointment_date, created_at) VALUES (${a.title}, ${a.appointmentDate}, ${a.createdAt})"
+
+    val testAppointments = Seq(
+      Appointment(
+        0,
+        "Meeting 1",
+        LocalDate.of(2025, 10, 12),
+        LocalDateTime.of(2025, 10, 11, 10, 0)
+      ),
+      Appointment(
+        0,
+        "Meeting 2",
+        LocalDate.of(2025, 10, 13),
+        LocalDateTime.of(2025, 10, 11, 11, 0)
+      ),
+      Appointment(
+        0,
+        "Meeting 3",
+        LocalDate.of(2025, 10, 14),
+        LocalDateTime.of(2025, 10, 11, 12, 0)
+      )
+    )
+
+    val result = {
+      for {
+        _            <- Sql.statement(ddlWithDates)
+        _            <- Sql.statement("truncate table appointments")
+        n            <- Sql.prepareUpdate(insertAppointment, testAppointments*)
+        appointments <-
+          Sql.statement(
+            "SELECT * FROM appointments ORDER BY appointment_date",
+            _.parsedList[Appointment]
+          )
+      } yield (n, appointments)
+    }.executePool
+
+    assert(result.isSuccess)
+    assertEquals(result.get._1, 3)
+    assertEquals(result.get._2.size, 3)
+    assertEquals(
+      result.get._2.head.appointmentDate,
+      LocalDate.of(2025, 10, 12)
+    )
+    assertEquals(
+      result.get._2(1).appointmentDate,
+      LocalDate.of(2025, 10, 13)
+    )
+    assertEquals(
+      result.get._2(2).appointmentDate,
+      LocalDate.of(2025, 10, 14)
+    )
+  }
+
+  test("java.time types with Option - nullable timestamps") {
+    given pool: PgConnectionPool = pgPool
+
+    val ddlWithNullableTimestamp = """
+      CREATE TABLE IF NOT EXISTS tasks (
+        id SERIAL PRIMARY KEY,
+        title TEXT NOT NULL,
+        due_date DATE,
+        completed_at TIMESTAMP
+      )
+    """
+
+    case class Task(
+        id: Int,
+        title: String,
+        dueDate: Option[LocalDate],
+        completedAt: Option[LocalDateTime]
+    ) derives ResultSetParser
+
+    val insertTask = (t: Task) =>
+      ps"INSERT INTO tasks (title, due_date, completed_at) VALUES (${t.title}, ${t.dueDate}, ${t.completedAt})"
+
+    val testTasks = Seq(
+      Task(
+        0,
+        "Task 1",
+        Some(LocalDate.of(2025, 10, 15)),
+        Some(LocalDateTime.of(2025, 10, 11, 15, 0))
+      ),
+      Task(0, "Task 2", Some(LocalDate.of(2025, 10, 16)), None),
+      Task(0, "Task 3", None, None)
+    )
+
+    val setup = {
+      for {
+        _ <- Sql.statement(ddlWithNullableTimestamp)
+        _ <- Sql.statement("DROP TABLE IF EXISTS tasks CASCADE")
+        _ <- Sql.statement(ddlWithNullableTimestamp)
+      } yield ()
+    }.executePool
+
+    assert(setup.isSuccess)
+
+    val result = {
+      for {
+        n     <- Sql.prepareUpdate(insertTask, testTasks*)
+        tasks <- Sql.statement(
+                   "SELECT * FROM tasks ORDER BY title",
+                   _.parsedList[Task]
+                 )
+      } yield (n, tasks)
+    }.executePool
+
+    assert(result.isSuccess, s"Result failed: ${result}")
+    assertEquals(result.get._1, 3)
+    assertEquals(result.get._2.size, 3)
+    assertEquals(result.get._2(0).dueDate, Some(LocalDate.of(2025, 10, 15)))
+    assertEquals(
+      result.get._2(0).completedAt,
+      Some(LocalDateTime.of(2025, 10, 11, 15, 0))
+    )
+    assertEquals(result.get._2(1).dueDate, Some(LocalDate.of(2025, 10, 16)))
+    assertEquals(result.get._2(1).completedAt, None)
+    assertEquals(result.get._2(2).dueDate, None)
+    assertEquals(result.get._2(2).completedAt, None)
   }
 
 }
