@@ -51,7 +51,7 @@ object Components {
       currentValue: String,
       changeEvent: String,
       placeholder: Option[String] = None,
-      extraAttrs: Attr*
+      extraAttrs: Seq[Attr] = Seq.empty
   ): Html = {
     val baseAttrs = List(
       Attributes.tpe := "text",
@@ -85,7 +85,7 @@ object Components {
       currentValue: String,
       changeEvent: String,
       placeholder: Option[String] = None,
-      extraAttrs: Attr*
+      extraAttrs: Seq[Attr] = Seq.empty
   ): Html = {
     val baseAttrs = List(
       Attributes.tpe := "email",
@@ -119,7 +119,7 @@ object Components {
       currentValue: String,
       changeEvent: String,
       placeholder: Option[String] = None,
-      extraAttrs: Attr*
+      extraAttrs: Seq[Attr] = Seq.empty
   ): Html = {
     val baseAttrs = List(
       Attributes.tpe := "password",
@@ -159,7 +159,7 @@ object Components {
       min: Option[Int] = None,
       max: Option[Int] = None,
       step: Option[Int] = None,
-      extraAttrs: Attr*
+      extraAttrs: Seq[Attr] = Seq.empty
   ): Html = {
     val baseAttrs = List(
       Attributes.tpe := "number",
@@ -201,7 +201,7 @@ object Components {
       changeEvent: String,
       rows: Int = 3,
       placeholder: Option[String] = None,
-      extraAttrs: Attr*
+      extraAttrs: Seq[Attr] = Seq.empty
   ): Html = {
     val baseAttrs = List(
       Attributes.name := name,
@@ -234,7 +234,7 @@ object Components {
       isChecked: Boolean,
       clickEvent: String,
       labelText: Option[String] = None,
-      extraAttrs: Attr*
+      extraAttrs: Seq[Attr] = Seq.empty
   ): Html = {
     val checkboxAttrs = List(
       Attributes.tpe := "checkbox",
@@ -279,7 +279,7 @@ object Components {
       isSelected: Boolean,
       clickEvent: String,
       labelText: Option[String] = None,
-      extraAttrs: Attr*
+      extraAttrs: Seq[Attr] = Seq.empty
   ): Html = {
     val radioId = s"$name-$value"
     val radioAttrs = List(
@@ -323,7 +323,7 @@ object Components {
       options: List[(String, String)],
       selectedValue: String,
       changeEvent: String,
-      extraAttrs: Attr*
+      extraAttrs: Seq[Attr] = Seq.empty
   ): Html = {
     val selectAttrs = List(
       Attributes.name := name,
@@ -352,7 +352,7 @@ object Components {
     * @param extraAttrs
     *   Additional attributes to add
     */
-  def submitButton(label: String, extraAttrs: Attr*): Html = {
+  def submitButton(label: String, extraAttrs: Seq[Attr] = Seq.empty): Html = {
     val attrs = List(
       Attributes.tpe := "submit"
     ) ++ extraAttrs
@@ -369,7 +369,7 @@ object Components {
     * @param extraAttrs
     *   Additional attributes to add
     */
-  def clickButton(label: String, clickEvent: String, extraAttrs: Attr*): Html = {
+  def clickButton(label: String, clickEvent: String, extraAttrs: Seq[Attr] = Seq.empty): Html = {
     val attrs = List(
       Attributes.tpe := "button",
       WebViewAttributes.wvClick := clickEvent
@@ -395,7 +395,7 @@ object Components {
       label: String,
       clickEvent: String,
       targetValue: String,
-      extraAttrs: Attr*
+      extraAttrs: Seq[Attr] = Seq.empty
   ): Html = {
     val attrs = List(
       Attributes.tpe := "button",
@@ -426,7 +426,7 @@ object Components {
       items: List[A],
       renderItem: (A, Int) => Html,
       containerTag: String = "div",
-      containerAttrs: Attr*
+      containerAttrs: Seq[Attr] = Seq.empty
   ): Html = {
     val children = items.zipWithIndex.map { case (item, index) =>
       renderItem(item, index)
@@ -447,7 +447,7 @@ object Components {
   def unorderedList[A](
       items: List[A],
       renderItem: A => Html,
-      extraAttrs: Attr*
+      extraAttrs: Seq[Attr] = Seq.empty
   ): Html = {
     val liElements = items.map { item =>
       Element("li", Nil, List(renderItem(item)))
@@ -468,7 +468,7 @@ object Components {
   def orderedList[A](
       items: List[A],
       renderItem: A => Html,
-      extraAttrs: Attr*
+      extraAttrs: Seq[Attr] = Seq.empty
   ): Html = {
     val liElements = items.map { item =>
       Element("li", Nil, List(renderItem(item)))
@@ -492,7 +492,7 @@ object Components {
     */
   def container(
       children: Html*
-  )(maxWidth: Option[String] = None, padding: Option[String] = None, extraAttrs: Attr*): Html = {
+  )(maxWidth: Option[String] = None, padding: Option[String] = None, extraAttrs: Seq[Attr] = Seq.empty): Html = {
     val styleProps = List(
       maxWidth.map("max-width" -> _),
       padding.map("padding" -> _),
@@ -530,7 +530,7 @@ object Components {
       gap: Option[String] = None,
       justifyContent: Option[String] = None,
       alignItems: Option[String] = None,
-      extraAttrs: Attr*
+      extraAttrs: Seq[Attr] = Seq.empty
   ): Html = {
     val styleProps = List(
       Some("display" -> "flex"),
