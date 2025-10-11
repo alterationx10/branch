@@ -20,12 +20,12 @@ _Branch_ is made up of a collection of modules, each focusing on different parts
 
 - **[Lzy](/lzy)** - Lazy Futures or Tiny Effects?
 - **[Spider](/spider)** - A wrapper/framework around the Java HttpServer, as well as
-  HttpClient helpers
+  HttpClient helpers and a Web Socket Server implementation
 - **[Piggy](/piggy)** - A SQL framework around java.sql
 - **[Friday](/friday)** - A JSON library, because Scala doesn't already have enough
 - **[Macaroni](/macaroni)** - Some reusable helpers and meta-programming utilities
 - **[Veil](/veil)** - `.env` / (JSON based) Config utilities
-- **[Blammo](/blammo)** - It's better than bad, it's (JSON) logging!
+- **[Blammo](/blammo)** - It's better than bad, it's (JSON) logging! (And Metrics! And Tracing!)
 - **[Keanu](/keanu)** - A simple _typed_ EventBus implementation, and a mediocre _untyped_ ActorSystem
 - **[Ursula](/ursula)** - A slim CLI framework
 - **[Mustachio](/mustachio)** - A Mustache template engine, great for HTML templating
