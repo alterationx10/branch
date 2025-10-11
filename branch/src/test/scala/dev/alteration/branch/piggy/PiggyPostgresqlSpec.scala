@@ -868,7 +868,7 @@ class PiggyPostgresqlSpec extends PGContainerSuite {
     val insertUser = (u: User) =>
       ps"INSERT INTO users (username, external_id) VALUES (${u.username}, ${u.externalId})"
 
-    val testUuid = UUID.randomUUID()
+    val testUuid  = UUID.randomUUID()
     val testUsers = Seq(
       User(0, "user1", Some(testUuid)),
       User(0, "user2", None),
@@ -877,10 +877,10 @@ class PiggyPostgresqlSpec extends PGContainerSuite {
 
     val result = {
       for {
-        _ <- Sql.statement(ddlWithUuid)
-        _ <- Sql.statement("DROP TABLE IF EXISTS users CASCADE")
-        _ <- Sql.statement(ddlWithUuid)
-        n <- Sql.prepareUpdate(insertUser, testUsers*)
+        _     <- Sql.statement(ddlWithUuid)
+        _     <- Sql.statement("DROP TABLE IF EXISTS users CASCADE")
+        _     <- Sql.statement(ddlWithUuid)
+        n     <- Sql.prepareUpdate(insertUser, testUsers*)
         users <- Sql.statement(
                    "SELECT * FROM users ORDER BY username",
                    _.parsedList[User]
@@ -925,10 +925,10 @@ class PiggyPostgresqlSpec extends PGContainerSuite {
 
     val result = {
       for {
-        _ <- Sql.statement(ddlWithInstant)
-        _ <- Sql.statement("DROP TABLE IF EXISTS audit_log CASCADE")
-        _ <- Sql.statement(ddlWithInstant)
-        n <- Sql.prepareUpdate(insertEntry, testEntries*)
+        _       <- Sql.statement(ddlWithInstant)
+        _       <- Sql.statement("DROP TABLE IF EXISTS audit_log CASCADE")
+        _       <- Sql.statement(ddlWithInstant)
+        n       <- Sql.prepareUpdate(insertEntry, testEntries*)
         entries <- Sql.statement(
                      "SELECT * FROM audit_log ORDER BY action",
                      _.parsedList[AuditEntry]
@@ -970,7 +970,7 @@ class PiggyPostgresqlSpec extends PGContainerSuite {
     val insertNumber = (n: LargeNumber) =>
       ps"INSERT INTO large_numbers (label, huge_value) VALUES (${n.label}, ${n.hugeValue})"
 
-    val testBigInt = new java.math.BigInteger("123456789012345678901234567890")
+    val testBigInt  = new java.math.BigInteger("123456789012345678901234567890")
     val testNumbers = Seq(
       LargeNumber(0, "num1", Some(testBigInt)),
       LargeNumber(0, "num2", None),
@@ -983,10 +983,10 @@ class PiggyPostgresqlSpec extends PGContainerSuite {
 
     val result = {
       for {
-        _ <- Sql.statement(ddlWithBigInt)
-        _ <- Sql.statement("DROP TABLE IF EXISTS large_numbers CASCADE")
-        _ <- Sql.statement(ddlWithBigInt)
-        n <- Sql.prepareUpdate(insertNumber, testNumbers*)
+        _       <- Sql.statement(ddlWithBigInt)
+        _       <- Sql.statement("DROP TABLE IF EXISTS large_numbers CASCADE")
+        _       <- Sql.statement(ddlWithBigInt)
+        n       <- Sql.prepareUpdate(insertNumber, testNumbers*)
         numbers <- Sql.statement(
                      "SELECT * FROM large_numbers ORDER BY label",
                      _.parsedList[LargeNumber]
