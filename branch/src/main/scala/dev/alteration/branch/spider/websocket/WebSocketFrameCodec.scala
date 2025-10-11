@@ -1,6 +1,6 @@
 package dev.alteration.branch.spider.websocket
 
-import java.io.{DataInputStream, IOException, InputStream}
+import java.io.{DataInputStream, InputStream, IOException}
 import java.nio.ByteBuffer
 import scala.util.Try
 
@@ -30,7 +30,7 @@ object WebSocketFrameCodec {
 
     if (payloadLength < 126) {
       buffer += (maskBit | payloadLength).toByte
-    } else if (payloadLength <= 0xFFFF) {
+    } else if (payloadLength <= 0xffff) {
       buffer += (maskBit | 126).toByte
       // Extended payload length (16 bits)
       buffer += (payloadLength >> 8).toByte
@@ -38,7 +38,8 @@ object WebSocketFrameCodec {
     } else {
       buffer += (maskBit | 127).toByte
       // Extended payload length (64 bits)
-      val longBytes = ByteBuffer.allocate(8).putLong(payloadLength.toLong).array()
+      val longBytes =
+        ByteBuffer.allocate(8).putLong(payloadLength.toLong).array()
       buffer ++= longBytes
     }
 
@@ -72,10 +73,10 @@ object WebSocketFrameCodec {
 
     Try {
       // Read byte 0: FIN + RSV + OpCode
-      val byte0     = dis.readByte()
-      val fin       = (byte0 & 0x80) != 0
-      val rsv       = (byte0 & 0x70) >> 4
-      val opCodeByte = (byte0 & 0x0F).toByte
+      val byte0      = dis.readByte()
+      val fin        = (byte0 & 0x80) != 0
+      val rsv        = (byte0 & 0x70) >> 4
+      val opCodeByte = (byte0 & 0x0f).toByte
 
       // Validate RSV bits (must be 0 unless extensions are negotiated)
       if (rsv != 0) {
@@ -90,21 +91,23 @@ object WebSocketFrameCodec {
       // Read byte 1: MASK + Payload Length
       val byte1       = dis.readByte()
       val masked      = (byte1 & 0x80) != 0
-      val payloadLen7 = byte1 & 0x7F
+      val payloadLen7 = byte1 & 0x7f
 
       // Determine actual payload length
       val payloadLength: Long = payloadLen7 match {
         case len if len < 126 =>
           len.toLong
-        case 126 =>
+        case 126              =>
           // Read 16-bit extended payload length
           val len16 = dis.readUnsignedShort()
           len16.toLong
-        case 127 =>
+        case 127              =>
           // Read 64-bit extended payload length
           dis.readLong()
-        case _ =>
-          throw new IOException(s"Invalid payload length indicator: $payloadLen7")
+        case _                =>
+          throw new IOException(
+            s"Invalid payload length indicator: $payloadLen7"
+          )
       }
 
       // Validate payload length

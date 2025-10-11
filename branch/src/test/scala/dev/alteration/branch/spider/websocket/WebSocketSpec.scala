@@ -7,17 +7,20 @@ import scala.util.{Failure, Success}
 class WebSocketSpec extends FunSuite {
 
   test("WebSocketOpCode.fromByte should parse valid opcodes") {
-    assertEquals(WebSocketOpCode.fromByte(0x0), Some(WebSocketOpCode.Continuation))
+    assertEquals(
+      WebSocketOpCode.fromByte(0x0),
+      Some(WebSocketOpCode.Continuation)
+    )
     assertEquals(WebSocketOpCode.fromByte(0x1), Some(WebSocketOpCode.Text))
     assertEquals(WebSocketOpCode.fromByte(0x2), Some(WebSocketOpCode.Binary))
     assertEquals(WebSocketOpCode.fromByte(0x8), Some(WebSocketOpCode.Close))
     assertEquals(WebSocketOpCode.fromByte(0x9), Some(WebSocketOpCode.Ping))
-    assertEquals(WebSocketOpCode.fromByte(0xA), Some(WebSocketOpCode.Pong))
+    assertEquals(WebSocketOpCode.fromByte(0xa), Some(WebSocketOpCode.Pong))
   }
 
   test("WebSocketOpCode.fromByte should return None for invalid opcodes") {
     assertEquals(WebSocketOpCode.fromByte(0x3), None)
-    assertEquals(WebSocketOpCode.fromByte(0xF), None)
+    assertEquals(WebSocketOpCode.fromByte(0xf), None)
   }
 
   test("WebSocketOpCode.isControl should identify control frames") {
@@ -54,9 +57,9 @@ class WebSocketSpec extends FunSuite {
     assertEquals(frame.opCode, WebSocketOpCode.Close)
 
     // Verify payload contains status code
-    val payload = frame.payload
+    val payload    = frame.payload
     assert(payload.length >= 2)
-    val statusCode = ((payload(0) & 0xFF) << 8) | (payload(1) & 0xFF)
+    val statusCode = ((payload(0) & 0xff) << 8) | (payload(1) & 0xff)
     assertEquals(statusCode, 1000)
 
     val reason = new String(payload.drop(2), "UTF-8")
@@ -97,7 +100,7 @@ class WebSocketSpec extends FunSuite {
 
   test("WebSocketFrameCodec should encode and decode a masked frame") {
     val maskingKey = Array[Byte](0x12, 0x34, 0x56, 0x78)
-    val original = WebSocketFrame(
+    val original   = WebSocketFrame(
       fin = true,
       opCode = WebSocketOpCode.Text,
       masked = true,
@@ -135,8 +138,10 @@ class WebSocketSpec extends FunSuite {
     }
   }
 
-  test("WebSocketFrameCodec should reject control frames with payload > 125 bytes") {
-    val longPayload = new Array[Byte](126)
+  test(
+    "WebSocketFrameCodec should reject control frames with payload > 125 bytes"
+  ) {
+    val longPayload  = new Array[Byte](126)
     val invalidFrame = WebSocketFrame(
       fin = true,
       opCode = WebSocketOpCode.Ping,
@@ -174,11 +179,15 @@ class WebSocketSpec extends FunSuite {
         fail("Should have rejected fragmented control frame")
 
       case Failure(error) =>
-        assert(error.getMessage.contains("Control frames must not be fragmented"))
+        assert(
+          error.getMessage.contains("Control frames must not be fragmented")
+        )
     }
   }
 
-  test("WebSocketHandshake.computeAcceptKey should compute correct accept key") {
+  test(
+    "WebSocketHandshake.computeAcceptKey should compute correct accept key"
+  ) {
     // Example from RFC 6455
     val clientKey = "dGhlIHNhbXBsZSBub25jZQ=="
     val expected  = "s3pPLMBiTxaQ9kYGzzhZRbK+xOo="
@@ -188,10 +197,10 @@ class WebSocketSpec extends FunSuite {
 
   test("WebSocketHandshake.validateHandshake should accept valid handshake") {
     val headers = Map(
-      "Upgrade"                -> List("websocket"),
-      "Connection"             -> List("Upgrade"),
-      "Sec-WebSocket-Key"      -> List("dGhlIHNhbXBsZSBub25jZQ=="),
-      "Sec-WebSocket-Version"  -> List("13")
+      "Upgrade"               -> List("websocket"),
+      "Connection"            -> List("Upgrade"),
+      "Sec-WebSocket-Key"     -> List("dGhlIHNhbXBsZSBub25jZQ=="),
+      "Sec-WebSocket-Version" -> List("13")
     )
 
     WebSocketHandshake.validateHandshake(headers) match {
@@ -203,7 +212,9 @@ class WebSocketSpec extends FunSuite {
     }
   }
 
-  test("WebSocketHandshake.validateHandshake should reject missing Upgrade header") {
+  test(
+    "WebSocketHandshake.validateHandshake should reject missing Upgrade header"
+  ) {
     val headers = Map(
       "Connection"            -> List("Upgrade"),
       "Sec-WebSocket-Key"     -> List("dGhlIHNhbXBsZSBub25jZQ=="),
@@ -219,7 +230,9 @@ class WebSocketSpec extends FunSuite {
     }
   }
 
-  test("WebSocketHandshake.validateHandshake should reject invalid Upgrade header") {
+  test(
+    "WebSocketHandshake.validateHandshake should reject invalid Upgrade header"
+  ) {
     val headers = Map(
       "Upgrade"               -> List("http"),
       "Connection"            -> List("Upgrade"),
@@ -236,7 +249,9 @@ class WebSocketSpec extends FunSuite {
     }
   }
 
-  test("WebSocketHandshake.validateHandshake should reject unsupported version") {
+  test(
+    "WebSocketHandshake.validateHandshake should reject unsupported version"
+  ) {
     val headers = Map(
       "Upgrade"               -> List("websocket"),
       "Connection"            -> List("Upgrade"),
@@ -255,10 +270,10 @@ class WebSocketSpec extends FunSuite {
 
   test("WebSocketHandshake.validateHandshake should be case-insensitive") {
     val headers = Map(
-      "upgrade"                -> List("WebSocket"),
-      "connection"             -> List("upgrade"),
-      "sec-websocket-key"      -> List("dGhlIHNhbXBsZSBub25jZQ=="),
-      "sec-websocket-version"  -> List("13")
+      "upgrade"               -> List("WebSocket"),
+      "connection"            -> List("upgrade"),
+      "sec-websocket-key"     -> List("dGhlIHNhbXBsZSBub25jZQ=="),
+      "sec-websocket-version" -> List("13")
     )
 
     WebSocketHandshake.validateHandshake(headers) match {

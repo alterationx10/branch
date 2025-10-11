@@ -54,7 +54,8 @@ object Veil {
           .filterNot(line => line.isEmpty || line.startsWith("#"))
           .flatMap { str =>
             str.split("=", 2).toList match {
-              case key :: value :: Nil => Some(key.trim -> stripQuotes(value.trim))
+              case key :: value :: Nil =>
+                Some(key.trim -> stripQuotes(value.trim))
               case key :: Nil          => Some(key.trim -> "")
               case _                   => None
             }
