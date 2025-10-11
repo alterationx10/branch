@@ -93,4 +93,17 @@ object PreparedStatementSetter {
       ps.setByte(index, value)
   }
 
+  /** A PreparedStatementSetter for Option[A] that handles NULL.
+    * Sets NULL if None, otherwise sets the value using the underlying setter.
+    */
+  given [A](using
+      setter: PreparedStatementSetter[A]
+  ): PreparedStatementSetter[Option[A]] with {
+    def set(ps: PreparedStatement)(index: Int)(value: Option[A]): Unit =
+      value match {
+        case Some(v) => setter.set(ps)(index)(v)
+        case None    => ps.setObject(index, null)
+      }
+  }
+
 }

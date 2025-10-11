@@ -140,7 +140,9 @@ object Sql {
       psArgs: PreparedStatementArg*
   ) {
 
-    private def set(preparedStatement: PreparedStatement): Unit = {
+    /** Set the arguments on the given PreparedStatement.
+      */
+    def set(preparedStatement: PreparedStatement): Unit = {
       psArgs.zipWithIndex.foreach { case (arg, i) =>
         arg.set(preparedStatement, i + 1)
       }

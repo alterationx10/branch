@@ -95,59 +95,70 @@ object SqlRuntime extends SqlRuntime {
           statement.execute(sql)
           val rs        = use(statement.getResultSet)
           fn(rs)
+        }.recoverWith { case e: Throwable =>
+          Failure(PiggyException.SqlExecutionException(sql, e))
         }
       case Sql.StatementCount(sql)              =>
         Using.Manager { use =>
           val statement = use(connection.createStatement())
           statement.execute(sql)
           statement.getUpdateCount
+        }.recoverWith { case e: Throwable =>
+          Failure(PiggyException.SqlExecutionException(sql, e))
         }
       case Sql.PreparedExec(sqlFn, args)        =>
         if (args.isEmpty) {
-          Failure(
-            new IllegalArgumentException(
-              "PreparedExec requires at least one argument"
-            )
-          )
+          Failure(PiggyException.EmptyArgumentException("PreparedExec"))
         } else {
+          val helpers = args.map(sqlFn)
+          val sql     = helpers.head.psStr
           Using.Manager { use =>
-            val helpers               = args.map(sqlFn)
-            val ps: PreparedStatement =
-              use(connection.prepareStatement(helpers.head.psStr))
-            helpers.foreach(_.setAndExecute(ps))
+            val ps: PreparedStatement = use(connection.prepareStatement(sql))
+            helpers.foreach { h =>
+              h.set(ps)
+              ps.addBatch()
+            }
+            ps.executeBatch()
+            () // Return Unit
+          }.recoverWith { case e: Throwable =>
+            Failure(PiggyException.BatchExecutionException(sql, args.size, e))
           }
         }
       case Sql.PreparedUpdate(sqlFn, args)      =>
         if (args.isEmpty) {
-          Failure(
-            new IllegalArgumentException(
-              "PreparedUpdate requires at least one argument"
-            )
-          )
+          Failure(PiggyException.EmptyArgumentException("PreparedUpdate"))
         } else {
+          val helpers = args.map(sqlFn)
+          val sql     = helpers.head.psStr
           Using.Manager { use =>
-            val helpers               = args.map(sqlFn)
-            val ps: PreparedStatement =
-              use(connection.prepareStatement(helpers.head.psStr))
-            val counts: Seq[Int]      = helpers.map(_.setAndExecuteUpdate(ps))
-            counts.foldLeft(0)(_ + _)
+            val ps: PreparedStatement = use(connection.prepareStatement(sql))
+            helpers.foreach { h =>
+              h.set(ps)
+              ps.addBatch()
+            }
+            val counts: Array[Int]    = ps.executeBatch()
+            counts.sum
+          }.recoverWith { case e: Throwable =>
+            Failure(PiggyException.BatchExecutionException(sql, args.size, e))
           }
         }
       case Sql.PreparedQuery(sqlFn, rsFn, args) =>
         if (args.isEmpty) {
-          Failure(
-            new IllegalArgumentException(
-              "PreparedQuery requires at least one argument"
-            )
-          )
+          Failure(PiggyException.EmptyArgumentException("PreparedQuery"))
         } else {
+          val helpers = args.map(sqlFn)
+          val sql     = helpers.head.psStr
           Using.Manager { use =>
-            val helpers               = args.map(sqlFn)
-            val ps: PreparedStatement =
-              use(connection.prepareStatement(helpers.head.psStr))
+            val ps: PreparedStatement = use(connection.prepareStatement(sql))
             helpers.flatMap { h =>
-              rsFn(h.setAndExecuteQuery(ps))
+              Using.resource(h.setAndExecuteQuery(ps)) { rs =>
+                rsFn(rs)
+              }
             }
+          }.recoverWith { case e: Throwable =>
+            Failure(
+              PiggyException.PreparedStatementException(sql, helpers.size, e)
+            )
           }
         }
       case Sql.Fail(e)                          =>

@@ -172,4 +172,14 @@ object ResultSetGetter {
     }
   }
 
+  /** `ResultSetGetter` instance for `Option[A]` values that handles NULL.
+    * Returns None if the column is NULL, otherwise Some(value).
+    */
+  given [A](using getter: ResultSetGetter[A]): ResultSetGetter[Option[A]] with {
+    override def get(rs: ResultSet, col: String | Int): Option[A] = {
+      val value = getter.get(rs, col)
+      if (rs.wasNull()) None else Some(value)
+    }
+  }
+
 }
