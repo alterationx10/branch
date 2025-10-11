@@ -851,4 +851,159 @@ class PiggyPostgresqlSpec extends PGContainerSuite {
     assertEquals(result.get._2(2).completedAt, None)
   }
 
+  test("Option[UUID] - nullable UUID column") {
+    given pool: PgConnectionPool = pgPool
+
+    val ddlWithUuid = """
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        username TEXT NOT NULL,
+        external_id UUID
+      )
+    """
+
+    case class User(id: Int, username: String, externalId: Option[UUID])
+        derives ResultSetParser
+
+    val insertUser = (u: User) =>
+      ps"INSERT INTO users (username, external_id) VALUES (${u.username}, ${u.externalId})"
+
+    val testUuid = UUID.randomUUID()
+    val testUsers = Seq(
+      User(0, "user1", Some(testUuid)),
+      User(0, "user2", None),
+      User(0, "user3", Some(UUID.randomUUID()))
+    )
+
+    val result = {
+      for {
+        _ <- Sql.statement(ddlWithUuid)
+        _ <- Sql.statement("DROP TABLE IF EXISTS users CASCADE")
+        _ <- Sql.statement(ddlWithUuid)
+        n <- Sql.prepareUpdate(insertUser, testUsers*)
+        users <- Sql.statement(
+                   "SELECT * FROM users ORDER BY username",
+                   _.parsedList[User]
+                 )
+      } yield (n, users)
+    }.executePool
+
+    assert(result.isSuccess, s"Result failed: ${result}")
+    assertEquals(result.get._1, 3)
+    assertEquals(result.get._2.size, 3)
+    assertEquals(result.get._2(0).externalId, Some(testUuid))
+    assertEquals(result.get._2(1).externalId, None)
+    assert(result.get._2(2).externalId.isDefined)
+  }
+
+  test("Option[Instant] - nullable timestamp column") {
+    given pool: PgConnectionPool = pgPool
+
+    val ddlWithInstant = """
+      CREATE TABLE IF NOT EXISTS audit_log (
+        id SERIAL PRIMARY KEY,
+        action TEXT NOT NULL,
+        performed_at TIMESTAMP
+      )
+    """
+
+    case class AuditEntry(
+        id: Int,
+        action: String,
+        performedAt: Option[Instant]
+    ) derives ResultSetParser
+
+    val insertEntry = (e: AuditEntry) =>
+      ps"INSERT INTO audit_log (action, performed_at) VALUES (${e.action}, ${e.performedAt})"
+
+    val testInstant = Instant.now().minusSeconds(3600)
+    val testEntries = Seq(
+      AuditEntry(0, "login", Some(testInstant)),
+      AuditEntry(0, "logout", None),
+      AuditEntry(0, "update", Some(Instant.now()))
+    )
+
+    val result = {
+      for {
+        _ <- Sql.statement(ddlWithInstant)
+        _ <- Sql.statement("DROP TABLE IF EXISTS audit_log CASCADE")
+        _ <- Sql.statement(ddlWithInstant)
+        n <- Sql.prepareUpdate(insertEntry, testEntries*)
+        entries <- Sql.statement(
+                     "SELECT * FROM audit_log ORDER BY action",
+                     _.parsedList[AuditEntry]
+                   )
+      } yield (n, entries)
+    }.executePool
+
+    assert(result.isSuccess, s"Result failed: ${result}")
+    assertEquals(result.get._1, 3)
+    assertEquals(result.get._2.size, 3)
+    assertEquals(result.get._2(0).action, "login")
+    assertEquals(
+      result.get._2(0).performedAt.map(_.toEpochMilli),
+      Some(testInstant.toEpochMilli)
+    )
+    assertEquals(result.get._2(1).action, "logout")
+    assertEquals(result.get._2(1).performedAt, None)
+    assertEquals(result.get._2(2).action, "update")
+    assert(result.get._2(2).performedAt.isDefined)
+  }
+
+  test("Option[BigInteger] - nullable numeric column") {
+    given pool: PgConnectionPool = pgPool
+
+    val ddlWithBigInt = """
+      CREATE TABLE IF NOT EXISTS large_numbers (
+        id SERIAL PRIMARY KEY,
+        label TEXT NOT NULL,
+        huge_value NUMERIC(50, 0)
+      )
+    """
+
+    case class LargeNumber(
+        id: Int,
+        label: String,
+        hugeValue: Option[java.math.BigInteger]
+    ) derives ResultSetParser
+
+    val insertNumber = (n: LargeNumber) =>
+      ps"INSERT INTO large_numbers (label, huge_value) VALUES (${n.label}, ${n.hugeValue})"
+
+    val testBigInt = new java.math.BigInteger("123456789012345678901234567890")
+    val testNumbers = Seq(
+      LargeNumber(0, "num1", Some(testBigInt)),
+      LargeNumber(0, "num2", None),
+      LargeNumber(
+        0,
+        "num3",
+        Some(new java.math.BigInteger("999999999999999999999999999999"))
+      )
+    )
+
+    val result = {
+      for {
+        _ <- Sql.statement(ddlWithBigInt)
+        _ <- Sql.statement("DROP TABLE IF EXISTS large_numbers CASCADE")
+        _ <- Sql.statement(ddlWithBigInt)
+        n <- Sql.prepareUpdate(insertNumber, testNumbers*)
+        numbers <- Sql.statement(
+                     "SELECT * FROM large_numbers ORDER BY label",
+                     _.parsedList[LargeNumber]
+                   )
+      } yield (n, numbers)
+    }.executePool
+
+    assert(result.isSuccess, s"Result failed: ${result}")
+    assertEquals(result.get._1, 3)
+    assertEquals(result.get._2.size, 3)
+    assertEquals(result.get._2(0).hugeValue, Some(testBigInt))
+    assertEquals(result.get._2(1).hugeValue, None)
+    assert(result.get._2(2).hugeValue.isDefined)
+    assertEquals(
+      result.get._2(2).hugeValue.get,
+      new java.math.BigInteger("999999999999999999999999999999")
+    )
+  }
+
 }

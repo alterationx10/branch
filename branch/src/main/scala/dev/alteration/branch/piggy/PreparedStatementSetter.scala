@@ -43,6 +43,12 @@ object PreparedStatementSetter {
       ps.setString(index, value)
   }
 
+  /** A PreparedStatementSetter for java.util.UUID */
+  given PreparedStatementSetter[java.util.UUID] with {
+    def set(ps: PreparedStatement)(index: Int)(value: java.util.UUID): Unit =
+      ps.setObject(index, value)
+  }
+
   /** A PreparedStatementSetter for Boolean */
   given PreparedStatementSetter[Boolean] with {
     def set(ps: PreparedStatement)(index: Int)(value: Boolean): Unit =

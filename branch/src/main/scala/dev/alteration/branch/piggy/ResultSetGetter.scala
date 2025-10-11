@@ -2,7 +2,6 @@ package dev.alteration.branch.piggy
 
 import java.sql.ResultSet
 import java.util.UUID
-import scala.compiletime.summonInline
 
 /** Trait for getting values from a `ResultSet` by column name or index.
   * @tparam A
@@ -44,9 +43,17 @@ object ResultSetGetter {
     }
   }
 
-  /** `ResultSetGetter` instance for `UUID` values. */
-  inline given ResultSetGetter[UUID] =
-    summonInline[ResultSetGetter[String]].map(UUID.fromString)
+  /** `ResultSetGetter` instance for `UUID` values.
+    */
+  given ResultSetGetter[UUID] with {
+    override def get(rs: ResultSet, col: String | Int): UUID = {
+      val str = col match {
+        case label: String => rs.getString(label)
+        case index: Int    => rs.getString(index)
+      }
+      if (str == null) null else UUID.fromString(str)
+    }
+  }
 
   /** `ResultSetGetter` instance for `Int` values. */
   given ResultSetGetter[Int] with {
@@ -128,9 +135,17 @@ object ResultSetGetter {
     }
   }
 
-  /** `ResultSetGetter` instance for `java.time.Instant` values. */
-  inline given ResultSetGetter[java.time.Instant] =
-    summonInline[ResultSetGetter[java.sql.Timestamp]].map(_.toInstant)
+  /** `ResultSetGetter` instance for `java.time.Instant` values.
+    */
+  given ResultSetGetter[java.time.Instant] with {
+    override def get(rs: ResultSet, col: String | Int): java.time.Instant = {
+      val sqlTimestamp = col match {
+        case label: String => rs.getTimestamp(label)
+        case index: Int    => rs.getTimestamp(index)
+      }
+      if (sqlTimestamp == null) null else sqlTimestamp.toInstant
+    }
+  }
 
   /** `ResultSetGetter` instance for `java.sql.Time` values. */
   given ResultSetGetter[java.sql.Time] with {
@@ -172,9 +187,7 @@ object ResultSetGetter {
     }
   }
 
-  /** `ResultSetGetter` instance for `java.time.LocalDate` values. Note: Returns
-    * null for NULL database values, which works correctly with
-    * Option[LocalDate].
+  /** `ResultSetGetter` instance for `java.time.LocalDate` values.
     */
   given ResultSetGetter[java.time.LocalDate] with {
     override def get(rs: ResultSet, col: String | Int): java.time.LocalDate = {
@@ -186,9 +199,7 @@ object ResultSetGetter {
     }
   }
 
-  /** `ResultSetGetter` instance for `java.time.LocalDateTime` values. Note:
-    * Returns null for NULL database values, which works correctly with
-    * Option[LocalDateTime].
+  /** `ResultSetGetter` instance for `java.time.LocalDateTime` values.
     */
   given ResultSetGetter[java.time.LocalDateTime] with {
     override def get(
@@ -204,8 +215,7 @@ object ResultSetGetter {
   }
 
   /** `ResultSetGetter` instance for `java.time.ZonedDateTime` values. Uses
-    * system default timezone for conversion. Note: Returns null for NULL
-    * database values, which works correctly with Option[ZonedDateTime].
+    * system default timezone for conversion.
     */
   given ResultSetGetter[java.time.ZonedDateTime] with {
     override def get(
@@ -221,13 +231,15 @@ object ResultSetGetter {
     }
   }
 
-  /** `ResultSetGetter` instance for `java.math.BigInteger` values. */
+  /** `ResultSetGetter` instance for `java.math.BigInteger` values.
+    */
   given ResultSetGetter[java.math.BigInteger] with {
     override def get(rs: ResultSet, col: String | Int): java.math.BigInteger = {
-      col match {
-        case label: String => rs.getBigDecimal(label).toBigInteger
-        case index: Int    => rs.getBigDecimal(index).toBigInteger
+      val bigDecimal = col match {
+        case label: String => rs.getBigDecimal(label)
+        case index: Int    => rs.getBigDecimal(index)
       }
+      if (bigDecimal == null) null else bigDecimal.toBigInteger
     }
   }
 
