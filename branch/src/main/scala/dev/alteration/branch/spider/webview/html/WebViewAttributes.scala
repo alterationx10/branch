@@ -16,7 +16,7 @@ import scala.reflect.ClassTag
   * form(wvSubmit := "save")
   * }}}
   *
-  * Example with typed events (Phase 4b):
+  * Example with typed events:
   * {{{
   * sealed trait MyEvent
   * case object Increment extends MyEvent

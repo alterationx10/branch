@@ -7,9 +7,6 @@ import dev.alteration.branch.keanu.actors.ActorSystem
   * A WebView is a stateful, reactive UI component that lives on the server and
   * maintains state while sending updates to connected clients over WebSocket.
   *
-  * This is Branch's answer to Phoenix LiveView - a LiveView-like solution that
-  * provides real-time, stateful web UIs using server-side rendering.
-  *
   * Example:
   * {{{
   * case class CounterView() extends WebView[CounterState]:
@@ -32,7 +29,7 @@ import dev.alteration.branch.keanu.actors.ActorSystem
   *     \"\"\"
   * }}}
   *
-  * Example with typed events (Phase 4b):
+  * Example with typed events:
   * {{{
   * sealed trait CounterEvent derives EventCodec
   * case object Increment extends CounterEvent
@@ -123,7 +120,7 @@ trait WebView[State, Event] {
     */
   def terminate(reason: Option[Throwable], state: State): Unit = {}
 
-  // ===== Lifecycle Hooks (Phoenix LiveView-style) =====
+  // ===== Lifecycle Hooks =====
 
   /** Called immediately after the WebView is mounted with initial state.
     *
