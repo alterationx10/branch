@@ -2,9 +2,10 @@ package dev.alteration.branch.veil
 
 /** An enum representing the level of the runtime environment.
   *
-  * This enum defines three possible runtime environments:
+  * This enum defines four possible runtime environments:
   *   - `DEV`: Development environment
   *   - `TEST`: Testing environment
+  *   - `STAGING`: Staging environment
   *   - `PROD`: Production environment
   */
 enum RuntimeEnv {
@@ -14,6 +15,9 @@ enum RuntimeEnv {
 
   /** Testing environment */
   case TEST
+
+  /** Staging environment */
+  case STAGING
 
   /** Production environment */
   case PROD
