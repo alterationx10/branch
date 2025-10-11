@@ -36,14 +36,26 @@ import scala.concurrent.ExecutionContext.Implicits.global
   *   .start(port = 8080)
   * }}}
   *
+  * == DevMode ==
+  *
+  * {{{
+  * val server = WebViewServer()
+  *   .withDevMode(enabled = true) // Adds DevTools at /__devtools
+  *   .withRoute("/counter", new CounterWebView())
+  *   .start(port = 8080)
+  * }}}
+  *
   * @param actorSystem
   *   The actor system to use (or create a default one)
   * @param routes
   *   Map of paths to route configurations
+  * @param devMode
+  *   Enable development mode (adds DevTools route)
   */
 case class WebViewServer(
     actorSystem: ActorSystem = ActorSystem(),
-    routes: Map[String, WebViewRoute[?, ?]] = Map.empty
+    routes: Map[String, WebViewRoute[?, ?]] = Map.empty,
+    devMode: Boolean = false
 ) {
 
   /** Add a WebView route to the server.
@@ -116,6 +128,20 @@ case class WebViewServer(
     copy(routes = routes + (path -> route))
   }
 
+  /** Enable or disable development mode.
+    *
+    * When enabled, adds a DevTools route at /__devtools for monitoring
+    * and debugging WebViews.
+    *
+    * @param enabled
+    *   Whether to enable dev mode
+    * @return
+    *   A new WebViewServer with dev mode enabled/disabled
+    */
+  def withDevMode(enabled: Boolean): WebViewServer = {
+    copy(devMode = enabled)
+  }
+
   /** Start the WebView server on the specified port.
     *
     * This creates a WebSocket server and registers all routes.
@@ -134,25 +160,37 @@ case class WebViewServer(
       )
     }
 
-    println(s"Starting Branch WebView server on $host:$port")
-    println(s"Routes:")
-    routes.keys.foreach(path => println(s"  ws://$host:$port$path"))
+    // Add DevTools route if devMode is enabled
+    val finalRoutes = if (devMode) {
+      import dev.alteration.branch.spider.webview.devtools.*
+      given EventCodec[DevToolsEvent] = EventCodec.derived
 
-    // For now, we only support a single route at the root level
-    // In the future, we could implement path-based routing
-    val (mainPath, mainRoute) = routes.head
+      val devToolsRoute = WebViewRoute[DevToolsUIState, DevToolsEvent](
+        factory = () => new DevToolsWebView(),
+        params = Map.empty,
+        session = Session(),
+        eventCodec = summon[EventCodec[DevToolsEvent]]
+      )
 
-    if (routes.size > 1) {
-      println(s"Warning: Multiple routes detected, but only one is currently supported.")
-      println(s"Serving only: $mainPath")
-      println(s"Full routing support is coming in a future release.")
+      routes + ("/__devtools" -> devToolsRoute)
+    } else {
+      routes
     }
 
-    // Create the handler for the main route
-    val handler = createHandler(mainRoute)
+    println(s"Starting Branch WebView server on $host:$port")
+    if (devMode) {
+      println(s"[DevMode] DevTools available at ws://$host:$port/__devtools")
+    }
+    println(s"Routes:")
+    finalRoutes.keys.foreach(path => println(s"  ws://$host:$port$path"))
 
-    // Start the WebSocket server
-    val wsServer = WebSocketServer.start(port, handler)
+    // Create handlers for all routes
+    val handlers = finalRoutes.map { case (path, route) =>
+      path -> createHandler(route)
+    }
+
+    // Start the WebSocket server with multiple routes
+    val wsServer = WebSocketServer.startWithRoutes(port, handlers)
 
     // Return running server
     RunningWebViewServer(
@@ -160,7 +198,8 @@ case class WebViewServer(
       wsServer = wsServer,
       port = port,
       host = host,
-      routes = routes
+      routes = finalRoutes,
+      devMode = devMode
     )
   }
 
@@ -222,13 +261,16 @@ case class WebViewRoute[State, Event](
   *   The host the server is bound to
   * @param routes
   *   The routes that were registered
+  * @param devMode
+  *   Whether dev mode is enabled
   */
 case class RunningWebViewServer(
     actorSystem: ActorSystem,
     wsServer: WebSocketServer,
     port: Int,
     host: String,
-    routes: Map[String, WebViewRoute[?, ?]]
+    routes: Map[String, WebViewRoute[?, ?]],
+    devMode: Boolean = false
 ) {
 
   /** Stop the server and cleanup resources. */

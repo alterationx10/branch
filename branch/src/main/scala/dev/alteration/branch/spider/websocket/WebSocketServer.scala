@@ -7,18 +7,30 @@ import scala.util.{Failure, Success, Try}
 
 /** A standalone WebSocket server that listens on its own port.
   *
-  * Example:
+  * Supports path-based routing to different WebSocket handlers.
+  *
+  * Example (single handler):
   * {{{
   *   val server = new WebSocketServer(9001, new EchoWebSocketHandler())
   *   server.start()
   * }}}
   *
+  * Example (multiple routes):
+  * {{{
+  *   val routes = Map(
+  *     "/echo" -> new EchoWebSocketHandler(),
+  *     "/chat" -> new ChatWebSocketHandler()
+  *   )
+  *   val server = new WebSocketServer(9001, routes)
+  *   server.start()
+  * }}}
+  *
   * @param port
   *   the port to listen on
-  * @param handler
-  *   the WebSocket handler
+  * @param routes
+  *   map of paths to WebSocket handlers
   */
-class WebSocketServer(port: Int, handler: WebSocketHandler)(using
+class WebSocketServer(port: Int, routes: Map[String, WebSocketHandler])(using
     ec: ExecutionContext
 ) extends AutoCloseable {
 
@@ -85,6 +97,30 @@ class WebSocketServer(port: Int, handler: WebSocketHandler)(using
           scala.util.boundary.break()
         }
 
+        // Parse the request path from "GET /path HTTP/1.1"
+        val requestPath = requestLine.split(" ") match {
+          case Array(_, path, _) => path.split("\\?").head // Remove query params if any
+          case _ => "/"
+        }
+
+        // Find the handler for this path
+        val handlerOpt = routes.get(requestPath)
+        if (handlerOpt.isEmpty) {
+          // Send 404 Not Found
+          val notFoundResponse =
+            s"""HTTP/1.1 404 Not Found\r
+Content-Type: text/plain\r
+Content-Length: ${s"Path not found: $requestPath".length}\r
+\r
+Path not found: $requestPath"""
+          out.print(notFoundResponse)
+          out.flush()
+          socket.close()
+          scala.util.boundary.break()
+        }
+
+        val handler = handlerOpt.get
+
         // Read headers until empty line
         var line = in.readLine()
         while (line != null && line.nonEmpty) {
@@ -146,19 +182,38 @@ ${error.getMessage}"""
 
 object WebSocketServer {
 
-  /** Create and start a WebSocket server in a background thread
+  /** Create and start a WebSocket server with a single handler (backward compatibility)
     *
     * @param port
     *   the port to listen on
     * @param handler
-    *   the WebSocket handler
+    *   the WebSocket handler (will be mounted at root "/")
     * @return
     *   the WebSocketServer instance
     */
   def start(port: Int, handler: WebSocketHandler)(using
       ec: ExecutionContext
   ): WebSocketServer = {
-    val server = new WebSocketServer(port, handler)
+    val server = new WebSocketServer(port, Map("/" -> handler))
+    Future {
+      server.start()
+    }
+    server
+  }
+
+  /** Create and start a WebSocket server with multiple route handlers
+    *
+    * @param port
+    *   the port to listen on
+    * @param routes
+    *   map of paths to WebSocket handlers
+    * @return
+    *   the WebSocketServer instance
+    */
+  def startWithRoutes(port: Int, routes: Map[String, WebSocketHandler])(using
+      ec: ExecutionContext
+  ): WebSocketServer = {
+    val server = new WebSocketServer(port, routes)
     Future {
       server.start()
     }
