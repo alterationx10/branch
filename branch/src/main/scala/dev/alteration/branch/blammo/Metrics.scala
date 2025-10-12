@@ -2,7 +2,7 @@ package dev.alteration.branch.blammo
 
 import java.lang.management.ManagementFactory
 import javax.management.*
-import scala.collection.mutable
+import scala.collection.concurrent.TrieMap
 import scala.util.Try
 
 /** A builder for defining metrics that are exposed via JMX.
@@ -33,9 +33,9 @@ case class Metrics(
     module: String,
     domain: String = "dev.alteration.branch"
 ) {
-  private val gauges     = mutable.Map.empty[String, () => Any]
-  private val counters   = mutable.Map.empty[String, () => Long]
-  private val histograms = mutable.Map.empty[String, () => Double]
+  private val gauges     = TrieMap.empty[String, () => Any]
+  private val counters   = TrieMap.empty[String, () => Long]
+  private val histograms = TrieMap.empty[String, () => Double]
 
   private val mbs  = ManagementFactory.getPlatformMBeanServer
   private val name = new ObjectName(
