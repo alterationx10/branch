@@ -32,7 +32,7 @@ export SCALA_ENV=PROD
 sbt "examples/runMain blammo.logging.LoggingExample"
 
 # Pretty-print JSON output with jq
-sbt "examples/runMain blammo.logging.LoggingExample" 2>&1 | grep jsonMessage | jq '.jsonMessage'
+sbt "examples/runMain blammo.logging.LoggingExample"  | grep jsonMessage | jq '.jsonMessage'
 ```
 
 **Log Levels by Environment**:
@@ -90,7 +90,7 @@ Demonstrates how to:
 sbt "examples/runMain blammo.tracing.TracerExample"
 
 # Pretty-print trace spans with jq
-sbt "examples/runMain blammo.tracing.TracerExample" 2>&1 | grep jsonMessage | jq '.jsonMessage'
+sbt "examples/runMain blammo.tracing.TracerExample" 2>&1 | grep jsonMessage | sed 's/\x1b\[0J//g' | jq '.jsonMessage'
 ```
 
 **Trace Events**:
