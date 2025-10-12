@@ -130,14 +130,25 @@ Common decoders are provided and can be imported with:
 import dev.alteration.branch.friday.JsonDecoder.given
 ```
 
-Auto derivation is supported for `Product` types (case classes):
+Auto derivation is supported for both `Product` types (case classes) and `Sum` types (enums/sealed traits):
 
 ```scala
+// Product type
 case class Person(name: String, age: Int) derives JsonDecoder
+
+// Sum type
+enum Status derives JsonDecoder {
+  case Active
+  case Inactive
+  case Pending
+}
 
 // Usage
 val personJson = """{"name": "Mark", "age": 42}"""
 val person: Try[Person] = Json.decode[Person](personJson)
+
+val statusJson = "\"Active\""
+val status: Try[Status] = Json.decode[Status](statusJson)
 ```
 
 ### Encoders
@@ -162,16 +173,27 @@ Common encoders are provided and can be imported with:
 import dev.alteration.branch.friday.JsonEncoder.given
 ```
 
-Auto derivation works the same as with decoders:
+Auto derivation works the same as with decoders for both Product and Sum types:
 
 ```scala
+// Product type
 case class Person(name: String, age: Int) derives JsonEncoder
+
+// Sum type
+enum Status derives JsonEncoder {
+  case Active
+  case Inactive
+  case Pending
+}
 
 // Usage
 val person = Person("Mark", 42)
 val json: Json = person.toJson  // Using extension method
 // or
 val json: Json = Json.encode(person)  // Using companion object
+
+val status = Status.Active
+val statusJson: Json = status.toJson  // JsonString("Active")
 ```
 
 ### Codecs
@@ -190,10 +212,18 @@ trait JsonCodec[A] { self =>
 
 Codecs can be created in several ways:
 
-1. Auto derivation for case classes:
+1. Auto derivation for Product types (case classes) and Sum types (enums/sealed traits):
 
 ```scala
+// Product type
 case class Person(name: String, age: Int) derives JsonCodec
+
+// Sum type
+enum Status derives JsonCodec {
+  case Active
+  case Inactive
+  case Pending
+}
 ```
 
 2. Combining existing encoder and decoder from the companion object JsonCodec.apply:
@@ -240,6 +270,52 @@ val longCodec: JsonCodec[Long] = JsonCodec[String].bimap(_.toLong)(_.toString)
 
 // Transform with map
 val intCodec: JsonCodec[Int] = JsonCodec[Long].map(_.toInt)(_.toLong)
+```
+
+### Working with Sum Types
+
+Sum types (enums and sealed traits) are fully supported through auto derivation. This includes both simple enums and parameterized cases:
+
+```scala
+// Simple enum
+enum Color derives JsonCodec {
+  case Red
+  case Green
+  case Blue
+}
+
+// Enum with parameterized cases
+enum Shape derives JsonCodec {
+  case Circle(radius: Double)
+  case Rectangle(width: Double, height: Double)
+  case Point
+}
+
+// Usage
+val red = Color.Red
+val redJson = red.toJson  // JsonString("Red")
+
+val circle = Shape.Circle(5.0)
+val circleJson = circle.toJson  // JsonObject(Map("Circle" -> JsonObject(Map("radius" -> JsonNumber(5.0)))))
+
+val shapeStr = """{"Circle":{"radius":5.0}}"""
+val decoded: Try[Shape] = shapeStr.decodeAs[Shape]  // Success(Circle(5.0))
+```
+
+Sum types can also be combined with product types in complex nested structures:
+
+```scala
+case class User(name: String, status: Status) derives JsonCodec
+
+enum Status derives JsonCodec {
+  case Active
+  case Suspended(reason: String)
+  case Deleted
+}
+
+val user = User("Alice", Status.Suspended("Payment overdue"))
+val userJson = user.toJsonString
+// {"name":"Alice","status":{"Suspended":{"reason":"Payment overdue"}}}
 ```
 
 ## Other Libraries
