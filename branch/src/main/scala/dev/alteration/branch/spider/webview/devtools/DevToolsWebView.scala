@@ -90,6 +90,7 @@ sealed trait DevToolsEvent
 case class SelectView(viewId: String) extends DevToolsEvent
 case class SetFilter(filter: TimelineFilter) extends DevToolsEvent
 case object ClearTimeline extends DevToolsEvent
+case object ClearDisconnected extends DevToolsEvent
 case object Refresh extends DevToolsEvent
 
 object DevToolsEvent {
@@ -100,6 +101,7 @@ object DevToolsEvent {
         case SelectView(viewId) => Json.obj("type" -> Json.JsonString("SelectView"), "viewId" -> Json.JsonString(viewId))
         case SetFilter(filter) => Json.obj("type" -> Json.JsonString("SetFilter"), "filter" -> Json.JsonString(filter.toString))
         case ClearTimeline => Json.obj("type" -> Json.JsonString("ClearTimeline"))
+        case ClearDisconnected => Json.obj("type" -> Json.JsonString("ClearDisconnected"))
         case Refresh => Json.obj("type" -> Json.JsonString("Refresh"))
       }
     },
@@ -122,6 +124,8 @@ object DevToolsEvent {
         }
       } else if (eventName == "clear-timeline") {
         ClearTimeline
+      } else if (eventName == "clear-disconnected") {
+        ClearDisconnected
       } else if (eventName == "refresh") {
         Refresh
       } else {
@@ -159,6 +163,19 @@ class DevToolsWebView extends WebView[DevToolsUIState, DevToolsEvent] {
             )
           case None => state
         }
+
+      case ClearDisconnected =>
+        import dev.alteration.branch.spider.webview.devtools.ConnectionStatus
+        // Remove all disconnected WebViews
+        val connectedStates = state.devToolsStates.filter { case (_, devToolsState) =>
+          devToolsState.connectionStatus == ConnectionStatus.Connected
+        }
+        // Update selected view if current selection was removed
+        val newSelectedView = state.selectedView.filter(connectedStates.contains)
+        state.copy(
+          devToolsStates = connectedStates,
+          selectedView = newSelectedView
+        )
 
       case Refresh =>
         // In a real implementation, this would fetch latest state from actors
@@ -209,9 +226,27 @@ class DevToolsWebView extends WebView[DevToolsUIState, DevToolsEvent] {
   }
 
   private def renderSidebar(state: DevToolsUIState): Html = {
+    import dev.alteration.branch.spider.webview.devtools.ConnectionStatus
+    val hasDisconnected = state.devToolsStates.exists { case (_, devToolsState) =>
+      devToolsState.connectionStatus != ConnectionStatus.Connected
+    }
+
     div(cls := "devtools-sidebar", style := sidebarStyle)(
-      h2(style := "margin: 0 0 20px 0; font-size: 1rem; color: #4a5568;")(
-        Html.Text("Active WebViews")
+      div(style := "display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;")(
+        h2(style := "margin: 0; font-size: 1rem; color: #4a5568;")(
+          Html.Text("Active WebViews")
+        ),
+        if (hasDisconnected) {
+          clickButton(
+            "Clear",
+            "clear-disconnected",
+            extraAttrs = Seq(
+              style := "padding: 6px 12px; background: #f56565; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.75rem;"
+            )
+          )
+        } else {
+          div()()
+        }
       ),
       if (state.devToolsStates.isEmpty) {
         div(style := "color: #a0aec0; font-size: 0.875rem;")(
