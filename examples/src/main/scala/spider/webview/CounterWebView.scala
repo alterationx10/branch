@@ -1,4 +1,4 @@
-package dev.alteration.branch.spider.webview.examples
+package spider.webview
 
 import dev.alteration.branch.spider.webview.*
 

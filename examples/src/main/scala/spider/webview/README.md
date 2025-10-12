@@ -2,15 +2,14 @@
 
 This directory contains complete, runnable examples for the Branch WebView library.
 
-## Simple Counter Example (Recommended for Getting Started)
+## SimpleCounterExample 
 
-The easiest way to get started with WebView. Just 3 lines of code!
 
 ### Running the Example
 
 ```bash
 # From the project root
-sbt "runMain dev.alteration.branch.spider.webview.examples.SimpleCounterExample"
+sbt "runMain spider.webview.SimpleCounterExample"
 ```
 
 Then open your browser to: http://localhost:8080/counter
@@ -24,41 +23,8 @@ This example uses the enhanced `WebViewServer` API that automatically:
 val server = WebViewServer()
   .withRoute("/counter", new CounterWebView())
   .withHtmlPages()  // Enable automatic HTML serving
+  .withDevMode(true)  // Enable debug mode
   .start(port = 8080)
-```
-
-## Counter Example with Params
-
-An example showing how to use initial params and DevMode.
-Use this to understand more advanced configuration options.
-
-### Running the Example
-
-```bash
-# From the project root
-sbt "runMain dev.alteration.branch.spider.webview.examples.CounterExample"
-```
-
-Then open your browser to: http://localhost:8080/counter
-
-The counter will start at 10 instead of 0 because of the `params = Map("initial" -> "10")` configuration.
-
-### What's Different
-
-1. **Initial params** - Pass URL query parameters to `mount()`
-2. **DevMode enabled** - Adds DevTools and debug logging
-3. **Same simple API** - Still uses `.withHtmlPages()` for automatic setup
-
-### File Structure
-
-```
-SimpleCounterExample.scala     # Simplest example
-CounterExample.scala           # With params and devmode
-CounterWebView.scala           # WebView implementation
-src/main/resources/
-  └── spider/
-      └── webview/
-          └── webview.js       # Client-side JavaScript
 ```
 
 ## Quick Start (Simplified API)

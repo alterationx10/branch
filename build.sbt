@@ -46,7 +46,8 @@ ThisBuild / scalacOptions ++= Seq(
   "-Wunused:all",
   "-deprecation",
   "-feature",
-  "-Xmax-inlines", "64",
+  "-Xmax-inlines",
+  "64"
 )
 
 ThisBuild / semanticdbEnabled := true
@@ -72,6 +73,14 @@ lazy val branch = project
       "org.postgresql"     % "postgresql"     % "42.7.8"
     ).map(_ % Test)
   )
+
+lazy val examples = project
+  .in(file("examples"))
+  .settings(
+    name           := "branch-examples",
+    publish / skip := true
+  )
+  .dependsOn(branch)
 
 addCommandAlias("fmt", "scalafmtAll")
 addCommandAlias("fix", "scalafixAll")
