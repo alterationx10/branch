@@ -1,4 +1,4 @@
-package dev.alteration.branch.spider.webview
+package dev.alteration.branch.spider.webview.html
 
 /** Branch HTML DSL - Type-safe HTML construction for WebViews.
   *
@@ -95,129 +95,119 @@ package dev.alteration.branch.spider.webview
   * )
   * }}}
   */
-package object html {
 
-  // Re-export all public APIs for convenient access
+// Re-export all public APIs for convenient access
 
-  // Core types (already visible from imports)
-  // Html and Attr traits are accessible via:
-  // import dev.alteration.branch.spider.webview.html.{Html, Attr}
+// Core types (already visible from imports)
+// Html and Attr traits are accessible via:
+// import dev.alteration.branch.spider.webview.html.{Html, Attr}
 
-  // Export Html constructors
-  export Html.{Element, Empty, Fragment, Raw, Text}
+// Export Html constructors
+export Html.{Element, Empty, Fragment, Raw, Text}
 
-  // Export Attr constructors
-  export Attr.{BooleanAttr, EmptyAttr, StringAttr}
+// Export Attr constructors
+export Attr.{BooleanAttr, EmptyAttr, StringAttr}
 
-  // Element constructors
-  export Tags._
+// Element constructors
+export Tags._
 
-  // Standard attributes
-  export Attributes._
+// Standard attributes
+export Attributes._
 
-  // WebView-specific attributes
-  export WebViewAttributes._
+// WebView-specific attributes
+export WebViewAttributes._
 
-  // Component helpers
-  export Components._
+// Component helpers
+export Components._
 
-  // === Additional Conveniences ===
+// === Additional Conveniences ===
 
-  /** Convert a list of Html elements to a single Html element.
-    *
-    * Useful for flattening nested structures.
+/** Convert a list of Html elements to a single Html element.
+  *
+  * Useful for flattening nested structures.
+  *
+  * {{{
+  * fragment(
+  *   h1("Title"),
+  *   p("Paragraph 1"),
+  *   p("Paragraph 2")
+  * )
+  * }}}
+  */
+def fragment(children: Html*): Html =
+  Html.Element("div", Nil, children.toList)
+
+/** Render multiple elements without a wrapper.
+  *
+  * Creates a "virtual" container that doesn't render its own tag.
+  */
+def fragments(children: Html*): Html =
+  Html.Fragment(children.toList)
+
+/** Create an HTML key attribute (for list optimization).
+  *
+  * While not used by the current implementation, this reserves the attribute
+  * for future morphing/diffing optimizations.
+  */
+val key = Attributes.AttrBuilder("data-key")
+
+/** Create an HTML element from raw HTML string.
+  *
+  * @param htmlString
+  *   Raw HTML (not escaped)
+  */
+def unsafeHtml(htmlString: String): Html = Html.Raw(htmlString)
+
+/** Escape HTML string manually (usually automatic).
+  *
+  * @param text
+  *   Text to escape
+  */
+def escape(text: String): String =
+  text
+    .replace("&", "&amp;")
+    .replace("<", "&lt;")
+    .replace(">", "&gt;")
+    .replace("\"", "&quot;")
+    .replace("'", "&#39;")
+
+// === Helper Extensions ===
+
+extension (html: Html) {
+  /** Render this HTML to a string. */
+  def asString: String = html.render
+
+  /** Wrap this HTML in a container element.
     *
     * {{{
-    * fragment(
-    *   h1("Title"),
-    *   p("Paragraph 1"),
-    *   p("Paragraph 2")
-    * )
+    * p("Hello").wrapIn("div", cls := "wrapper")
+    * // Produces: <div class="wrapper"><p>Hello</p></div>
     * }}}
     */
-  def fragment(children: Html*): Html = {
-    Html.Element("div", Nil, children.toList)
-  }
+  def wrapIn(tag: String, attrs: Attr*): Html =
+    Html.Element(tag, attrs.toList, List(html))
+}
 
-  /** Render multiple elements without a wrapper.
+extension (attrs: List[Attr]) {
+  /** Add an attribute to a list of attributes. */
+  def +(attr: Attr): List[Attr] = attrs :+ attr
+
+  /** Add multiple attributes to a list. */
+  def ++(newAttrs: List[Attr]): List[Attr] = attrs ++ newAttrs
+}
+
+extension (htmlList: List[Html]) {
+  /** Join HTML elements with a separator.
     *
-    * Creates a "virtual" container that doesn't render its own tag.
+    * {{{
+    * List(span("A"), span("B"), span("C")).joinHtml(text(" | "))
+    * // Produces: <span>A</span> | <span>B</span> | <span>C</span>
+    * }}}
     */
-  def fragments(children: Html*): Html = {
-    Html.Fragment(children.toList)
-  }
-
-  /** Create an HTML key attribute (for list optimization).
-    *
-    * While not used by the current implementation, this reserves the attribute
-    * for future morphing/diffing optimizations.
-    */
-  val key = Attributes.AttrBuilder("data-key")
-
-  /** Create an HTML element from raw HTML string.
-    *
-    * @param htmlString
-    *   Raw HTML (not escaped)
-    */
-  def unsafeHtml(htmlString: String): Html = Html.Raw(htmlString)
-
-  /** Escape HTML string manually (usually automatic).
-    *
-    * @param text
-    *   Text to escape
-    */
-  def escape(text: String): String = {
-    text
-      .replace("&", "&amp;")
-      .replace("<", "&lt;")
-      .replace(">", "&gt;")
-      .replace("\"", "&quot;")
-      .replace("'", "&#39;")
-  }
-
-  // === Helper Extensions ===
-
-  extension (html: Html) {
-
-    /** Render this HTML to a string. */
-    def asString: String = html.render
-
-    /** Wrap this HTML in a container element.
-      *
-      * {{{
-      * p("Hello").wrapIn("div", cls := "wrapper")
-      * // Produces: <div class="wrapper"><p>Hello</p></div>
-      * }}}
-      */
-    def wrapIn(tag: String, attrs: Attr*): Html = {
-      Html.Element(tag, attrs.toList, List(html))
+  def joinHtml(separator: Html): Html =
+    if htmlList.isEmpty then Html.Empty
+    else {
+      val result = htmlList.flatMap(h => List(h, separator)).dropRight(1)
+      fragments(result*)
     }
-  }
-
-  extension (attrs: List[Attr]) {
-
-    /** Add an attribute to a list of attributes. */
-    def +(attr: Attr): List[Attr] = attrs :+ attr
-
-    /** Add multiple attributes to a list. */
-    def ++(newAttrs: List[Attr]): List[Attr] = attrs ++ newAttrs
-  }
-
-  extension (htmlList: List[Html]) {
-
-    /** Join HTML elements with a separator.
-      *
-      * {{{
-      * List(span("A"), span("B"), span("C")).joinHtml(text(" | "))
-      * // Produces: <span>A</span> | <span>B</span> | <span>C</span>
-      * }}}
-      */
-    def joinHtml(separator: Html): Html = {
-      if (htmlList.isEmpty) Html.Empty
-      else {
-        val result = htmlList.flatMap(h => List(h, separator)).dropRight(1)
-        fragments(result*)
-      }
-    }
-  }
 }
