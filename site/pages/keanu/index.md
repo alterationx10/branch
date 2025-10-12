@@ -137,13 +137,291 @@ case class EchoActor() extends Actor {
 
 case class CounterActor(actorSystem: ActorSystem) extends Actor {
   private var count = 0
-  
+
   override def onMsg: PartialFunction[Any, Any] = {
     case n: Int =>
       count += n
       actorSystem.tell[EchoActor]("echo", s"Count is now $count")
     case "get" => count
     case "print" => println(s"Count is $count")
+  }
+}
+```
+
+### TypedActor - Type-Safe Message Handling
+
+The `TypedActor` trait provides compile-time type safety for actor message handling. Instead of handling messages of type `Any`, typed actors constrain their messages to a specific type, reducing runtime errors and improving code clarity.
+
+#### Basic TypedActor Usage
+
+Define a sealed trait for your message types and extend `TypedActor[M]`:
+
+```scala
+sealed trait CounterMessage
+case object Increment extends CounterMessage
+case object Decrement extends CounterMessage
+case class AddValue(value: Int) extends CounterMessage
+
+case class TypedCounterActor() extends TypedActor[CounterMessage] {
+  private var count = 0
+
+  override def typedOnMsg: PartialFunction[CounterMessage, Any] = {
+    case Increment =>
+      count += 1
+      count
+    case Decrement =>
+      count -= 1
+      count
+    case AddValue(n) =>
+      count += n
+      count
+  }
+}
+```
+
+Register and use typed actors just like regular actors:
+
+```scala
+val system = ActorSystem()
+system.registerProp(ActorProps.props[TypedCounterActor]())
+
+system.tell[TypedCounterActor]("counter", Increment)
+system.tell[TypedCounterActor]("counter", AddValue(5))
+system.tell[TypedCounterActor]("counter", Decrement)
+```
+
+Messages that don't match the expected type will be automatically sent to dead letters:
+
+```scala
+// This message won't be processed and goes to dead letters
+system.tell[TypedCounterActor]("counter", "invalid message")
+
+// Check dead letters to debug
+val deadLetters = system.getDeadLetters(100)
+```
+
+#### TypedActor with Complex Message Hierarchies
+
+TypedActor works well with rich message type hierarchies:
+
+```scala
+sealed trait DatabaseMessage
+sealed trait QueryMessage extends DatabaseMessage
+sealed trait CommandMessage extends DatabaseMessage
+
+case class SelectQuery(table: String, conditions: Map[String, Any]) extends QueryMessage
+case class InsertCommand(table: String, data: Map[String, Any]) extends CommandMessage
+case class DeleteCommand(table: String, id: String) extends CommandMessage
+
+case class DatabaseActor() extends TypedActor[DatabaseMessage] {
+  override def typedOnMsg: PartialFunction[DatabaseMessage, Any] = {
+    case SelectQuery(table, conditions) =>
+      // Execute select query
+      performSelect(table, conditions)
+    case InsertCommand(table, data) =>
+      // Execute insert
+      performInsert(table, data)
+    case DeleteCommand(table, id) =>
+      // Execute delete
+      performDelete(table, id)
+  }
+}
+```
+
+### StatefulActor - Immutable State Management
+
+The `StatefulActor` trait extends `TypedActor` to provide built-in immutable state management. Instead of managing mutable state yourself, `StatefulActor` handles state updates through a functional approach.
+
+#### Basic StatefulActor Usage
+
+Define your state type, message types, and extend `StatefulActor[State, Msg]`:
+
+```scala
+case class CounterState(count: Int, history: List[String])
+
+sealed trait CounterMessage
+case object Increment extends CounterMessage
+case object Decrement extends CounterMessage
+case object Reset extends CounterMessage
+case class AddValue(n: Int) extends CounterMessage
+
+case class StatefulCounterActor() extends StatefulActor[CounterState, CounterMessage] {
+  override def initialState: CounterState =
+    CounterState(count = 0, history = List.empty)
+
+  override def statefulOnMsg: PartialFunction[CounterMessage, CounterState] = {
+    case Increment =>
+      state.copy(
+        count = state.count + 1,
+        history = state.history :+ "increment"
+      )
+    case Decrement =>
+      state.copy(
+        count = state.count - 1,
+        history = state.history :+ "decrement"
+      )
+    case AddValue(n) =>
+      state.copy(
+        count = state.count + n,
+        history = state.history :+ s"add $n"
+      )
+    case Reset =>
+      initialState
+  }
+}
+```
+
+The `statefulOnMsg` method returns a new state for each message. Access the current state using the protected `state` method.
+
+#### State Initialization and Updates
+
+Key concepts for StatefulActor:
+
+- **initialState**: Called when the actor starts and after restarts
+- **state**: Protected accessor for reading current state
+- **statefulOnMsg**: Returns new state; this becomes the current state for the next message
+
+```scala
+case class ShoppingCartState(
+  items: Map[String, Int],
+  total: Double,
+  discountApplied: Boolean
+)
+
+sealed trait CartMessage
+case class AddItem(item: String, price: Double) extends CartMessage
+case class RemoveItem(item: String) extends CartMessage
+case class ApplyDiscount(percent: Double) extends CartMessage
+
+case class ShoppingCartActor() extends StatefulActor[ShoppingCartState, CartMessage] {
+  override def initialState: ShoppingCartState =
+    ShoppingCartState(Map.empty, 0.0, discountApplied = false)
+
+  override def statefulOnMsg: PartialFunction[CartMessage, ShoppingCartState] = {
+    case AddItem(item, price) =>
+      val newItems = state.items.updatedWith(item) {
+        case Some(count) => Some(count + 1)
+        case None => Some(1)
+      }
+      state.copy(
+        items = newItems,
+        total = state.total + price
+      )
+
+    case RemoveItem(item) =>
+      state.items.get(item).fold(state) { count =>
+        if (count > 1) {
+          state.copy(items = state.items.updated(item, count - 1))
+        } else {
+          state.copy(items = state.items.removed(item))
+        }
+      }
+
+    case ApplyDiscount(percent) if !state.discountApplied =>
+      state.copy(
+        total = state.total * (1.0 - percent / 100.0),
+        discountApplied = true
+      )
+
+    case ApplyDiscount(_) =>
+      state // Already applied, no change
+  }
+}
+```
+
+#### Preserving State Across Restarts
+
+By default, state resets to `initialState` after an actor restart. To preserve state across restarts:
+
+```scala
+case class PersistentCounterActor() extends StatefulActor[CounterState, CounterMessage] {
+  private var savedState: Option[CounterState] = None
+
+  override def preRestart(reason: Throwable): Unit = {
+    // Save state before restart
+    savedState = Some(state)
+  }
+
+  override def initialState: CounterState =
+    // Restore saved state or use default
+    savedState.getOrElse(CounterState(0, List.empty))
+
+  override def statefulOnMsg: PartialFunction[CounterMessage, CounterState] = {
+    case Increment => state.copy(count = state.count + 1)
+    case Decrement => state.copy(count = state.count - 1)
+  }
+}
+```
+
+#### StatefulActor with Complex State Transitions
+
+StatefulActor excels at managing complex state machines:
+
+```scala
+sealed trait SessionState
+case object Unauthenticated extends SessionState
+case class Authenticated(userId: String, permissions: Set[String]) extends SessionState
+case class Locked(attempts: Int, lockUntil: Long) extends SessionState
+
+case class SessionActorState(
+  status: SessionState,
+  loginAttempts: Int,
+  lastActivity: Long
+)
+
+sealed trait SessionMessage
+case class Login(userId: String, password: String) extends SessionMessage
+case object Logout extends SessionMessage
+case class CheckPermission(permission: String) extends SessionMessage
+case object RefreshActivity extends SessionMessage
+
+case class SessionActor(authService: AuthService)
+  extends StatefulActor[SessionActorState, SessionMessage] {
+
+  override def initialState: SessionActorState =
+    SessionActorState(Unauthenticated, 0, System.currentTimeMillis())
+
+  override def statefulOnMsg: PartialFunction[SessionMessage, SessionActorState] = {
+    case Login(userId, password) =>
+      state.status match {
+        case Locked(_, lockUntil) if System.currentTimeMillis() < lockUntil =>
+          // Still locked
+          state
+
+        case _ =>
+          if (authService.authenticate(userId, password)) {
+            val permissions = authService.getPermissions(userId)
+            state.copy(
+              status = Authenticated(userId, permissions),
+              loginAttempts = 0,
+              lastActivity = System.currentTimeMillis()
+            )
+          } else {
+            val newAttempts = state.loginAttempts + 1
+            if (newAttempts >= 3) {
+              state.copy(
+                status = Locked(newAttempts, System.currentTimeMillis() + 300000),
+                loginAttempts = newAttempts
+              )
+            } else {
+              state.copy(loginAttempts = newAttempts)
+            }
+          }
+      }
+
+    case Logout =>
+      state.copy(status = Unauthenticated, loginAttempts = 0)
+
+    case CheckPermission(perm) =>
+      state.status match {
+        case Authenticated(_, permissions) if permissions.contains(perm) =>
+          state.copy(lastActivity = System.currentTimeMillis())
+        case _ =>
+          state
+      }
+
+    case RefreshActivity =>
+      state.copy(lastActivity = System.currentTimeMillis())
   }
 }
 ```
