@@ -300,9 +300,11 @@ Spider's WebSocket implementation:
 
 ## WebView - Server-Side Reactive UI Framework
 
-WebView is a powerful server-side reactive UI framework built on Spider that brings a Phoenix LiveView-inspired approach
-to Scala. It enables you to build dynamic, real-time web applications where the UI state lives on the server and updates
-are pushed to clients over WebSocket.
+WebView is a server-side reactive UI framework that brings a Phoenix LiveView-inspired approach to Scala. It enables you
+to build dynamic, real-time web applications where the UI state lives on the server and updates are pushed to clients
+over WebSocket.
+
+This is new and ambitious, so there are probably a few bugs and likely to change a bit in the early iterations.
 
 ### Key Features
 
@@ -315,7 +317,7 @@ are pushed to clients over WebSocket.
 - **Error Boundaries**: Graceful error recovery with customizable error handling
 - **CSS-in-Scala**: Scoped styling with StyleSheet for collision-free CSS
 - **DevTools**: Built-in debugging and monitoring tools for development
-- **Component Library**: Pre-built components for forms, inputs, buttons, and layouts
+- **Component Library**: Some pre-built components for forms, inputs, buttons, and layouts
 
 ### Quick Start
 
