@@ -246,18 +246,21 @@ class TagsSuite extends FunSuite {
   }
 
   test("implicit conversion - String to Html") {
+    import scala.language.implicitConversions
     import Tags.given
     val html: Html = "Hello"
     assertEquals(html.render, "Hello")
   }
 
   test("implicit conversion - Int to Html") {
+    import scala.language.implicitConversions
     import Tags.given
     val html: Html = 42
     assertEquals(html.render, "42")
   }
 
   test("implicit conversion - Boolean to Html") {
+    import scala.language.implicitConversions
     import Tags.given
     val html: Html = true
     assertEquals(html.render, "true")

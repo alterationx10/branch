@@ -2,6 +2,8 @@ package dev.alteration.branch.spider.webview
 
 import dev.alteration.branch.testkit.fixtures.WebViewSuite
 
+import scala.annotation.nowarn
+
 /** Tests for WebView lifecycle and hooks.
   *
   * Tests the core WebView trait functionality including mount, handleEvent,
@@ -325,6 +327,7 @@ class WebViewLifecycleSuite extends WebViewSuite {
         input: String
     )
 
+    @nowarn
     sealed trait TodoEvent derives EventCodec
     case class AddTodo(text: String)     extends TodoEvent
     case class RemoveTodo(index: Int)    extends TodoEvent
