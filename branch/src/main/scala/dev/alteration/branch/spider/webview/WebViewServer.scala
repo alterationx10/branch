@@ -12,12 +12,13 @@ import dev.alteration.branch.spider.webview.http.{
   HttpResponse,
   ResourceServer
 }
+
 import java.io.{BufferedReader, InputStreamReader}
 import java.net.{ServerSocket, Socket}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
-
 import ExecutionContext.Implicits.global
+import scala.annotation.nowarn
 
 /** Fluent builder API for setting up Branch WebView servers.
   *
@@ -332,6 +333,7 @@ case class WebViewServer(
     * @return
     *   A WebSocketHandler
     */
+  @nowarn
   private def createHandler[State, Event](
       route: WebViewRoute[State, Event],
       devToolsActorName: Option[String] = None,

@@ -180,5 +180,5 @@ object CSSUtils {
 extension (s: String) {
 
   /** Combine multiple class names */
-  def +(other: String): String = s"$s $other"
+  def withClass(other: String): String = s"$s $other"
 }

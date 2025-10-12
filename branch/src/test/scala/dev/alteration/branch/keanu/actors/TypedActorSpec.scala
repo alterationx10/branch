@@ -260,11 +260,10 @@ class TypedActorSpec extends FunSuite {
     assert(restartCount >= 2, "Actor should have restarted after failure")
   }
 
+  sealed trait QueryMessage
+  case class Query(value: String) extends QueryMessage
   test("TypedActor should work with Ask pattern") {
     import scala.concurrent.Await
-
-    sealed trait QueryMessage
-    case class Query(value: String) extends QueryMessage
 
     case class QueryActor() extends TypedActor[Any] {
       override def typedOnMsg: PartialFunction[Any, Any] = { case ask: Ask[?] =>
@@ -287,15 +286,14 @@ class TypedActorSpec extends FunSuite {
     assertEquals(result, "Response: hello")
   }
 
+  sealed trait PriorityMessage
+  case class Priority(value: Int) extends PriorityMessage
+  case object Start               extends PriorityMessage
+  case object Done                extends PriorityMessage
   test("TypedActor should work with mailbox types") {
     val receivedMessages = scala.collection.mutable.ArrayBuffer[Int]()
     val startLatch       = new CountDownLatch(1)
     val latch            = new CountDownLatch(3)
-
-    sealed trait PriorityMessage
-    case class Priority(value: Int) extends PriorityMessage
-    case object Start               extends PriorityMessage
-    case object Done                extends PriorityMessage
 
     case class PriorityActor() extends TypedActor[PriorityMessage] {
       override def typedOnMsg: PartialFunction[PriorityMessage, Any] = {

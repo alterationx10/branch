@@ -2,6 +2,8 @@ package dev.alteration.branch.spider.webview
 
 import dev.alteration.branch.keanu.actors.ActorSystem
 
+import scala.annotation.nowarn
+
 /** Core trait for defining a WebView component.
   *
   * A WebView is a stateful, reactive UI component that lives on the server and
@@ -94,6 +96,7 @@ trait WebView[State, Event] {
     * @return
     *   The new state
     */
+  @nowarn
   def handleInfo(msg: Any, state: State): State = state
 
   /** Render the current state as HTML.

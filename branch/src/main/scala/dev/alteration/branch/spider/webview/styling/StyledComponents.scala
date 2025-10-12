@@ -2,6 +2,8 @@ package dev.alteration.branch.spider.webview.styling
 
 import dev.alteration.branch.spider.webview.html.{Attr, Attributes, Html}
 
+import scala.annotation.nowarn
+
 /** Styled components for Branch WebView.
   *
   * Inspired by styled-components, provides a clean API for creating styled HTML
@@ -161,6 +163,7 @@ class StyledComponentRegistry {
   private val idCounter = new AtomicInteger(0)
   private val styles    = scala.collection.mutable.Map.empty[String, String]
 
+  @nowarn
   def register(tagName: String, properties: Seq[(String, String)]): String = {
     val className = s"sc-${idCounter.getAndIncrement()}"
     val cssText   = properties

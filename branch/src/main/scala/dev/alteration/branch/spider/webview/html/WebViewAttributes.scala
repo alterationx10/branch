@@ -1,6 +1,8 @@
 package dev.alteration.branch.spider.webview.html
 
-import Attr._
+import Attr.*
+
+import scala.annotation.nowarn
 import scala.reflect.ClassTag
 
 /** WebView-specific HTML attributes.
@@ -56,11 +58,12 @@ object WebViewAttributes {
       * @param event
       *   The typed event to send to the server
       */
+    @nowarn
     def :=[Event](event: Event)(using ct: ClassTag[Event]): Attr = {
       // Extract the simple name of the event type
       // For case objects: "Increment" -> "Increment"
       // For case classes: "SetCount" -> "SetCount"
-      val eventName = event.getClass.getSimpleName.stripSuffix("$")
+      val eventName = ct.runtimeClass.getSimpleName.stripSuffix("$")
       StringAttr(s"wv-$eventType", eventName)
     }
   }

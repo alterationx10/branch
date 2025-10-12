@@ -5,7 +5,9 @@ import dev.alteration.branch.spider.webview.html.Html
 import dev.alteration.branch.spider.webview.html.Tags.*
 import dev.alteration.branch.spider.webview.html.Attributes.*
 import dev.alteration.branch.spider.webview.html.Components.*
+
 import java.time.format.DateTimeFormatter
+import scala.annotation.nowarn
 
 /** DevTools WebView - provides a UI for monitoring and debugging WebViews.
   *
@@ -79,7 +81,7 @@ object TimelineFilter {
           case _                  => throw new RuntimeException(s"Expected string, got: $json")
         }
       },
-    decodeClientFunc = (eventName, payload) =>
+    decodeClientFunc = (eventName, _) =>
       scala.util.Try {
         eventName match {
           case "all"    => TimelineFilter.All
@@ -122,11 +124,11 @@ object DevToolsEvent {
         case Refresh            => Json.obj("type" -> Json.JsonString("Refresh"))
       }
     },
-    decodeFunc = json =>
+    decodeFunc = _ =>
       scala.util.Try {
         throw new RuntimeException("Server-side decode not implemented")
       },
-    decodeClientFunc = (eventName, payload) =>
+    decodeClientFunc = (eventName, _) =>
       scala.util.Try {
         // Handle event names like "select-view-abc123", "set-filter-all", "clear-timeline"
         if (eventName.startsWith("select-view-")) {
@@ -319,6 +321,7 @@ class DevToolsWebView extends WebView[DevToolsUIState, DevToolsEvent] {
     )
   }
 
+  @nowarn
   private def renderMainPanel(
       viewId: String,
       devToolsState: DevToolsState,
