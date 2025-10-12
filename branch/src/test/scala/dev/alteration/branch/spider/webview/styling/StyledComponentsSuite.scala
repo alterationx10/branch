@@ -1,6 +1,10 @@
 package dev.alteration.branch.spider.webview.styling
 
-import dev.alteration.branch.spider.webview.html.{Attributes, Html, WebViewAttributes}
+import dev.alteration.branch.spider.webview.html.{
+  Attributes,
+  Html,
+  WebViewAttributes
+}
 import munit.FunSuite
 
 /** Tests for StyledComponents.
@@ -75,8 +79,8 @@ class StyledComponentsSuite extends FunSuite {
 
   test("styled.toStyleTag generates CSS") {
     // Create some styled components
-    val _Button = styled.button("background" -> "blue")
-    val _Div    = styled.div("color" -> "red")
+    styled.button("background" -> "blue")
+    styled.div("color"         -> "red")
 
     val styleTag = styled.toStyleTag
 
@@ -184,9 +188,9 @@ class StyledComponentsSuite extends FunSuite {
   }
 
   test("StyledComponent with CSSUtils integration") {
-    val Button = styled.button(
-      "padding"    -> CSSUtils.Spacing.md,
-      "background" -> CSSUtils.Colors.primary,
+    styled.button(
+      "padding"       -> CSSUtils.Spacing.md,
+      "background"    -> CSSUtils.Colors.primary,
       "border-radius" -> CSSUtils.Radius.md
     )
 
@@ -218,12 +222,14 @@ class StyledComponentsSuite extends FunSuite {
   }
 
   test("StyledComponent with flexbox layout") {
-    val FlexContainer = styled.div(CSSUtils.flex(
-      direction = "row",
-      justify = "space-between",
-      align = "center",
-      gap = "10px"
-    )*)
+    styled.div(
+      CSSUtils.flex(
+        direction = "row",
+        justify = "space-between",
+        align = "center",
+        gap = "10px"
+      )*
+    )
 
     val styleTag = styled.toStyleTag
     assert(styleTag.contains("display: flex;"))
@@ -239,7 +245,7 @@ class StyledComponentsSuite extends FunSuite {
     )
 
     // Generate the element to register the style
-    val _html = TestComponent(Html.Text("Test"))
+    TestComponent(Html.Text("Test"))
 
     val css = styled.toStyleTag
 
@@ -250,13 +256,13 @@ class StyledComponentsSuite extends FunSuite {
   }
 
   test("Multiple styled components in single render") {
-    val Card   = styled.div(
+    val Card  = styled.div(
       "border"        -> "1px solid #ccc",
       "border-radius" -> "8px",
       "padding"       -> "16px"
     )
-    val Title  = styled.h2("margin" -> "0 0 10px 0")
-    val Text   = styled.p("color" -> "#666")
+    val Title = styled.h2("margin" -> "0 0 10px 0")
+    val Text  = styled.p("color" -> "#666")
 
     val html = Card(
       Title(Html.Text("Card Title")),

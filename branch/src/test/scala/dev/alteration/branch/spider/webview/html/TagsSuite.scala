@@ -17,7 +17,10 @@ class TagsSuite extends FunSuite {
 
   test("div with attributes") {
     val result = div(cls := "container", id := "main")(text("Content"))
-    assertEquals(result.render, """<div class="container" id="main">Content</div>""")
+    assertEquals(
+      result.render,
+      """<div class="container" id="main">Content</div>"""
+    )
   }
 
   test("span creates a span element") {
@@ -30,7 +33,10 @@ class TagsSuite extends FunSuite {
       span()(text("First")),
       span()(text("Second"))
     )
-    assertEquals(result.render, "<div><span>First</span><span>Second</span></div>")
+    assertEquals(
+      result.render,
+      "<div><span>First</span><span>Second</span></div>"
+    )
   }
 
   test("heading tags h1 through h6") {
@@ -105,7 +111,7 @@ class TagsSuite extends FunSuite {
 
   test("form and input tags") {
     val result = form()(
-      input(tpe := "text", name := "username"),
+      input(tpe := "text", name     := "username"),
       input(tpe := "password", name := "password")
     )
     assertEquals(
@@ -126,7 +132,10 @@ class TagsSuite extends FunSuite {
 
   test("textarea tag") {
     val result = textarea(name := "message")(text("Default text"))
-    assertEquals(result.render, """<textarea name="message">Default text</textarea>""")
+    assertEquals(
+      result.render,
+      """<textarea name="message">Default text</textarea>"""
+    )
   }
 
   test("select and option tags") {

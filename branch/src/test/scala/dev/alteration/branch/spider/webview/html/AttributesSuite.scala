@@ -80,7 +80,7 @@ class AttributesSuite extends FunSuite {
   }
 
   test("width and height attribute builders") {
-    val w = width := "800"
+    val w = width  := "800"
     val h = height := "600"
     assertEquals(w.render, """width="800"""")
     assertEquals(h.render, """height="600"""")
@@ -119,21 +119,21 @@ class AttributesSuite extends FunSuite {
 
   test("required boolean attribute") {
     val optional = required := false
-    val req = required := true
+    val req      = required := true
     assertEquals(optional.render, "")
     assertEquals(req.render, "required")
   }
 
   test("checked boolean attribute") {
     val unchecked = checked := false
-    val check   = checked := true
+    val check     = checked := true
     assertEquals(unchecked.render, "")
     assertEquals(check.render, "checked")
   }
 
   test("selected boolean attribute") {
     val unselected = selected := false
-    val select   = selected := true
+    val select     = selected := true
     assertEquals(unselected.render, "")
     assertEquals(select.render, "selected")
   }
@@ -154,10 +154,10 @@ class AttributesSuite extends FunSuite {
   }
 
   test("ARIA attributes") {
-    val label       = ariaLabel := "Close button"
+    val label       = ariaLabel       := "Close button"
     val describedBy = ariaDescribedBy := "help-text"
-    val hidden      = ariaHidden := "true"
-    val roleAttr    = role := "button"
+    val hidden      = ariaHidden      := "true"
+    val roleAttr    = role            := "button"
 
     assertEquals(label.render, """aria-label="Close button"""")
     assertEquals(describedBy.render, """aria-describedby="help-text"""")
@@ -242,7 +242,10 @@ class AttributesSuite extends FunSuite {
       "font-size"  -> "16px",
       "margin-top" -> "10px"
     )
-    assertEquals(attr.render, """style="color: red; font-size: 16px; margin-top: 10px"""")
+    assertEquals(
+      attr.render,
+      """style="color: red; font-size: 16px; margin-top: 10px""""
+    )
   }
 
   test("styles helper with single property") {
@@ -277,10 +280,10 @@ class AttributesSuite extends FunSuite {
 
   test("combining multiple attribute builders") {
     val attrs = List(
-      id := "submit-btn",
-      cls := "btn btn-primary",
-      tpe := "submit",
-      disabled := false,
+      id             := "submit-btn",
+      cls            := "btn btn-primary",
+      tpe            := "submit",
+      disabled       := false,
       data("action") := "submit-form"
     )
 

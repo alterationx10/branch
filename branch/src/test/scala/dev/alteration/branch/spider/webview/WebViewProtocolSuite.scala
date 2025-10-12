@@ -48,7 +48,7 @@ class WebViewProtocolSuite extends FunSuite {
       case Some(Event(event, target, value)) =>
         assertEquals(event, "click")
         assertEquals(target, "btn")
-        // value will be present but might be JsonNull or similar
+      // value will be present but might be JsonNull or similar
       case _                                 => fail("Expected Event message")
     }
   }

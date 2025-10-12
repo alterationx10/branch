@@ -13,13 +13,13 @@ class EventCodecSuite extends FunSuite {
   // === Test Events ===
 
   sealed trait CounterEvent derives EventCodec
-  case object Increment extends CounterEvent
-  case object Decrement extends CounterEvent
+  case object Increment           extends CounterEvent
+  case object Decrement           extends CounterEvent
   case class SetCount(value: Int) extends CounterEvent
 
   sealed trait UserEvent derives EventCodec
   case class SetName(name: String) extends UserEvent
-  case class SetAge(age: Int) extends UserEvent
+  case class SetAge(age: Int)      extends UserEvent
   case class UpdateProfile(name: String, age: Int, email: String)
       extends UserEvent
 
@@ -38,8 +38,8 @@ class EventCodecSuite extends FunSuite {
   }
 
   test("String events - decodeFromClient") {
-    val codec   = EventCodec.stringEventCodec
-    val result  = codec.decodeFromClient("increment", Map.empty)
+    val codec  = EventCodec.stringEventCodec
+    val result = codec.decodeFromClient("increment", Map.empty)
     assertEquals(result, Success("increment"))
   }
 
@@ -60,8 +60,8 @@ class EventCodecSuite extends FunSuite {
   }
 
   test("Case object - decode Increment") {
-    val codec = EventCodec[CounterEvent]
-    val json  = Json.obj("type" -> Json.JsonString("Increment"))
+    val codec  = EventCodec[CounterEvent]
+    val json   = Json.obj("type" -> Json.JsonString("Increment"))
     val result = codec.decode(json)
 
     assert(result.isSuccess)
@@ -77,8 +77,8 @@ class EventCodecSuite extends FunSuite {
   }
 
   test("Case object - decode Decrement") {
-    val codec = EventCodec[CounterEvent]
-    val json  = Json.obj("type" -> Json.JsonString("Decrement"))
+    val codec  = EventCodec[CounterEvent]
+    val json   = Json.obj("type" -> Json.JsonString("Decrement"))
     val result = codec.decode(json)
 
     assert(result.isSuccess)
@@ -100,8 +100,8 @@ class EventCodecSuite extends FunSuite {
   }
 
   test("Case class - decode SetCount") {
-    val codec = EventCodec[CounterEvent]
-    val json  = Json.obj(
+    val codec  = EventCodec[CounterEvent]
+    val json   = Json.obj(
       "type"  -> Json.JsonString("SetCount"),
       "value" -> Json.JsonNumber(42)
     )
@@ -140,8 +140,8 @@ class EventCodecSuite extends FunSuite {
   }
 
   test("Case class with string - decode SetName") {
-    val codec = EventCodec[UserEvent]
-    val json  = Json.obj(
+    val codec  = EventCodec[UserEvent]
+    val json   = Json.obj(
       "type" -> Json.JsonString("SetName"),
       "name" -> Json.JsonString("Alice")
     )
@@ -156,8 +156,8 @@ class EventCodecSuite extends FunSuite {
     val event = UpdateProfile("Bob", 25, "bob@example.com")
     val json  = codec.encode(event)
 
-    val typeField = (json ? "type").strOpt
-    val nameField = (json ? "name").strOpt
+    val typeField  = (json ? "type").strOpt
+    val nameField  = (json ? "name").strOpt
     val emailField = (json ? "email").strOpt
 
     assertEquals(typeField, Some("UpdateProfile"))
@@ -168,8 +168,8 @@ class EventCodecSuite extends FunSuite {
   }
 
   test("Case class with multiple fields - decode UpdateProfile") {
-    val codec = EventCodec[UserEvent]
-    val json  = Json.obj(
+    val codec  = EventCodec[UserEvent]
+    val json   = Json.obj(
       "type"  -> Json.JsonString("UpdateProfile"),
       "name"  -> Json.JsonString("Bob"),
       "age"   -> Json.JsonNumber(25),
@@ -184,16 +184,16 @@ class EventCodecSuite extends FunSuite {
   // === Error Cases ===
 
   test("decode fails on invalid event name") {
-    val codec = EventCodec[CounterEvent]
-    val json  = Json.obj("type" -> Json.JsonString("InvalidEvent"))
+    val codec  = EventCodec[CounterEvent]
+    val json   = Json.obj("type" -> Json.JsonString("InvalidEvent"))
     val result = codec.decode(json)
 
     assert(result.isFailure)
   }
 
   test("decode fails on missing type field") {
-    val codec = EventCodec[CounterEvent]
-    val json  = Json.obj("value" -> Json.JsonNumber(42))
+    val codec  = EventCodec[CounterEvent]
+    val json   = Json.obj("value" -> Json.JsonNumber(42))
     val result = codec.decode(json)
 
     assert(result.isFailure)
@@ -207,9 +207,9 @@ class EventCodecSuite extends FunSuite {
   }
 
   test("decode from JSON string") {
-    val codec    = EventCodec[CounterEvent]
-    val jsonStr  = """{"type":"Increment"}"""
-    val result   = codec.decode(jsonStr)
+    val codec   = EventCodec[CounterEvent]
+    val jsonStr = """{"type":"Increment"}"""
+    val result  = codec.decode(jsonStr)
 
     assert(result.isSuccess)
     assertEquals(result.get, Increment)
@@ -226,7 +226,7 @@ class EventCodecSuite extends FunSuite {
   // === Extension Methods ===
 
   test("event.toJson extension method") {
-    val codec = EventCodec[CounterEvent]
+    EventCodec[CounterEvent]
 
     val event = Increment
     val json  = event.toJson
@@ -236,10 +236,10 @@ class EventCodecSuite extends FunSuite {
   }
 
   test("event.toJsonString extension method") {
-    val codec = EventCodec[CounterEvent]
+    EventCodec[CounterEvent]
 
-    val event    = SetCount(42)
-    val jsonStr  = event.toJsonString
+    val event   = SetCount(42)
+    val jsonStr = event.toJsonString
 
     assert(jsonStr.contains("SetCount"))
     assert(jsonStr.contains("42"))
@@ -256,9 +256,9 @@ class EventCodecSuite extends FunSuite {
   }
 
   test("decodeFromClient with JSON object value") {
-    val codec  = EventCodec[UserEvent]
+    val codec     = EventCodec[UserEvent]
     val jsonValue = """{"name":"Alice","age":30,"email":"alice@example.com"}"""
-    val result = codec.decodeFromClient(
+    val result    = codec.decodeFromClient(
       "UpdateProfile",
       Map("value" -> jsonValue)
     )

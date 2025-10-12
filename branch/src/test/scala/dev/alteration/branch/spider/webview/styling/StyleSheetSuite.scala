@@ -228,9 +228,9 @@ class StyleSheetSuite extends FunSuite {
       import CSSUtils._
 
       val button = style(
-        "padding"    -> Spacing.md,
-        "background" -> Colors.primary,
-        "color"      -> "white",
+        "padding"       -> Spacing.md,
+        "background"    -> Colors.primary,
+        "color"         -> "white",
         "border-radius" -> Radius.md
       )
     }
@@ -244,11 +244,13 @@ class StyleSheetSuite extends FunSuite {
 
   test("StyleSheet with flex helper") {
     object LayoutStyles extends StyleSheet {
-      val flexContainer = style(CSSUtils.flex(
-        direction = "row",
-        justify = "center",
-        gap = "10px"
-      )*)
+      val flexContainer = style(
+        CSSUtils.flex(
+          direction = "row",
+          justify = "center",
+          gap = "10px"
+        )*
+      )
     }
 
     val css = LayoutStyles.toCss

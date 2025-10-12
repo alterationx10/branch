@@ -80,7 +80,7 @@ class WebViewAttributesSuite extends FunSuite {
   }
 
   test("wvIgnore creates ignore attribute") {
-    val attr = wvIgnore := true
+    val attr  = wvIgnore := true
     assertEquals(attr.render, """wv-ignore""")
     val attr2 = wvIgnore := "true"
     assertEquals(attr2.render, """wv-ignore="true"""")
@@ -150,9 +150,9 @@ class WebViewAttributesSuite extends FunSuite {
   test("Multiple WebView attributes on element") {
 
     val button = Tags.button(
-      wvClick := "submit",
-      wvTarget := "form-1",
-      Attributes.cls := "btn",
+      wvClick             := "submit",
+      wvTarget            := "form-1",
+      Attributes.cls      := "btn",
       Attributes.disabled := false
     )(Html.Text("Submit"))
 
@@ -165,10 +165,10 @@ class WebViewAttributesSuite extends FunSuite {
   test("Debounced search input pattern") {
 
     val searchInput = Tags.input(
-      Attributes.tpe := "text",
+      Attributes.tpe         := "text",
       Attributes.placeholder := "Search...",
-      wvInput := "search",
-      wvDebounce := "500"
+      wvInput                := "search",
+      wvDebounce             := "500"
     )
 
     val html = searchInput.render
@@ -179,8 +179,8 @@ class WebViewAttributesSuite extends FunSuite {
   test("Button with target value pattern") {
 
     val deleteBtn = Tags.button(
-      wvClick := "delete-todo",
-      wvTarget := "todo-42",
+      wvClick        := "delete-todo",
+      wvTarget       := "todo-42",
       Attributes.cls := "btn-danger"
     )(Html.Text("Delete"))
 

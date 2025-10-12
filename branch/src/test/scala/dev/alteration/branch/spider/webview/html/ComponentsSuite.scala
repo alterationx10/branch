@@ -116,8 +116,8 @@ class ComponentsSuite extends FunSuite {
   }
 
   test("checkbox creates checkbox input") {
-    val cb = checkbox("agree", true, "toggle-agree")
-    val html     = cb.render
+    val cb   = checkbox("agree", true, "toggle-agree")
+    val html = cb.render
 
     assert(html.contains("""type="checkbox""""))
     assert(html.contains("""name="agree""""))
@@ -126,28 +126,28 @@ class ComponentsSuite extends FunSuite {
   }
 
   test("checkbox with label") {
-    val cb = checkbox(
+    val cb   = checkbox(
       "newsletter",
       false,
       "toggle-newsletter",
       labelText = Some("Subscribe to newsletter")
     )
-    val html     = cb.render
+    val html = cb.render
 
     assert(html.contains("<label"))
     assert(html.contains("Subscribe to newsletter"))
   }
 
   test("checkbox unchecked") {
-    val cb = checkbox("terms", false, "toggle-terms")
-    val html     = cb.render
+    val cb   = checkbox("terms", false, "toggle-terms")
+    val html = cb.render
 
     assert(!html.contains("checked"))
   }
 
   test("radio creates radio button") {
-    val r = radio("size", "medium", true, "select-size")
-    val html  = r.render
+    val r    = radio("size", "medium", true, "select-size")
+    val html = r.render
 
     assert(html.contains("""type="radio""""))
     assert(html.contains("""name="size""""))
@@ -156,14 +156,14 @@ class ComponentsSuite extends FunSuite {
   }
 
   test("radio with label") {
-    val r = radio(
+    val r    = radio(
       "color",
       "red",
       false,
       "select-color",
       labelText = Some("Red")
     )
-    val html  = r.render
+    val html = r.render
 
     assert(html.contains("<label"))
     assert(html.contains("Red"))
@@ -181,7 +181,9 @@ class ComponentsSuite extends FunSuite {
     assert(html.contains("<select"))
     assert(html.contains("""name="country""""))
     assert(html.contains("""wv-change="update-country""""))
-    assert(html.contains("""<option value="us" selected>United States</option>"""))
+    assert(
+      html.contains("""<option value="us" selected>United States</option>""")
+    )
     assert(html.contains("""<option value="uk" >United Kingdom</option>"""))
     assert(html.contains("""<option value="ca" >Canada</option>"""))
   }
@@ -240,12 +242,12 @@ class ComponentsSuite extends FunSuite {
   }
 
   test("keyedList renders list of items") {
-    val items   = List("Apple", "Banana", "Cherry")
-    val list    = keyedList(
+    val items = List("Apple", "Banana", "Cherry")
+    val list  = keyedList(
       items,
       (item, idx) => Html.Element("div", Nil, List(Html.Text(s"$idx: $item")))
     )
-    val html    = list.render
+    val html  = list.render
 
     assert(html.contains("0: Apple"))
     assert(html.contains("1: Banana"))
@@ -308,11 +310,11 @@ class ComponentsSuite extends FunSuite {
   }
 
   test("container creates div with max-width and padding") {
-    val c = container(Html.Text("Content"))(
+    val c    = container(Html.Text("Content"))(
       maxWidth = Some("800px"),
       padding = Some("20px")
     )
-    val html      = c.render
+    val html = c.render
 
     assert(html.contains("<div"))
     assert(html.contains("max-width: 800px"))
@@ -321,8 +323,8 @@ class ComponentsSuite extends FunSuite {
   }
 
   test("container without styling") {
-    val c = container(Html.Text("Content"))()
-    val html      = c.render
+    val c    = container(Html.Text("Content"))()
+    val html = c.render
 
     assert(html.contains("<div"))
     assert(html.contains("Content"))

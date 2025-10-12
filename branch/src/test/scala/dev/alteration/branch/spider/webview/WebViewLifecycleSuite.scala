@@ -14,8 +14,8 @@ class WebViewLifecycleSuite extends WebViewSuite {
   case class CounterState(count: Int)
 
   sealed trait CounterEvent derives EventCodec
-  case object Increment extends CounterEvent
-  case object Decrement extends CounterEvent
+  case object Increment           extends CounterEvent
+  case object Decrement           extends CounterEvent
   case class SetCount(value: Int) extends CounterEvent
 
   // === Basic WebView Implementations ===
@@ -28,9 +28,9 @@ class WebViewLifecycleSuite extends WebViewSuite {
 
     def handleEvent(event: CounterEvent, state: CounterState): CounterState = {
       event match {
-        case Increment      => state.copy(count = state.count + 1)
-        case Decrement      => state.copy(count = state.count - 1)
-        case SetCount(n)    => state.copy(count = n)
+        case Increment   => state.copy(count = state.count + 1)
+        case Decrement   => state.copy(count = state.count - 1)
+        case SetCount(n) => state.copy(count = n)
       }
     }
 
@@ -90,20 +90,24 @@ class WebViewLifecycleSuite extends WebViewSuite {
   test("multiple events in sequence") {
     val view       = new SimpleCounterView()
     val state      = mount(view)
-    val finalState = sendEvents(view, state, Seq(
-      Increment,
-      Increment,
-      Increment,
-      Decrement,
-      SetCount(10)
-    ))
+    val finalState = sendEvents(
+      view,
+      state,
+      Seq(
+        Increment,
+        Increment,
+        Increment,
+        Decrement,
+        SetCount(10)
+      )
+    )
 
     assertEquals(finalState.count, 10)
   }
 
   test("mountAndRender helper") {
-    val view           = new SimpleCounterView()
-    val (state, html)  = mountAndRender(
+    val view          = new SimpleCounterView()
+    val (state, html) = mountAndRender(
       view,
       events = Seq(Increment, Increment),
       params = Map("initial" -> "5")
@@ -160,9 +164,9 @@ class WebViewLifecycleSuite extends WebViewSuite {
 
       override def handleInfo(msg: Any, state: CounterState): CounterState = {
         msg match {
-          case "reset"      => CounterState(0)
-          case n: Int       => state.copy(count = n)
-          case _            => state
+          case "reset" => CounterState(0)
+          case n: Int  => state.copy(count = n)
+          case _       => state
         }
       }
 
@@ -170,8 +174,8 @@ class WebViewLifecycleSuite extends WebViewSuite {
         s"<div>${state.count}</div>"
     }
 
-    val view      = new MessageHandlingView()
-    val state     = CounterState(42)
+    val view  = new MessageHandlingView()
+    val state = CounterState(42)
 
     val resetState = sendInfo(view, "reset", state)
     assertEquals(resetState.count, 0)
@@ -322,8 +326,8 @@ class WebViewLifecycleSuite extends WebViewSuite {
     )
 
     sealed trait TodoEvent derives EventCodec
-    case class AddTodo(text: String) extends TodoEvent
-    case class RemoveTodo(index: Int) extends TodoEvent
+    case class AddTodo(text: String)     extends TodoEvent
+    case class RemoveTodo(index: Int)    extends TodoEvent
     case class SetFilter(filter: String) extends TodoEvent
 
     class TodoView extends WebView[TodoState, TodoEvent] {
@@ -333,11 +337,11 @@ class WebViewLifecycleSuite extends WebViewSuite {
 
       def handleEvent(event: TodoEvent, state: TodoState): TodoState = {
         event match {
-          case AddTodo(text)      =>
+          case AddTodo(text)     =>
             state.copy(todos = state.todos :+ text)
-          case RemoveTodo(index)  =>
+          case RemoveTodo(index) =>
             state.copy(todos = state.todos.patch(index, Nil, 1))
-          case SetFilter(filter)  =>
+          case SetFilter(filter) =>
             state.copy(filter = filter)
         }
       }
@@ -347,13 +351,17 @@ class WebViewLifecycleSuite extends WebViewSuite {
       }
     }
 
-    val view = new TodoView()
-    val state = mount(view)
-    val withTodos = sendEvents(view, state, Seq(
-      AddTodo("Buy milk"),
-      AddTodo("Walk dog"),
-      AddTodo("Write tests")
-    ))
+    val view      = new TodoView()
+    val state     = mount(view)
+    val withTodos = sendEvents(
+      view,
+      state,
+      Seq(
+        AddTodo("Buy milk"),
+        AddTodo("Walk dog"),
+        AddTodo("Write tests")
+      )
+    )
 
     assertEquals(withTodos.todos.length, 3)
     assertEquals(withTodos.todos(0), "Buy milk")
@@ -364,10 +372,10 @@ class WebViewLifecycleSuite extends WebViewSuite {
   }
 
   test("WebView state immutability") {
-    val view     = new SimpleCounterView()
-    val state1   = CounterState(0)
-    val state2   = sendEvent(view, Increment, state1)
-    val state3   = sendEvent(view, Increment, state2)
+    val view   = new SimpleCounterView()
+    val state1 = CounterState(0)
+    val state2 = sendEvent(view, Increment, state1)
+    val state3 = sendEvent(view, Increment, state2)
 
     // Each state should be independent
     assertEquals(state1.count, 0)
