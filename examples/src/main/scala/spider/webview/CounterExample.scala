@@ -2,34 +2,36 @@ package spider.webview
 
 import dev.alteration.branch.spider.webview.*
 
-/** A complete example showing how to serve a WebView with initial params.
+/** The simplest possible WebView example using the enhanced WebViewServer API.
   *
-  * This example demonstrates:
-  * 1. Using the WebViewServer fluent API
-  * 2. Passing initial params to the WebView
-  * 3. Automatically serving HTML and JavaScript
+  * This example shows how easy it is to get started with WebView:
+  * - Define your WebView
+  * - Add it to the server with .withRoute()
+  * - Enable HTML serving with .withHtmlPages()
+  * - Start the server
+  *
+  * The server automatically:
+  * - Serves HTML pages for each route
+  * - Loads the webview.js client library
+  * - Sets up WebSocket connections
   *
   * Run this and visit: http://localhost:8080/counter
   */
 object CounterExample extends App {
 
-  // Create a WebView server with initial params
+  // Create a WebView server with automatic HTML serving and DevTools
   val server = WebViewServer()
-    .withRoute(
-      "/counter",
-      new CounterWebView(),
-      params = Map("initial" -> "10")  // Start counter at 10
-    )
-    .withHtmlPages()
-    .withDevMode(true)  // Enable debug mode
+    .withRoute("/counter", new CounterWebView())
+    .withHtmlPages()  // Enable automatic HTML page generation
+    .withDevMode(true) // Enable DevTools for debugging
     .start(port = 8080)
 
   println()
   println("Visit: http://localhost:8080/counter")
-  println("Counter will start at 10 (from initial params)")
   println("Press Ctrl+C to stop")
   println()
 
-  // Keep the server running
+  // The server is now running and will block here
+  // HTML page and JS are served automatically!
   scala.io.StdIn.readLine()
 }
