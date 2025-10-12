@@ -74,8 +74,9 @@ case class WebViewActor[State, Event](webView: WebView[State, Event])
 
         // Initialize DevTools state if devMode is enabled
         val viewId = UUID.randomUUID().toString
+        val componentType = webView.getClass.getSimpleName.stripSuffix("$")
         val devToolsState = devToolsActorNameOpt.map { _ =>
-          DevToolsState(viewId).recordMount(initialUserState)
+          DevToolsState(viewId, componentType).recordMount(initialUserState)
         }
 
         // Call afterMount hook with context

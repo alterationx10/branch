@@ -30,6 +30,8 @@ case class TimelineEntry(
   *
   * @param viewId
   *   Unique identifier for this WebView instance
+  * @param componentType
+  *   The type/class name of the WebView component
   * @param timeline
   *   History of state changes and events
   * @param connectionStatus
@@ -39,6 +41,7 @@ case class TimelineEntry(
   */
 case class DevToolsState(
     viewId: String,
+    componentType: String,
     timeline: List[TimelineEntry] = List.empty,
     connectionStatus: ConnectionStatus = ConnectionStatus.Connected,
     metrics: PerformanceMetrics = PerformanceMetrics()

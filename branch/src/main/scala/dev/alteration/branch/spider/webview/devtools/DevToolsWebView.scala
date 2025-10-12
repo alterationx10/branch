@@ -227,6 +227,9 @@ class DevToolsWebView extends WebView[DevToolsUIState, DevToolsEvent] {
               attr("wv-click") := s"select-view-$viewId"
             )(
               div(style := "font-weight: bold; margin-bottom: 4px;")(
+                Html.Text(devToolsState.componentType)
+              ),
+              div(style := "font-size: 0.75rem; opacity: 0.8; margin-bottom: 2px;")(
                 Html.Text(viewId.take(12) + "...")
               ),
               div(style := "font-size: 0.75rem; opacity: 0.8;")(
