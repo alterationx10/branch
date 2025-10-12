@@ -1,5 +1,6 @@
-package dev.alteration.branch.spider.webview
+package dev.alteration.branch.testkit.fixtures
 
+import dev.alteration.branch.spider.webview.{Session, WebView}
 import munit.FunSuite
 
 /** Base trait for testing WebViews.
