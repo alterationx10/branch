@@ -13,8 +13,8 @@ The docs (so far ™️) are on: https://branch.alteration.dev
 _Branch_ is made up of a collection of modules, each focusing on different parts:
 
 - **[Lzy](/lzy)** - Lazy Futures or Tiny Effects?
-- **[Spider](/spider)** - A wrapper/framework around the Java HttpServer, as well as HttpClient helpers and a Web Socket
-  Server implementation
+- **[Spider](/spider)** - A wrapper/framework around the Java HttpServer, as well as
+  HttpClient helpers, a Web Socket Server implementation, and a server-side reactive UI framework named WebView
 - **[Piggy](/piggy)** - A SQL framework around java.sql
 - **[Friday](/friday)** - A JSON library, because Scala doesn't already have enough
 - **[Macaroni](/macaroni)** - Some reusable helpers and meta-programming utilities
