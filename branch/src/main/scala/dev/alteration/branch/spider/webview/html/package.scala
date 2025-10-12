@@ -174,6 +174,7 @@ def escape(text: String): String =
 // === Helper Extensions ===
 
 extension (html: Html) {
+
   /** Render this HTML to a string. */
   def asString: String = html.render
 
@@ -189,6 +190,7 @@ extension (html: Html) {
 }
 
 extension (attrs: List[Attr]) {
+
   /** Add an attribute to a list of attributes. */
   def +(attr: Attr): List[Attr] = attrs :+ attr
 
@@ -197,6 +199,7 @@ extension (attrs: List[Attr]) {
 }
 
 extension (htmlList: List[Html]) {
+
   /** Join HTML elements with a separator.
     *
     * {{{
