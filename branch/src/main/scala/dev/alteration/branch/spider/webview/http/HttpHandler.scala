@@ -1,4 +1,4 @@
-package dev.alteration.branch.spider.http
+package dev.alteration.branch.spider.webview.http
 
 import java.io.PrintWriter
 import java.net.Socket

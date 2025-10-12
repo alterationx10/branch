@@ -1,6 +1,6 @@
 package dev.alteration.branch.spider.webview
 
-import dev.alteration.branch.spider.http.{HttpHandler, HttpResponse}
+import dev.alteration.branch.spider.webview.http.{HttpHandler, HttpResponse}
 import java.net.Socket
 
 /** An HTTP handler that serves the initial HTML page for a WebView.

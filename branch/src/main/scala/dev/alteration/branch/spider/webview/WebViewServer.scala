@@ -2,7 +2,7 @@ package dev.alteration.branch.spider.webview
 
 import dev.alteration.branch.keanu.actors.ActorSystem
 import dev.alteration.branch.spider.websocket.{WebSocketServer, WebSocketHandler, WebSocketConnection, WebSocketHandshake}
-import dev.alteration.branch.spider.http.{HttpHandler, HttpResponse, ResourceServer}
+import dev.alteration.branch.spider.webview.http.{HttpHandler, HttpResponse, ResourceServer}
 import java.io.{BufferedReader, InputStreamReader}
 import java.net.{ServerSocket, Socket}
 import scala.concurrent.{ExecutionContext, Future}
