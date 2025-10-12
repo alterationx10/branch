@@ -31,8 +31,8 @@ object MustachioHelpers {
 
   /** Render a Mustachio template with the given context.
     *
-    * The result is wrapped in Html.Raw to preserve the HTML structure.
-    * Note: This does NOT escape HTML in the template, so be careful with
+    * The result is wrapped in Html.Raw to preserve the HTML structure. Note:
+    * This does NOT escape HTML in the template, so be careful with
     * user-generated content. Use {{escaped}} syntax in templates for safety.
     *
     * @param template
@@ -49,7 +49,7 @@ object MustachioHelpers {
       context: Map[String, Any] = Map.empty,
       partials: Map[String, String] = Map.empty
   ): Html = {
-    val stacheContext = contextToStache(context)
+    val stacheContext  = contextToStache(context)
     val stachePartials = partialsToStache(partials)
 
     val rendered = Mustachio.render(
@@ -85,14 +85,15 @@ object MustachioHelpers {
 
   /** Convert a context map to a Stache object.
     *
-    * This handles common Scala types and converts them to Stache representation:
-    * - String -> Stache.Str
-    * - Int/Long/Double -> Stache.Str (formatted as string)
-    * - Boolean -> Stache.Str ("true"/"false")
-    * - List/Seq -> Stache.Arr
-    * - Map -> Stache.Obj
-    * - None/null -> Stache.Null
-    * - Some(value) -> converted value
+    * This handles common Scala types and converts them to Stache
+    * representation:
+    *   - String -> Stache.Str
+    *   - Int/Long/Double -> Stache.Str (formatted as string)
+    *   - Boolean -> Stache.Str ("true"/"false")
+    *   - List/Seq -> Stache.Arr
+    *   - Map -> Stache.Obj
+    *   - None/null -> Stache.Null
+    *   - Some(value) -> converted value
     *
     * @param context
     *   The context map
@@ -107,24 +108,24 @@ object MustachioHelpers {
 
   /** Convert a value to Stache representation. */
   private def toStache(value: Any): Stache = value match {
-    case null => Stache.Null
-    case None => Stache.Null
-    case Some(v) => toStache(v)
-    case s: String => Stache.Str(s)
-    case i: Int => Stache.Str(i.toString)
-    case l: Long => Stache.Str(l.toString)
-    case d: Double => Stache.Str(d.toString)
-    case f: Float => Stache.Str(f.toString)
-    case b: Boolean => Stache.Str(b.toString)
-    case list: List[?] => Stache.Arr(list.map(toStache))
-    case seq: Seq[?] => Stache.Arr(seq.toList.map(toStache))
+    case null           => Stache.Null
+    case None           => Stache.Null
+    case Some(v)        => toStache(v)
+    case s: String      => Stache.Str(s)
+    case i: Int         => Stache.Str(i.toString)
+    case l: Long        => Stache.Str(l.toString)
+    case d: Double      => Stache.Str(d.toString)
+    case f: Float       => Stache.Str(f.toString)
+    case b: Boolean     => Stache.Str(b.toString)
+    case list: List[?]  => Stache.Arr(list.map(toStache))
+    case seq: Seq[?]    => Stache.Arr(seq.toList.map(toStache))
     case map: Map[?, ?] =>
       val stringMap = map.map { case (k, v) =>
         k.toString -> toStache(v)
       }
       Stache.Obj(stringMap)
-    case json: Json => Stache.fromJson(json)
-    case other => Stache.Str(other.toString)
+    case json: Json     => Stache.fromJson(json)
+    case other          => Stache.Str(other.toString)
   }
 
   /** Convert a partials map to Stache representation. */

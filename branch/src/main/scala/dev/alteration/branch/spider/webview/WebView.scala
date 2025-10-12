@@ -46,7 +46,8 @@ import dev.alteration.branch.keanu.actors.ActorSystem
   * @tparam State
   *   The type of state this WebView maintains
   * @tparam Event
-  *   The type of events this WebView handles (use String for backward compatibility)
+  *   The type of events this WebView handles (use String for backward
+  *   compatibility)
   */
 trait WebView[State, Event] {
 
@@ -67,11 +68,11 @@ trait WebView[State, Event] {
   /** Handle events sent from the client.
     *
     * Events are triggered by user interactions in the browser (clicks, form
-    * changes, etc.) and sent to the server over WebSocket, then decoded
-    * into strongly-typed events.
+    * changes, etc.) and sent to the server over WebSocket, then decoded into
+    * strongly-typed events.
     *
-    * The compiler enforces exhaustiveness checking when pattern matching
-    * on sealed trait events, ensuring all event cases are handled.
+    * The compiler enforces exhaustiveness checking when pattern matching on
+    * sealed trait events, ensuring all event cases are handled.
     *
     * @param event
     *   The typed event (e.g., Increment, SetName("Alice"))
@@ -125,12 +126,12 @@ trait WebView[State, Event] {
   /** Called immediately after the WebView is mounted with initial state.
     *
     * Use this to run side effects like:
-    * - Subscribing to pub/sub topics
-    * - Starting timers
-    * - Loading additional data asynchronously
+    *   - Subscribing to pub/sub topics
+    *   - Starting timers
+    *   - Loading additional data asynchronously
     *
-    * This hook has access to the WebView context, allowing you to send
-    * messages to self or interact with the actor system.
+    * This hook has access to the WebView context, allowing you to send messages
+    * to self or interact with the actor system.
     *
     * @param state
     *   The initial state after mount
@@ -142,9 +143,9 @@ trait WebView[State, Event] {
   /** Called before an event is processed.
     *
     * Use this for:
-    * - Logging/debugging events
-    * - Authorization checks
-    * - Pre-processing event data
+    *   - Logging/debugging events
+    *   - Authorization checks
+    *   - Pre-processing event data
     *
     * @param event
     *   The event about to be processed
@@ -153,14 +154,18 @@ trait WebView[State, Event] {
     * @param context
     *   The WebView context
     */
-  def beforeUpdate(event: Event, state: State, context: WebViewContext): Unit = {}
+  def beforeUpdate(
+      event: Event,
+      state: State,
+      context: WebViewContext
+  ): Unit = {}
 
   /** Called after an event has been processed and state has been updated.
     *
     * Use this for:
-    * - Side effects based on state changes
-    * - Triggering async operations
-    * - Broadcasting updates to other actors
+    *   - Side effects based on state changes
+    *   - Triggering async operations
+    *   - Broadcasting updates to other actors
     *
     * @param event
     *   The event that was processed
@@ -171,16 +176,22 @@ trait WebView[State, Event] {
     * @param context
     *   The WebView context
     */
-  def afterUpdate(event: Event, oldState: State, newState: State, context: WebViewContext): Unit = {}
+  def afterUpdate(
+      event: Event,
+      oldState: State,
+      newState: State,
+      context: WebViewContext
+  ): Unit = {}
 
   /** Called before rendering, allowing state transformation.
     *
     * Use this for:
-    * - Adding computed/derived fields for rendering
-    * - Transforming state for display
-    * - Temporary view-specific state modifications
+    *   - Adding computed/derived fields for rendering
+    *   - Transforming state for display
+    *   - Temporary view-specific state modifications
     *
-    * Note: This should NOT have side effects. Only transform state for rendering.
+    * Note: This should NOT have side effects. Only transform state for
+    * rendering.
     *
     * @param state
     *   The current state
@@ -193,14 +204,14 @@ trait WebView[State, Event] {
 
   /** Called when an error occurs during event handling or rendering.
     *
-    * This allows the WebView to recover from errors gracefully by returning
-    * a new state. Return None to use the current state unchanged.
+    * This allows the WebView to recover from errors gracefully by returning a
+    * new state. Return None to use the current state unchanged.
     *
     * Use this for:
-    * - Logging errors with context
-    * - Recovering to a safe state
-    * - Clearing problematic data
-    * - Setting error flags in state
+    *   - Logging errors with context
+    *   - Recovering to a safe state
+    *   - Clearing problematic data
+    *   - Setting error flags in state
     *
     * @param error
     *   The error that occurred
@@ -211,12 +222,16 @@ trait WebView[State, Event] {
     * @return
     *   Optional new state to recover to, or None to keep current state
     */
-  def onError(error: Throwable, state: State, phase: ErrorPhase): Option[State] = None
+  def onError(
+      error: Throwable,
+      state: State,
+      phase: ErrorPhase
+  ): Option[State] = None
 
   /** Render an error UI when an unrecoverable error occurs.
     *
-    * This is called when onError returns None or when the error boundary
-    * itself throws an error. Override this to provide custom error UI.
+    * This is called when onError returns None or when the error boundary itself
+    * throws an error. Override this to provide custom error UI.
     *
     * @param error
     *   The error that occurred
@@ -228,7 +243,7 @@ trait WebView[State, Event] {
   def renderError(error: Throwable, phase: ErrorPhase): String = {
     val errorMsg = error.getMessage match {
       case null => error.getClass.getSimpleName
-      case msg => msg
+      case msg  => msg
     }
 
     s"""
@@ -261,15 +276,19 @@ trait WebView[State, Event] {
     * @return
     *   true if should retry, false otherwise
     */
-  def shouldRetry(error: Throwable, phase: ErrorPhase, attemptCount: Int): Boolean = false
+  def shouldRetry(
+      error: Throwable,
+      phase: ErrorPhase,
+      attemptCount: Int
+  ): Boolean = false
 }
 
 /** Phase where an error occurred in the WebView lifecycle. */
 enum ErrorPhase(val name: String) {
-  case Mount extends ErrorPhase("Mount")
-  case Event extends ErrorPhase("Event Handling")
-  case Info extends ErrorPhase("Info Handling")
-  case Render extends ErrorPhase("Rendering")
+  case Mount     extends ErrorPhase("Mount")
+  case Event     extends ErrorPhase("Event Handling")
+  case Info      extends ErrorPhase("Info Handling")
+  case Render    extends ErrorPhase("Rendering")
   case Lifecycle extends ErrorPhase("Lifecycle Hook")
 }
 
@@ -297,7 +316,8 @@ case class Session(data: Map[String, Any] = Map.empty) {
   * @param system
   *   The ActorSystem
   * @param sendSelfMsg
-  *   Function to send a message to this WebView (will be received via handleInfo)
+  *   Function to send a message to this WebView (will be received via
+  *   handleInfo)
   */
 case class WebViewContext(
     system: ActorSystem,

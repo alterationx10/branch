@@ -28,8 +28,8 @@ case class Mount(
 
 /** Event from the client.
   *
-  * This message contains a strongly-typed event that has been decoded
-  * from the client's JSON payload using an EventCodec.
+  * This message contains a strongly-typed event that has been decoded from the
+  * client's JSON payload using an EventCodec.
   *
   * @param event
   *   The typed event (e.g., Increment, SetName("Alice"))
@@ -112,8 +112,7 @@ object WebViewProtocol {
           event  <- (json ? "event").strOpt
           target <- (json ? "target").strOpt
           value   = (json ? "value")
-        }
-        yield Event(event, target, value)
+        } yield Event(event, target, value)
       case Some("ping")      => Some(Heartbeat)
       case Some("heartbeat") => Some(Heartbeat)
       case _                 => None

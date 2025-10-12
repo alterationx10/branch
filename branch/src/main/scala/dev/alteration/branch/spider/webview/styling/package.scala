@@ -28,8 +28,10 @@ package object styling {
 
   /** Create a style tag from CSS text.
     *
-    * @param cssText The CSS content
-    * @return An Html.Raw element containing the style tag
+    * @param cssText
+    *   The CSS content
+    * @return
+    *   An Html.Raw element containing the style tag
     */
   def styleTag(cssText: String): Html = {
     Html.Raw(s"<style>\n${cssText.trim}\n</style>")
@@ -37,8 +39,10 @@ package object styling {
 
   /** Create inline styles from property pairs.
     *
-    * @param properties CSS property-value pairs
-    * @return A style attribute string
+    * @param properties
+    *   CSS property-value pairs
+    * @return
+    *   A style attribute string
     */
   def inlineStyle(properties: (String, String)*): String = {
     properties.map { case (prop, value) => s"$prop: $value" }.mkString("; ")

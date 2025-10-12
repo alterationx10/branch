@@ -99,8 +99,9 @@ class WebSocketServer(port: Int, routes: Map[String, WebSocketHandler])(using
 
         // Parse the request path from "GET /path HTTP/1.1"
         val requestPath = requestLine.split(" ") match {
-          case Array(_, path, _) => path.split("\\?").head // Remove query params if any
-          case _ => "/"
+          case Array(_, path, _) =>
+            path.split("\\?").head // Remove query params if any
+          case _                 => "/"
         }
 
         // Find the handler for this path
@@ -182,7 +183,8 @@ ${error.getMessage}"""
 
 object WebSocketServer {
 
-  /** Create and start a WebSocket server with a single handler (backward compatibility)
+  /** Create and start a WebSocket server with a single handler (backward
+    * compatibility)
     *
     * @param port
     *   the port to listen on

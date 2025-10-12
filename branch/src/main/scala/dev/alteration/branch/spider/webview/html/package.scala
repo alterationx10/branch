@@ -5,7 +5,7 @@ package dev.alteration.branch.spider.webview
   * This package provides a Scalatags-inspired DSL for building HTML in a
   * type-safe, composable way with automatic XSS protection.
   *
-  * == Quick Start ==
+  * ==Quick Start==
   *
   * {{{
   * import dev.alteration.branch.spider.webview.html._
@@ -21,7 +21,7 @@ package dev.alteration.branch.spider.webview
   * val htmlString = render(42).render
   * }}}
   *
-  * == Key Features ==
+  * ==Key Features==
   *
   *   - '''Type Safety''': Catch HTML errors at compile time
   *   - '''Automatic Escaping''': XSS protection built-in
@@ -29,15 +29,16 @@ package dev.alteration.branch.spider.webview
   *   - '''WebView Integration''': First-class support for wv-* attributes
   *   - '''Zero Overhead''': Compiles to efficient string operations
   *
-  * == Main Types ==
+  * ==Main Types==
   *
   *   - [[Html]] - Core HTML ADT (Element, Text, Raw, Empty)
   *   - [[Attr]] - HTML attributes with automatic escaping
   *   - [[Tags]] - Element constructors (div, button, input, etc.)
   *   - [[Attributes]] - Attribute builders (cls, id, style, etc.)
-  *   - [[WebViewAttributes]] - WebView event attributes (wvClick, wvChange, etc.)
+  *   - [[WebViewAttributes]] - WebView event attributes (wvClick, wvChange,
+  *     etc.)
   *
-  * == Examples ==
+  * ==Examples==
   *
   * '''Basic Elements:'''
   * {{{
@@ -103,10 +104,10 @@ package object html {
   // import dev.alteration.branch.spider.webview.html.{Html, Attr}
 
   // Export Html constructors
-  export Html.{Element, Text, Raw, Empty, Fragment}
+  export Html.{Element, Empty, Fragment, Raw, Text}
 
   // Export Attr constructors
-  export Attr.{StringAttr, BooleanAttr, EmptyAttr}
+  export Attr.{BooleanAttr, EmptyAttr, StringAttr}
 
   // Element constructors
   export Tags._

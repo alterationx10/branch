@@ -7,14 +7,14 @@ import Html._
   * This module provides higher-level abstractions for frequently-used UI
   * patterns like forms, inputs, buttons, and lists.
   *
-  * == Philosophy ==
+  * ==Philosophy==
   *
   *   - '''Accessible by default''' - Proper ARIA labels and roles
   *   - '''Mobile-friendly''' - Sensible defaults for touch interfaces
   *   - '''Composable''' - Can be combined and customized
   *   - '''Not magic''' - Just functions returning Html
   *
-  * == Usage ==
+  * ==Usage==
   *
   * {{{
   * import dev.alteration.branch.spider.webview.html._
@@ -54,15 +54,16 @@ object Components {
       extraAttrs: Seq[Attr] = Seq.empty
   ): Html = {
     val baseAttrs = List(
-      Attributes.tpe := "text",
-      Attributes.name := name,
-      Attributes.id := name,
-      Attributes.value := currentValue,
+      Attributes.tpe             := "text",
+      Attributes.name            := name,
+      Attributes.id              := name,
+      Attributes.value           := currentValue,
       WebViewAttributes.wvChange := changeEvent
     )
 
-    val placeholderAttr = placeholder.map(p => Attributes.placeholder := p).toList
-    val allAttrs = baseAttrs ++ placeholderAttr ++ extraAttrs
+    val placeholderAttr =
+      placeholder.map(p => Attributes.placeholder := p).toList
+    val allAttrs        = baseAttrs ++ placeholderAttr ++ extraAttrs
 
     Element("input", allAttrs, Nil)
   }
@@ -88,15 +89,16 @@ object Components {
       extraAttrs: Seq[Attr] = Seq.empty
   ): Html = {
     val baseAttrs = List(
-      Attributes.tpe := "email",
-      Attributes.name := name,
-      Attributes.id := name,
-      Attributes.value := currentValue,
+      Attributes.tpe             := "email",
+      Attributes.name            := name,
+      Attributes.id              := name,
+      Attributes.value           := currentValue,
       WebViewAttributes.wvChange := changeEvent
     )
 
-    val placeholderAttr = placeholder.map(p => Attributes.placeholder := p).toList
-    val allAttrs = baseAttrs ++ placeholderAttr ++ extraAttrs
+    val placeholderAttr =
+      placeholder.map(p => Attributes.placeholder := p).toList
+    val allAttrs        = baseAttrs ++ placeholderAttr ++ extraAttrs
 
     Element("input", allAttrs, Nil)
   }
@@ -122,15 +124,16 @@ object Components {
       extraAttrs: Seq[Attr] = Seq.empty
   ): Html = {
     val baseAttrs = List(
-      Attributes.tpe := "password",
-      Attributes.name := name,
-      Attributes.id := name,
-      Attributes.value := currentValue,
+      Attributes.tpe             := "password",
+      Attributes.name            := name,
+      Attributes.id              := name,
+      Attributes.value           := currentValue,
       WebViewAttributes.wvChange := changeEvent
     )
 
-    val placeholderAttr = placeholder.map(p => Attributes.placeholder := p).toList
-    val allAttrs = baseAttrs ++ placeholderAttr ++ extraAttrs
+    val placeholderAttr =
+      placeholder.map(p => Attributes.placeholder := p).toList
+    val allAttrs        = baseAttrs ++ placeholderAttr ++ extraAttrs
 
     Element("input", allAttrs, Nil)
   }
@@ -162,10 +165,10 @@ object Components {
       extraAttrs: Seq[Attr] = Seq.empty
   ): Html = {
     val baseAttrs = List(
-      Attributes.tpe := "number",
-      Attributes.name := name,
-      Attributes.id := name,
-      Attributes.value := currentValue,
+      Attributes.tpe             := "number",
+      Attributes.name            := name,
+      Attributes.id              := name,
+      Attributes.value           := currentValue,
       WebViewAttributes.wvChange := changeEvent
     )
 
@@ -204,14 +207,15 @@ object Components {
       extraAttrs: Seq[Attr] = Seq.empty
   ): Html = {
     val baseAttrs = List(
-      Attributes.name := name,
-      Attributes.id := name,
-      Attributes.attr("rows") := rows.toString,
+      Attributes.name            := name,
+      Attributes.id              := name,
+      Attributes.attr("rows")    := rows.toString,
       WebViewAttributes.wvChange := changeEvent
     )
 
-    val placeholderAttr = placeholder.map(p => Attributes.placeholder := p).toList
-    val allAttrs = baseAttrs ++ placeholderAttr ++ extraAttrs
+    val placeholderAttr =
+      placeholder.map(p => Attributes.placeholder := p).toList
+    val allAttrs        = baseAttrs ++ placeholderAttr ++ extraAttrs
 
     Element("textarea", allAttrs, List(Text(currentValue)))
   }
@@ -237,10 +241,10 @@ object Components {
       extraAttrs: Seq[Attr] = Seq.empty
   ): Html = {
     val checkboxAttrs = List(
-      Attributes.tpe := "checkbox",
-      Attributes.name := name,
-      Attributes.id := name,
-      Attributes.checked := isChecked,
+      Attributes.tpe            := "checkbox",
+      Attributes.name           := name,
+      Attributes.id             := name,
+      Attributes.checked        := isChecked,
       WebViewAttributes.wvClick := clickEvent
     ) ++ extraAttrs
 
@@ -253,7 +257,7 @@ object Components {
           List(Attributes.attr("for") := name),
           List(checkboxElem, Text(" "), Text(label))
         )
-      case None =>
+      case None        =>
         checkboxElem
     }
   }
@@ -281,13 +285,13 @@ object Components {
       labelText: Option[String] = None,
       extraAttrs: Seq[Attr] = Seq.empty
   ): Html = {
-    val radioId = s"$name-$value"
+    val radioId    = s"$name-$value"
     val radioAttrs = List(
-      Attributes.tpe := "radio",
-      Attributes.name := name,
-      Attributes.id := radioId,
-      Attributes.value := value,
-      Attributes.checked := isSelected,
+      Attributes.tpe            := "radio",
+      Attributes.name           := name,
+      Attributes.id             := radioId,
+      Attributes.value          := value,
+      Attributes.checked        := isSelected,
       WebViewAttributes.wvClick := clickEvent
     ) ++ extraAttrs
 
@@ -300,7 +304,7 @@ object Components {
           List(Attributes.attr("for") := radioId),
           List(radioElem, Text(" "), Text(label))
         )
-      case None =>
+      case None        =>
         radioElem
     }
   }
@@ -326,15 +330,15 @@ object Components {
       extraAttrs: Seq[Attr] = Seq.empty
   ): Html = {
     val selectAttrs = List(
-      Attributes.name := name,
-      Attributes.id := name,
+      Attributes.name            := name,
+      Attributes.id              := name,
       WebViewAttributes.wvChange := changeEvent
     ) ++ extraAttrs
 
     val optionElements = options.map { case (value, label) =>
-      val isSelected = value == selectedValue
+      val isSelected  = value == selectedValue
       val optionAttrs = List(
-        Attributes.value := value,
+        Attributes.value    := value,
         Attributes.selected := isSelected
       )
       Element("option", optionAttrs, List(Text(label)))
@@ -369,9 +373,13 @@ object Components {
     * @param extraAttrs
     *   Additional attributes to add
     */
-  def clickButton(label: String, clickEvent: String, extraAttrs: Seq[Attr] = Seq.empty): Html = {
+  def clickButton(
+      label: String,
+      clickEvent: String,
+      extraAttrs: Seq[Attr] = Seq.empty
+  ): Html = {
     val attrs = List(
-      Attributes.tpe := "button",
+      Attributes.tpe            := "button",
       WebViewAttributes.wvClick := clickEvent
     ) ++ extraAttrs
 
@@ -398,8 +406,8 @@ object Components {
       extraAttrs: Seq[Attr] = Seq.empty
   ): Html = {
     val attrs = List(
-      Attributes.tpe := "button",
-      WebViewAttributes.wvClick := clickEvent,
+      Attributes.tpe             := "button",
+      WebViewAttributes.wvClick  := clickEvent,
       WebViewAttributes.wvTarget := targetValue
     ) ++ extraAttrs
 
@@ -492,7 +500,11 @@ object Components {
     */
   def container(
       children: Html*
-  )(maxWidth: Option[String] = None, padding: Option[String] = None, extraAttrs: Seq[Attr] = Seq.empty): Html = {
+  )(
+      maxWidth: Option[String] = None,
+      padding: Option[String] = None,
+      extraAttrs: Seq[Attr] = Seq.empty
+  ): Html = {
     val styleProps = List(
       maxWidth.map("max-width" -> _),
       padding.map("padding" -> _),
@@ -533,7 +545,7 @@ object Components {
       extraAttrs: Seq[Attr] = Seq.empty
   ): Html = {
     val styleProps = List(
-      Some("display" -> "flex"),
+      Some("display"        -> "flex"),
       Some("flex-direction" -> direction),
       gap.map("gap" -> _),
       justifyContent.map("justify-content" -> _),

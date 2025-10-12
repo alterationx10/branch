@@ -19,7 +19,8 @@ import scala.util.{Try, Using}
   * }}}
   *
   * @param resourceBasePath
-  *   The base path in the resources directory (without leading slash in resources)
+  *   The base path in the resources directory (without leading slash in
+  *   resources)
   * @param stripPrefix
   *   Optional prefix to strip from request paths (e.g., "/static")
   */
@@ -37,7 +38,7 @@ class ResourceServer(
     val actualPath = stripPrefix match {
       case Some(prefix) if path.startsWith(prefix) =>
         path.substring(prefix.length)
-      case _ => path
+      case _                                       => path
     }
 
     // Build resource path (remove leading slash)
@@ -75,20 +76,20 @@ class ResourceServer(
   private def getContentType(path: String): String = {
     val extension = path.split("\\.").lastOption.map(_.toLowerCase)
     extension match {
-      case Some("html") => "text/html; charset=utf-8"
-      case Some("css")  => "text/css; charset=utf-8"
-      case Some("js")   => "application/javascript; charset=utf-8"
-      case Some("json") => "application/json; charset=utf-8"
-      case Some("png")  => "image/png"
+      case Some("html")               => "text/html; charset=utf-8"
+      case Some("css")                => "text/css; charset=utf-8"
+      case Some("js")                 => "application/javascript; charset=utf-8"
+      case Some("json")               => "application/json; charset=utf-8"
+      case Some("png")                => "image/png"
       case Some("jpg") | Some("jpeg") => "image/jpeg"
-      case Some("gif")  => "image/gif"
-      case Some("svg")  => "image/svg+xml"
-      case Some("ico")  => "image/x-icon"
-      case Some("woff") => "font/woff"
-      case Some("woff2") => "font/woff2"
-      case Some("ttf")  => "font/ttf"
-      case Some("eot")  => "application/vnd.ms-fontobject"
-      case _            => "application/octet-stream"
+      case Some("gif")                => "image/gif"
+      case Some("svg")                => "image/svg+xml"
+      case Some("ico")                => "image/x-icon"
+      case Some("woff")               => "font/woff"
+      case Some("woff2")              => "font/woff2"
+      case Some("ttf")                => "font/ttf"
+      case Some("eot")                => "application/vnd.ms-fontobject"
+      case _                          => "application/octet-stream"
     }
   }
 }
@@ -98,13 +99,17 @@ object ResourceServer {
   /** Create a resource server with a base path.
     *
     * @param resourceBasePath
-    *   The base path in resources (e.g., "static" for src/main/resources/static/)
+    *   The base path in resources (e.g., "static" for
+    *   src/main/resources/static/)
     * @param stripPrefix
     *   Optional prefix to strip from request paths
     * @return
     *   A new ResourceServer instance
     */
-  def apply(resourceBasePath: String, stripPrefix: Option[String] = None): ResourceServer = {
+  def apply(
+      resourceBasePath: String,
+      stripPrefix: Option[String] = None
+  ): ResourceServer = {
     new ResourceServer(resourceBasePath, stripPrefix)
   }
 }

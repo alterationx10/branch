@@ -217,8 +217,8 @@ object Attributes {
     * }}}
     */
   def classWhen(conditions: (String, Boolean)*): Attr = {
-    val activeClasses = conditions.collect {
-      case (name, true) => name
+    val activeClasses = conditions.collect { case (name, true) =>
+      name
     }
     if (activeClasses.isEmpty) EmptyAttr
     else cls := activeClasses.mkString(" ")
@@ -254,8 +254,8 @@ object Attributes {
     * }}}
     */
   def styleWhen(properties: (String, String, Boolean)*): Attr = {
-    val activeStyles = properties.collect {
-      case (key, value, true) => (key, value)
+    val activeStyles = properties.collect { case (key, value, true) =>
+      (key, value)
     }
     if (activeStyles.isEmpty) EmptyAttr
     else styles(activeStyles*)

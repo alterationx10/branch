@@ -211,15 +211,15 @@ object JsonEncoder {
   /** Encoder for sum types (sealed traits/enums).
     *
     * Encodes ADTs using a tagged union with a "type" field:
-    * - Case objects: { "type": "Increment" }
-    * - Case classes: { "type": "SetCount", "value": 42 }
+    *   - Case objects: { "type": "Increment" }
+    *   - Case classes: { "type": "SetCount", "value": 42 }
     */
   protected class DerivedSumJsonEncoder[A](using
       s: Mirror.SumOf[A],
       encoders: List[JsonEncoder[?]]
   ) extends JsonEncoder[A] {
     def encode(a: A): Json = {
-      val ord = s.ordinal(a)
+      val ord     = s.ordinal(a)
       val encoder = encoders(ord).asInstanceOf[JsonEncoder[Any]]
 
       // Get the type name from the value's class
@@ -230,7 +230,7 @@ object JsonEncoder {
         case JsonObject(fields) =>
           // Case class: merge type field with fields
           JsonObject(fields + ("type" -> JsonString(typeName)))
-        case _ =>
+        case _                  =>
           // Case object or simple value: just add type field
           JsonObject(Map("type" -> JsonString(typeName)))
       }
@@ -239,7 +239,7 @@ object JsonEncoder {
 
   inline given derived[A](using m: Mirror.Of[A]): JsonEncoder[A] = {
     inline m match {
-      case s: Mirror.SumOf[A] =>
+      case s: Mirror.SumOf[A]     =>
         new DerivedSumJsonEncoder[A](using
           s,
           summonHigherListOf[s.MirroredElemTypes, JsonEncoder]

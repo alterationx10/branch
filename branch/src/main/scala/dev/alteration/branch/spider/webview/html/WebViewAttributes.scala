@@ -6,8 +6,8 @@ import scala.reflect.ClassTag
 /** WebView-specific HTML attributes.
   *
   * These attributes enable reactive, server-side event handling in Branch
-  * WebView. When a user interacts with an element that has a WebView
-  * attribute, an event is sent to the server over WebSocket.
+  * WebView. When a user interacts with an element that has a WebView attribute,
+  * an event is sent to the server over WebSocket.
   *
   * Example with string events (backward compatible):
   * {{{
@@ -50,8 +50,8 @@ object WebViewAttributes {
     /** Create a WebView event attribute from a typed event.
       *
       * This extracts the event type name and uses it as the event identifier.
-      * For case objects, it uses the simple class name.
-      * For case classes, it uses the class name (parameters are sent separately).
+      * For case objects, it uses the simple class name. For case classes, it
+      * uses the class name (parameters are sent separately).
       *
       * @param event
       *   The typed event to send to the server
@@ -266,7 +266,7 @@ object WebViewAttributes {
     */
   def wvClickTarget(eventName: String, targetValue: String): List[Attr] = {
     List(
-      wvClick := eventName,
+      wvClick  := eventName,
       wvTarget := targetValue
     )
   }
@@ -296,7 +296,7 @@ object WebViewAttributes {
     */
   def wvDebounceInput(eventName: String, delayMs: Int): List[Attr] = {
     List(
-      wvInput := eventName,
+      wvInput    := eventName,
       wvDebounce := delayMs.toString
     )
   }
@@ -311,7 +311,7 @@ object WebViewAttributes {
     */
   def wvThrottleClick(eventName: String, intervalMs: Int): List[Attr] = {
     List(
-      wvClick := eventName,
+      wvClick    := eventName,
       wvThrottle := intervalMs.toString
     )
   }

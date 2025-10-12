@@ -4,8 +4,8 @@ import munit.FunSuite
 
 /** Base trait for testing WebViews.
   *
-  * Provides helper methods for testing WebView components without needing
-  * a full server setup or WebSocket connections.
+  * Provides helper methods for testing WebView components without needing a
+  * full server setup or WebSocket connections.
   *
   * Example:
   * {{{
@@ -104,8 +104,8 @@ trait WebViewSuite extends FunSuite {
 
   /** Render the WebView with the given state.
     *
-    * This calls render on the WebView with the given state, applying
-    * the beforeRender hook first.
+    * This calls render on the WebView with the given state, applying the
+    * beforeRender hook first.
     *
     * @param webView
     *   The WebView
@@ -268,8 +268,8 @@ trait WebViewSuite extends FunSuite {
       session: Session = Session()
   ): (State, String) = {
     val initialState = mount(webView, params, session)
-    val finalState = sendEvents(webView, initialState, events)
-    val html = render(webView, finalState)
+    val finalState   = sendEvents(webView, initialState, events)
+    val html         = render(webView, finalState)
     (finalState, html)
   }
 }

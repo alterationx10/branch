@@ -2,13 +2,14 @@ package dev.alteration.branch.spider.webview.devtools
 
 import java.time.Instant
 
-/** DevTools for Branch WebView - provides debugging and monitoring capabilities.
+/** DevTools for Branch WebView - provides debugging and monitoring
+  * capabilities.
   *
   * Features:
-  * - State timeline inspector
-  * - Event log viewer
-  * - Performance metrics
-  * - WebSocket connection status
+  *   - State timeline inspector
+  *   - Event log viewer
+  *   - Performance metrics
+  *   - WebSocket connection status
   */
 
 /** A single entry in the DevTools timeline.
@@ -60,14 +61,19 @@ case class DevToolsState(
   }
 
   /** Add a timeline entry for an event. */
-  def recordEvent(event: Any, oldState: Any, newState: Any, renderTimeMs: Long): DevToolsState = {
+  def recordEvent(
+      event: Any,
+      oldState: Any,
+      newState: Any,
+      renderTimeMs: Long
+  ): DevToolsState = {
     val entry = TimelineEntry(
       timestamp = Instant.now(),
       eventType = "Event",
       data = Map(
-        "event" -> event.toString,
-        "oldState" -> oldState.toString,
-        "newState" -> newState.toString,
+        "event"        -> event.toString,
+        "oldState"     -> oldState.toString,
+        "newState"     -> newState.toString,
         "renderTimeMs" -> renderTimeMs
       )
     )
@@ -83,7 +89,7 @@ case class DevToolsState(
       timestamp = Instant.now(),
       eventType = "Info",
       data = Map(
-        "message" -> msg.toString,
+        "message"  -> msg.toString,
         "oldState" -> oldState.toString,
         "newState" -> newState.toString
       )

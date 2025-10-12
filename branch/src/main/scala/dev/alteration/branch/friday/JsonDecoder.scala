@@ -249,8 +249,8 @@ object JsonDecoder {
   /** Decoder for sum types (sealed traits/enums).
     *
     * Decodes ADTs using a tagged union with a "type" field:
-    * - Case objects: { "type": "Increment" }
-    * - Case classes: { "type": "SetCount", "value": 42 }
+    *   - Case objects: { "type": "Increment" }
+    *   - Case classes: { "type": "SetCount", "value": 42 }
     */
   protected class DerivedSumJsonDecoder[A](using
       decoders: List[JsonDecoder[?]],
@@ -259,22 +259,23 @@ object JsonDecoder {
     def decode(json: Json): Try[A] = {
       Try {
         val underlying = json.asInstanceOf[JsonObject].value
-        val typeName = underlying.get("type") match {
+        val typeName   = underlying.get("type") match {
           case Some(Json.JsonString(name)) => name
-          case _ => throw new Exception("Missing or invalid 'type' field in sum type")
+          case _                           =>
+            throw new Exception("Missing or invalid 'type' field in sum type")
         }
 
         // Find the decoder for this type
         typeLabels.indexOf(typeName) match {
-          case -1 =>
+          case -1  =>
             throw new Exception(
               s"Unknown type '$typeName' for sum type. Expected one of: ${typeLabels.mkString(", ")}"
             )
           case idx =>
-            val decoder = decoders(idx).asInstanceOf[JsonDecoder[Any]]
+            val decoder         = decoders(idx).asInstanceOf[JsonDecoder[Any]]
             // Remove the "type" field before decoding the value
             val remainingFields = underlying - "type"
-            val valueJson = if (remainingFields.isEmpty) {
+            val valueJson       = if (remainingFields.isEmpty) {
               // Case object with no fields - use empty object
               JsonObject(Map.empty)
             } else {
@@ -290,7 +291,7 @@ object JsonDecoder {
 
   inline given derived[A](using m: Mirror.Of[A]): JsonDecoder[A] = {
     inline m match {
-      case s: Mirror.SumOf[A] =>
+      case s: Mirror.SumOf[A]     =>
         new DerivedSumJsonDecoder[A](using
           summonHigherListOf[s.MirroredElemTypes, JsonDecoder],
           summonListOfValuesAs[s.MirroredElemLabels, String]

@@ -250,9 +250,9 @@ object Tags {
   given Conversion[String, Html] = Text(_)
 
   /** Automatically convert numbers to Text nodes. */
-  given Conversion[Int, Html] = i => Text(i.toString)
-  given Conversion[Long, Html] = l => Text(l.toString)
-  given Conversion[Double, Html] = d => Text(d.toString)
-  given Conversion[Float, Html] = f => Text(f.toString)
+  given Conversion[Int, Html]     = i => Text(i.toString)
+  given Conversion[Long, Html]    = l => Text(l.toString)
+  given Conversion[Double, Html]  = d => Text(d.toString)
+  given Conversion[Float, Html]   = f => Text(f.toString)
   given Conversion[Boolean, Html] = b => Text(b.toString)
 }

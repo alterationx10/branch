@@ -84,7 +84,10 @@ object HttpResponse {
     * @param message
     *   The error message
     */
-  def internalError(socket: Socket, message: String = "Internal Server Error"): Unit = {
+  def internalError(
+      socket: Socket,
+      message: String = "Internal Server Error"
+  ): Unit = {
     sendResponse(socket, 500, "Internal Server Error", "text/plain", message)
   }
 
@@ -108,7 +111,7 @@ object HttpResponse {
       contentType: String,
       content: String
   ): Unit = {
-    val out = new PrintWriter(socket.getOutputStream, true)
+    val out      = new PrintWriter(socket.getOutputStream, true)
     val response = s"""HTTP/1.1 $statusCode $statusText\r
 Content-Type: $contentType\r
 Content-Length: ${content.getBytes("UTF-8").length}\r

@@ -7,9 +7,9 @@ import scala.util.{Failure, Success, Try}
 /** Type-class for encoding and decoding WebView events.
   *
   * EventCodec handles the serialization and deserialization of typed events
-  * between the client and server. Events are sent from the browser as JSON
-  * with an event name and payload, and decoded into strongly-typed ADTs on
-  * the server.
+  * between the client and server. Events are sent from the browser as JSON with
+  * an event name and payload, and decoded into strongly-typed ADTs on the
+  * server.
   *
   * Example:
   * {{{
@@ -34,8 +34,8 @@ trait EventCodec[Event] {
 
   /** Encode an event to a JSON representation.
     *
-    * This converts a strongly-typed event into JSON that can be sent to
-    * the client (typically for testing or server-initiated events).
+    * This converts a strongly-typed event into JSON that can be sent to the
+    * client (typically for testing or server-initiated events).
     *
     * @param event
     *   The event to encode
@@ -46,9 +46,9 @@ trait EventCodec[Event] {
 
   /** Decode an event from a JSON representation.
     *
-    * This converts JSON from the client into a strongly-typed event.
-    * The JSON typically contains an "event" field with the event name
-    * and additional fields for the event payload.
+    * This converts JSON from the client into a strongly-typed event. The JSON
+    * typically contains an "event" field with the event name and additional
+    * fields for the event payload.
     *
     * @param json
     *   The JSON to decode
@@ -67,15 +67,16 @@ trait EventCodec[Event] {
   def decode(jsonStr: String): Try[Event] =
     Json.parse(jsonStr).toOption match {
       case Some(json) => decode(json)
-      case None => Failure(new RuntimeException(s"Failed to parse JSON: $jsonStr"))
+      case None       =>
+        Failure(new RuntimeException(s"Failed to parse JSON: $jsonStr"))
     }
 
   /** Decode an event from the client event format.
     *
     * The client sends events with:
-    * - event: the event name/type
-    * - target: the element ID that triggered the event (optional)
-    * - value: the event payload (optional)
+    *   - event: the event name/type
+    *   - target: the element ID that triggered the event (optional)
+    *   - value: the event payload (optional)
     *
     * This method extracts the event name and payload and attempts to decode
     * them into a strongly-typed event.
@@ -90,6 +91,7 @@ trait EventCodec[Event] {
   def decodeFromClient(eventName: String, payload: Map[String, Any]): Try[Event]
 
   extension (event: Event) {
+
     /** Encode this event to JSON */
     def toJson: Json = encode(event)
 
@@ -102,15 +104,19 @@ object EventCodec {
 
   /** Private implementation of EventCodec that delegates to JsonCodec.
     *
-    * This class exists to avoid duplicating anonymous class definitions
-    * at each inline site where the derived given is used.
+    * This class exists to avoid duplicating anonymous class definitions at each
+    * inline site where the derived given is used.
     */
-  class DerivedEventCodec[Event](jsonCodec: JsonCodec[Event]) extends EventCodec[Event] {
+  class DerivedEventCodec[Event](jsonCodec: JsonCodec[Event])
+      extends EventCodec[Event] {
     def encode(event: Event): Json = jsonCodec.encode(event)
 
     def decode(json: Json): Try[Event] = jsonCodec.decode(json)
 
-    def decodeFromClient(eventName: String, payload: Map[String, Any]): Try[Event] = {
+    def decodeFromClient(
+        eventName: String,
+        payload: Map[String, Any]
+    ): Try[Event] = {
       // Build JSON from event name and payload
       // Client sends: { event: "EventName", target: "...", value: "..." }
       // We construct: { "type": "EventName", ...fields from value if present }
@@ -121,23 +127,24 @@ object EventCodec {
           // Try to parse as JSON to extract fields
           Json.parse(v).toOption match {
             case Some(Json.JsonObject(obj)) => obj
-            case Some(other) => Map("value" -> other) // Single value field
-            case None => Map("value" -> Json.JsonString(v))
+            case Some(other)                => Map("value" -> other) // Single value field
+            case None                       => Map("value" -> Json.JsonString(v))
           }
-        case Some(v) =>
+        case Some(v)                       =>
           // Convert other types to JSON
           Map("value" -> (v match {
-            case i: Int => Json.JsonNumber(i)
-            case d: Double => Json.JsonNumber(d)
+            case i: Int     => Json.JsonNumber(i)
+            case d: Double  => Json.JsonNumber(d)
             case b: Boolean => Json.JsonBool(b)
-            case other => Json.JsonString(other.toString)
+            case other      => Json.JsonString(other.toString)
           }))
-        case None =>
+        case None                          =>
           Map.empty[String, Json]
       }
 
       // Construct the JSON object for decoding with the type field
-      val eventJson = Json.JsonObject(fields + ("type" -> Json.JsonString(eventName)))
+      val eventJson =
+        Json.JsonObject(fields + ("type" -> Json.JsonString(eventName)))
 
       decode(eventJson)
     }
@@ -174,30 +181,36 @@ object EventCodec {
       decodeClientFunc: (String, Map[String, Any]) => Try[Event]
   ): EventCodec[Event] =
     new EventCodec[Event] {
-      def encode(event: Event): Json = encodeFunc(event)
+      def encode(event: Event): Json     = encodeFunc(event)
       def decode(json: Json): Try[Event] = decodeFunc(json)
-      def decodeFromClient(eventName: String, payload: Map[String, Any]): Try[Event] =
+      def decodeFromClient(
+          eventName: String,
+          payload: Map[String, Any]
+      ): Try[Event] =
         decodeClientFunc(eventName, payload)
     }
 
   /** Automatically derive an EventCodec for a sealed trait.
     *
-    * This uses Friday's automatic sum type derivation to generate
-    * encoding and decoding logic for sealed trait ADTs.
+    * This uses Friday's automatic sum type derivation to generate encoding and
+    * decoding logic for sealed trait ADTs.
     *
     * The derived codec encodes events using Friday's tagged union format:
-    * - Case objects: { "type": "ObjectName" }
-    * - Case classes: { "type": "ClassName", "field1": value1, "field2": value2, ... }
+    *   - Case objects: { "type": "ObjectName" }
+    *   - Case classes: { "type": "ClassName", "field1": value1, "field2":
+    *     value2, ... }
     *
-    * For client events, it matches the event name (from the "type" field) to the
-    * ADT case and decodes payload fields into the case class fields.
+    * For client events, it matches the event name (from the "type" field) to
+    * the ADT case and decodes payload fields into the case class fields.
     *
     * @tparam Event
     *   The event type (must be a sealed trait)
     * @return
     *   A derived EventCodec instance
     */
-  inline given derived[Event](using m: Mirror.SumOf[Event]): EventCodec[Event] = {
+  inline given derived[Event](using
+      m: Mirror.SumOf[Event]
+  ): EventCodec[Event] = {
     // Use Friday's JsonCodec which now supports sum types!
     val jsonCodec = JsonCodec.derived[Event]
 
@@ -206,18 +219,21 @@ object EventCodec {
 
   /** EventCodec for String events (for backward compatibility).
     *
-    * This allows using String as the event type, which is useful for
-    * gradually migrating from string-based events to typed events.
+    * This allows using String as the event type, which is useful for gradually
+    * migrating from string-based events to typed events.
     */
   given stringEventCodec: EventCodec[String] = new EventCodec[String] {
     def encode(event: String): Json = Json.JsonString(event)
 
     def decode(json: Json): Try[String] = json match {
       case Json.JsonString(s) => Success(s)
-      case _ => Failure(new RuntimeException(s"Expected string, got: $json"))
+      case _                  => Failure(new RuntimeException(s"Expected string, got: $json"))
     }
 
-    def decodeFromClient(eventName: String, payload: Map[String, Any]): Try[String] =
+    def decodeFromClient(
+        eventName: String,
+        payload: Map[String, Any]
+    ): Try[String] =
       Success(eventName)
   }
 }

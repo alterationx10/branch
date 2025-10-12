@@ -2,7 +2,10 @@ package dev.alteration.branch.spider.webview
 
 import dev.alteration.branch.keanu.actors.{PoisonPill, StatefulActor}
 import dev.alteration.branch.spider.websocket.WebSocketConnection
-import dev.alteration.branch.spider.webview.devtools.{DevToolsState, UpdateDevToolsState}
+import dev.alteration.branch.spider.webview.devtools.{
+  DevToolsState,
+  UpdateDevToolsState
+}
 import scala.util.{Failure, Success, Try}
 import java.util.UUID
 
@@ -67,13 +70,14 @@ case class WebViewActor[State, Event](webView: WebView[State, Event])
   override def statefulOnMsg
       : PartialFunction[WebViewMessage, WebViewActorState[State]] = {
 
-    case Mount(params, session, connection, devToolsActorNameOpt) if !state.mounted =>
+    case Mount(params, session, connection, devToolsActorNameOpt)
+        if !state.mounted =>
       // Initialize the WebView with error boundary
       handleWithErrorBoundary(ErrorPhase.Mount, None, connection) {
         val initialUserState = webView.mount(params, session)
 
         // Initialize DevTools state if devMode is enabled
-        val viewId = UUID.randomUUID().toString
+        val viewId        = UUID.randomUUID().toString
         val componentType = webView.getClass.getSimpleName.stripSuffix("$")
         val devToolsState = devToolsActorNameOpt.map { _ =>
           DevToolsState(viewId, componentType).recordMount(initialUserState)
@@ -88,13 +92,13 @@ case class WebViewActor[State, Event](webView: WebView[State, Event])
         Try(webView.afterMount(initialUserState, ctx)) match {
           case Failure(error) =>
             println(s"Error in afterMount: ${error.getMessage}")
-            // Continue with mount even if afterMount fails
-          case Success(_) => ()
+          // Continue with mount even if afterMount fails
+          case Success(_)     => ()
         }
 
         // Render with beforeRender hook
         val renderState = webView.beforeRender(initialUserState)
-        val html = webView.render(renderState)
+        val html        = webView.render(renderState)
 
         // Send initial HTML to client
         sendHtml(connection, html)
@@ -120,41 +124,60 @@ case class WebViewActor[State, Event](webView: WebView[State, Event])
         case Some(currentUserState) =>
           state.connection match {
             case Some(conn) =>
-              handleWithErrorBoundary(ErrorPhase.Event, Some(currentUserState), conn) {
+              handleWithErrorBoundary(
+                ErrorPhase.Event,
+                Some(currentUserState),
+                conn
+              ) {
                 val ctx = WebViewContext(
                   context.system,
                   msg => context.system.tell(context.self, InfoMessage(msg))
                 )
 
                 // Call beforeUpdate hook
-                Try(webView.beforeUpdate(typedEvent, currentUserState, ctx)) match {
+                Try(
+                  webView.beforeUpdate(typedEvent, currentUserState, ctx)
+                ) match {
                   case Failure(error) =>
                     println(s"Error in beforeUpdate: ${error.getMessage}")
-                  case Success(_) => ()
+                  case Success(_)     => ()
                 }
 
                 // Process the event
-                val startTime = System.currentTimeMillis()
-                val newUserState = webView.handleEvent(typedEvent, currentUserState)
+                val startTime    = System.currentTimeMillis()
+                val newUserState =
+                  webView.handleEvent(typedEvent, currentUserState)
 
                 // Call afterUpdate hook
-                Try(webView.afterUpdate(typedEvent, currentUserState, newUserState, ctx)) match {
+                Try(
+                  webView.afterUpdate(
+                    typedEvent,
+                    currentUserState,
+                    newUserState,
+                    ctx
+                  )
+                ) match {
                   case Failure(error) =>
                     println(s"Error in afterUpdate: ${error.getMessage}")
-                  case Success(_) => ()
+                  case Success(_)     => ()
                 }
 
                 // Render with beforeRender hook
                 val renderState = webView.beforeRender(newUserState)
-                val html = webView.render(renderState)
-                val renderTime = System.currentTimeMillis() - startTime
+                val html        = webView.render(renderState)
+                val renderTime  = System.currentTimeMillis() - startTime
 
                 // Send updated HTML to client
                 sendHtml(conn, html)
 
                 // Update DevTools state
                 val newDevToolsState = state.devToolsState.map { devTools =>
-                  devTools.recordEvent(typedEvent, currentUserState, newUserState, renderTime)
+                  devTools.recordEvent(
+                    typedEvent,
+                    currentUserState,
+                    newUserState,
+                    renderTime
+                  )
                 }
 
                 val newState = state.copy(
@@ -168,7 +191,7 @@ case class WebViewActor[State, Event](webView: WebView[State, Event])
 
                 newState
               }
-            case None =>
+            case None       =>
               println("Warning: Connection lost")
               state
           }
@@ -184,12 +207,16 @@ case class WebViewActor[State, Event](webView: WebView[State, Event])
         case Some(currentUserState) =>
           state.connection match {
             case Some(conn) =>
-              handleWithErrorBoundary(ErrorPhase.Info, Some(currentUserState), conn) {
+              handleWithErrorBoundary(
+                ErrorPhase.Info,
+                Some(currentUserState),
+                conn
+              ) {
                 val newUserState = webView.handleInfo(msg, currentUserState)
 
                 // Render with beforeRender hook
                 val renderState = webView.beforeRender(newUserState)
-                val html = webView.render(renderState)
+                val html        = webView.render(renderState)
 
                 // Send updated HTML to client
                 sendHtml(conn, html)
@@ -210,7 +237,7 @@ case class WebViewActor[State, Event](webView: WebView[State, Event])
 
                 newState
               }
-            case None =>
+            case None       =>
               println("Warning: Connection lost")
               state
           }
@@ -229,7 +256,10 @@ case class WebViewActor[State, Event](webView: WebView[State, Event])
 
       // Update DevTools state with disconnect event
       val updatedDevToolsState = state.devToolsState.map { devTools =>
-        import dev.alteration.branch.spider.webview.devtools.{ConnectionStatus, TimelineEntry}
+        import dev.alteration.branch.spider.webview.devtools.{
+          ConnectionStatus,
+          TimelineEntry
+        }
         import java.time.Instant
 
         val disconnectEntry = TimelineEntry(
@@ -267,9 +297,9 @@ case class WebViewActor[State, Event](webView: WebView[State, Event])
     *   New actor state
     */
   private def handleWithErrorBoundary(
-    phase: ErrorPhase,
-    currentState: Option[State],
-    connection: WebSocketConnection
+      phase: ErrorPhase,
+      currentState: Option[State],
+      connection: WebSocketConnection
   )(block: => WebViewActorState[State]): WebViewActorState[State] = {
     Try(block) match {
       case Success(newState) => newState
@@ -288,13 +318,18 @@ case class WebViewActor[State, Event](webView: WebView[State, Event])
                 // Render recovered state
                 Try {
                   val renderState = webView.beforeRender(recoveredState)
-                  val html = webView.render(renderState)
+                  val html        = webView.render(renderState)
                   sendHtml(connection, html)
                 } match {
-                  case Success(_) =>
-                    state.copy(userState = Some(recoveredState), errorState = None)
+                  case Success(_)           =>
+                    state.copy(
+                      userState = Some(recoveredState),
+                      errorState = None
+                    )
                   case Failure(renderError) =>
-                    println(s"Error rendering recovered state: ${renderError.getMessage}")
+                    println(
+                      s"Error rendering recovered state: ${renderError.getMessage}"
+                    )
                     // Fall through to error UI
                     renderErrorUI(error, phase, connection)
                 }
@@ -324,12 +359,12 @@ case class WebViewActor[State, Event](webView: WebView[State, Event])
     *   Actor state with error recorded
     */
   private def renderErrorUI(
-    error: Throwable,
-    phase: ErrorPhase,
-    connection: WebSocketConnection
+      error: Throwable,
+      phase: ErrorPhase,
+      connection: WebSocketConnection
   ): WebViewActorState[State] = {
     Try(webView.renderError(error, phase)) match {
-      case Success(errorHtml) =>
+      case Success(errorHtml)   =>
         sendHtml(connection, errorHtml)
       case Failure(renderError) =>
         println(s"Error rendering error UI: ${renderError.getMessage}")
@@ -346,7 +381,13 @@ case class WebViewActor[State, Event](webView: WebView[State, Event])
 
     // Update state with error
     state.copy(
-      errorState = Some(ErrorState(error, phase, state.errorState.map(_.attemptCount + 1).getOrElse(1)))
+      errorState = Some(
+        ErrorState(
+          error,
+          phase,
+          state.errorState.map(_.attemptCount + 1).getOrElse(1)
+        )
+      )
     )
   }
 
@@ -366,22 +407,6 @@ case class WebViewActor[State, Event](webView: WebView[State, Event])
     }
   }
 
-  /** Send an error message to the client.
-    *
-    * @param message
-    *   The error message
-    */
-  private def sendError(message: String): Unit = {
-    state.connection.foreach { conn =>
-      val errorMsg = WebViewProtocol.Error(message)
-      conn.sendText(errorMsg.toJson.toJsonString) match {
-        case Success(_)     => // Success
-        case Failure(error) =>
-          println(s"Error: Failed to send error: ${error.getMessage}")
-      }
-    }
-  }
-
   /** Send DevTools update if devMode is enabled.
     *
     * @param actorState
@@ -390,7 +415,7 @@ case class WebViewActor[State, Event](webView: WebView[State, Event])
   private def sendDevToolsUpdate(actorState: WebViewActorState[State]): Unit = {
     for {
       devToolsActorName <- actorState.devToolsActorName
-      devToolsState <- actorState.devToolsState
+      devToolsState     <- actorState.devToolsState
     } {
       Try {
         // Use tellPath to send to the DevTools actor by path
@@ -400,7 +425,7 @@ case class WebViewActor[State, Event](webView: WebView[State, Event])
           InfoMessage(UpdateDevToolsState(devToolsState.viewId, devToolsState))
         )
       } match {
-        case Failure(error) =>
+        case Failure(_) =>
           // DevTools actor might not exist yet if DevTools page isn't open
           // This is expected behavior, so we just silently ignore
           ()

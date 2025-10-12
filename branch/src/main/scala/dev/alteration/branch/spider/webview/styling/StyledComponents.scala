@@ -1,10 +1,11 @@
 package dev.alteration.branch.spider.webview.styling
 
-import dev.alteration.branch.spider.webview.html.{Html, Attr, Attributes}
+import dev.alteration.branch.spider.webview.html.{Attr, Attributes, Html}
 
 /** Styled components for Branch WebView.
   *
-  * Inspired by styled-components, provides a clean API for creating styled HTML elements.
+  * Inspired by styled-components, provides a clean API for creating styled HTML
+  * elements.
   *
   * Example:
   * {{{
@@ -125,17 +126,19 @@ object styled {
 
 /** A styled component that can be used like a regular HTML element. */
 case class StyledComponent(
-  tagName: String,
-  properties: Seq[(String, String)],
-  registry: StyledComponentRegistry
+    tagName: String,
+    properties: Seq[(String, String)],
+    registry: StyledComponentRegistry
 ) {
 
   private val className = registry.register(tagName, properties)
 
   /** Apply attributes and children to create the styled element.
     *
-    * @param attrs Additional HTML attributes
-    * @return A function that accepts children and returns Html
+    * @param attrs
+    *   Additional HTML attributes
+    * @return
+    *   A function that accepts children and returns Html
     */
   def apply(attrs: Attr*)(children: Html*): Html = {
     // For now, just add the class - combining with existing classes would require
@@ -156,11 +159,13 @@ class StyledComponentRegistry {
   import java.util.concurrent.atomic.AtomicInteger
 
   private val idCounter = new AtomicInteger(0)
-  private val styles = scala.collection.mutable.Map.empty[String, String]
+  private val styles    = scala.collection.mutable.Map.empty[String, String]
 
   def register(tagName: String, properties: Seq[(String, String)]): String = {
     val className = s"sc-${idCounter.getAndIncrement()}"
-    val cssText = properties.map { case (prop, value) => s"  $prop: $value;" }.mkString("\n")
+    val cssText   = properties
+      .map { case (prop, value) => s"  $prop: $value;" }
+      .mkString("\n")
     styles(className) = s".$className {\n$cssText\n}"
     className
   }
@@ -180,34 +185,34 @@ trait Theme {
 /** Default theme based on Tailwind CSS colors */
 object DefaultTheme extends Theme {
   val colors = Map(
-    "primary" -> "#667eea",
+    "primary"   -> "#667eea",
     "secondary" -> "#764ba2",
-    "success" -> "#48bb78",
-    "danger" -> "#f56565",
-    "warning" -> "#ed8936",
-    "info" -> "#38b2ac",
-    "light" -> "#f7fafc",
-    "dark" -> "#2d3748",
-    "gray" -> "#a0aec0"
+    "success"   -> "#48bb78",
+    "danger"    -> "#f56565",
+    "warning"   -> "#ed8936",
+    "info"      -> "#38b2ac",
+    "light"     -> "#f7fafc",
+    "dark"      -> "#2d3748",
+    "gray"      -> "#a0aec0"
   )
 
   val spacing = Map(
-    "xs" -> "4px",
-    "sm" -> "8px",
-    "md" -> "16px",
-    "lg" -> "24px",
-    "xl" -> "32px",
+    "xs"  -> "4px",
+    "sm"  -> "8px",
+    "md"  -> "16px",
+    "lg"  -> "24px",
+    "xl"  -> "32px",
     "xxl" -> "48px"
   )
 
   val typography = Map(
-    "xs" -> "0.75rem",
-    "sm" -> "0.875rem",
+    "xs"   -> "0.75rem",
+    "sm"   -> "0.875rem",
     "base" -> "1rem",
-    "lg" -> "1.125rem",
-    "xl" -> "1.25rem",
-    "2xl" -> "1.5rem",
-    "3xl" -> "1.875rem",
-    "4xl" -> "2.25rem"
+    "lg"   -> "1.125rem",
+    "xl"   -> "1.25rem",
+    "2xl"  -> "1.5rem",
+    "3xl"  -> "1.875rem",
+    "4xl"  -> "2.25rem"
   )
 }

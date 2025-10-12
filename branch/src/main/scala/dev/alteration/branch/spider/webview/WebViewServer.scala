@@ -1,8 +1,17 @@
 package dev.alteration.branch.spider.webview
 
 import dev.alteration.branch.keanu.actors.ActorSystem
-import dev.alteration.branch.spider.websocket.{WebSocketServer, WebSocketHandler, WebSocketConnection, WebSocketHandshake}
-import dev.alteration.branch.spider.webview.http.{HttpHandler, HttpResponse, ResourceServer}
+import dev.alteration.branch.spider.websocket.{
+  WebSocketConnection,
+  WebSocketHandler,
+  WebSocketHandshake,
+  WebSocketServer
+}
+import dev.alteration.branch.spider.webview.http.{
+  HttpHandler,
+  HttpResponse,
+  ResourceServer
+}
 import java.io.{BufferedReader, InputStreamReader}
 import java.net.{ServerSocket, Socket}
 import scala.concurrent.{ExecutionContext, Future}
@@ -15,7 +24,7 @@ import ExecutionContext.Implicits.global
   * This provides an ergonomic way to configure and start WebView servers
   * without manually creating ActorSystems, handlers, and routing.
   *
-  * == Quick Start ==
+  * ==Quick Start==
   *
   * {{{
   * import dev.alteration.branch.spider.webview._
@@ -29,7 +38,7 @@ import ExecutionContext.Implicits.global
   * server.stop()
   * }}}
   *
-  * == Advanced Usage ==
+  * ==Advanced Usage==
   *
   * {{{
   * val customActorSystem = ActorSystem()
@@ -42,7 +51,7 @@ import ExecutionContext.Implicits.global
   *   .start(port = 8080)
   * }}}
   *
-  * == DevMode ==
+  * ==DevMode==
   *
   * {{{
   * val server = WebViewServer()
@@ -138,8 +147,8 @@ case class WebViewServer(
 
   /** Enable or disable development mode.
     *
-    * When enabled, adds a DevTools route at /__devtools for monitoring
-    * and debugging WebViews.
+    * When enabled, adds a DevTools route at /__devtools for monitoring and
+    * debugging WebViews.
     *
     * @param enabled
     *   Whether to enable dev mode
@@ -152,13 +161,13 @@ case class WebViewServer(
 
   /** Enable automatic HTML page serving for WebView routes.
     *
-    * When enabled, creates HTTP endpoints that serve HTML pages with
-    * the WebView client JavaScript for each WebView route.
+    * When enabled, creates HTTP endpoints that serve HTML pages with the
+    * WebView client JavaScript for each WebView route.
     *
     * Example: If you have a route at "/counter", this will create:
-    * - HTTP GET /counter - Serves HTML page
-    * - WebSocket /ws/counter - WebView WebSocket endpoint
-    * - HTTP GET /js/webview.js - Serves the WebView client library
+    *   - HTTP GET /counter - Serves HTML page
+    *   - WebSocket /ws/counter - WebView WebSocket endpoint
+    *   - HTTP GET /js/webview.js - Serves the WebView client library
     *
     * @param enabled
     *   Whether to enable HTML serving (default: true)
@@ -171,8 +180,8 @@ case class WebViewServer(
 
   /** Add a custom HTTP route.
     *
-    * This allows you to serve custom pages, static files, or APIs
-    * alongside your WebView routes.
+    * This allows you to serve custom pages, static files, or APIs alongside
+    * your WebView routes.
     *
     * @param path
     *   The HTTP path (e.g., "/api/data")
@@ -187,10 +196,9 @@ case class WebViewServer(
 
   /** Start the WebView server on the specified port.
     *
-    * This creates a server and registers all routes.
-    * If HTML serving is enabled or HTTP routes are configured,
-    * an internal server will handle both HTTP and WebSocket.
-    * Otherwise, a pure WebSocket server is used.
+    * This creates a server and registers all routes. If HTML serving is enabled
+    * or HTTP routes are configured, an internal server will handle both HTTP
+    * and WebSocket. Otherwise, a pure WebSocket server is used.
     *
     * @param port
     *   The port to listen on
@@ -230,10 +238,18 @@ case class WebViewServer(
     val wsHandlers = finalRoutes.map { case (path, route) =>
       if (path == "/__devtools") {
         // DevTools handler: use shared actor name, don't send updates to self
-        path -> createHandler(route, devToolsActorName = None, useSharedActorName = devToolsActorName)
+        path -> createHandler(
+          route,
+          devToolsActorName = None,
+          useSharedActorName = devToolsActorName
+        )
       } else {
         // Regular WebView handler: send updates to DevTools
-        path -> createHandler(route, devToolsActorName = devToolsActorName, useSharedActorName = None)
+        path -> createHandler(
+          route,
+          devToolsActorName = devToolsActorName,
+          useSharedActorName = None
+        )
       }
     }
 
@@ -252,7 +268,8 @@ case class WebViewServer(
 
       // Add resource server for webview.js
       // Strip "/js/" prefix so "/js/webview.js" looks up "spider/webview/webview.js"
-      val resourceServer = ResourceServer("spider/webview", stripPrefix = Some("/js"))
+      val resourceServer =
+        ResourceServer("spider/webview", stripPrefix = Some("/js"))
 
       httpRoutes ++ pageHandlers + ("/js" -> resourceServer)
     } else {
@@ -264,7 +281,9 @@ case class WebViewServer(
     // Decide whether to use internal server or pure WebSocket server
     val server: AutoCloseable = if (finalHttpRoutes.nonEmpty) {
       println("HTTP routes:")
-      finalHttpRoutes.keys.foreach(path => println(s"  http://$host:$port$path"))
+      finalHttpRoutes.keys.foreach(path =>
+        println(s"  http://$host:$port$path")
+      )
       println("WebSocket routes:")
       finalRoutes.keys.foreach(path => println(s"  ws://$host:$port$path"))
 
@@ -272,7 +291,8 @@ case class WebViewServer(
         println(s"[DevMode] DevTools available at ws://$host:$port/__devtools")
       }
 
-      val internalServer = new InternalWebViewServer(port, finalHttpRoutes, wsHandlers)
+      val internalServer =
+        new InternalWebViewServer(port, finalHttpRoutes, wsHandlers)
       Future { internalServer.start() }
       Thread.sleep(100) // Give it a moment to start
       internalServer
@@ -436,9 +456,10 @@ private class InternalWebViewServer(
     port: Int,
     httpRoutes: Map[String, HttpHandler],
     wsRoutes: Map[String, WebSocketHandler]
-)(using ec: ExecutionContext) extends AutoCloseable {
+)(using ec: ExecutionContext)
+    extends AutoCloseable {
 
-  @volatile private var running = false
+  @volatile private var running                  = false
   private var serverSocket: Option[ServerSocket] = None
 
   /** Start the server. */
@@ -461,8 +482,8 @@ private class InternalWebViewServer(
         }
       } catch {
         case _: java.net.SocketException if !running =>
-          // Server was stopped, exit gracefully
-        case e: Exception =>
+        // Server was stopped, exit gracefully
+        case e: Exception                            =>
           println(s"Error accepting connection: ${e.getMessage}")
           e.printStackTrace()
       }
@@ -484,93 +505,107 @@ private class InternalWebViewServer(
       val in = new BufferedReader(new InputStreamReader(socket.getInputStream))
 
       // Read HTTP headers
-      val headers = scala.collection.mutable.Map.empty[String, List[String]]
+      val headers     = scala.collection.mutable.Map.empty[String, List[String]]
       val requestLine = in.readLine()
 
       if (requestLine == null || !requestLine.startsWith("GET")) {
         socket.close()
       } else {
 
-      // Parse the request path from "GET /path HTTP/1.1"
-      val requestPath = requestLine.split(" ") match {
-        case Array(_, path, _) => path.split("\\?").head // Remove query params
-        case _ => "/"
-      }
+        // Parse the request path from "GET /path HTTP/1.1"
+        val requestPath = requestLine.split(" ") match {
+          case Array(_, path, _) =>
+            path.split("\\?").head // Remove query params
+          case _                 => "/"
+        }
 
-      // Read headers until empty line
-      var line = in.readLine()
-      while (line != null && line.nonEmpty) {
-        val colonIndex = line.indexOf(':')
-        if (colonIndex > 0) {
-          val key = line.substring(0, colonIndex).trim
-          val value = line.substring(colonIndex + 1).trim
-          headers.updateWith(key) {
-            case Some(values) => Some(values :+ value)
-            case None => Some(List(value))
+        // Read headers until empty line
+        var line = in.readLine()
+        while (line != null && line.nonEmpty) {
+          val colonIndex = line.indexOf(':')
+          if (colonIndex > 0) {
+            val key   = line.substring(0, colonIndex).trim
+            val value = line.substring(colonIndex + 1).trim
+            headers.updateWith(key) {
+              case Some(values) => Some(values :+ value)
+              case None         => Some(List(value))
+            }
+          }
+          line = in.readLine()
+        }
+
+        val headersMap = headers.toMap
+
+        // Check if this is a WebSocket upgrade request
+        val isWebSocket =
+          WebSocketHandshake.validateHandshake(headersMap).isSuccess
+
+        if (isWebSocket) {
+          // Try to find a WebSocket handler
+          wsRoutes.get(requestPath) match {
+            case Some(wsHandler) =>
+              // Handle WebSocket upgrade
+              WebSocketHandshake.validateHandshake(headersMap) match {
+                case Success(secWebSocketKey) =>
+                  // Send 101 Switching Protocols response
+                  val responseBytes =
+                    WebSocketHandshake.createRawHandshakeResponse(
+                      secWebSocketKey
+                    )
+                  socket.getOutputStream.write(responseBytes)
+                  socket.getOutputStream.flush()
+
+                  // Create WebSocket connection and handle it
+                  val wsConnection = WebSocketConnection(socket)
+                  WebSocketHandler.handleConnection(wsHandler, wsConnection)
+
+                case Failure(handshakeError) =>
+                  HttpResponse.internalError(
+                    socket,
+                    s"WebSocket handshake failed: ${handshakeError.getMessage}"
+                  )
+                  socket.close()
+              }
+
+            case None =>
+              HttpResponse.notFound(
+                socket,
+                s"WebSocket route not found: $requestPath"
+              )
+              socket.close()
+          }
+        } else {
+          // Try to find an HTTP handler
+          // First try exact match
+          httpRoutes.get(requestPath) match {
+            case Some(httpHandler) =>
+              httpHandler.handleGet(requestPath, headersMap, socket)
+              socket.close()
+
+            case None =>
+              // Try prefix match (for serving directories)
+              httpRoutes.find { case (routePath, _) =>
+                requestPath.startsWith(routePath)
+              } match {
+                case Some((_, httpHandler)) =>
+                  httpHandler.handleGet(requestPath, headersMap, socket)
+                  socket.close()
+
+                case None =>
+                  HttpResponse.notFound(
+                    socket,
+                    s"Route not found: $requestPath"
+                  )
+                  socket.close()
+              }
           }
         }
-        line = in.readLine()
-      }
-
-      val headersMap = headers.toMap
-
-      // Check if this is a WebSocket upgrade request
-      val isWebSocket = WebSocketHandshake.validateHandshake(headersMap).isSuccess
-
-      if (isWebSocket) {
-        // Try to find a WebSocket handler
-        wsRoutes.get(requestPath) match {
-          case Some(wsHandler) =>
-            // Handle WebSocket upgrade
-            WebSocketHandshake.validateHandshake(headersMap) match {
-              case Success(secWebSocketKey) =>
-                // Send 101 Switching Protocols response
-                val responseBytes = WebSocketHandshake.createRawHandshakeResponse(secWebSocketKey)
-                socket.getOutputStream.write(responseBytes)
-                socket.getOutputStream.flush()
-
-                // Create WebSocket connection and handle it
-                val wsConnection = WebSocketConnection(socket)
-                WebSocketHandler.handleConnection(wsHandler, wsConnection)
-
-              case Failure(handshakeError) =>
-                HttpResponse.internalError(socket, s"WebSocket handshake failed: ${handshakeError.getMessage}")
-                socket.close()
-            }
-
-          case None =>
-            HttpResponse.notFound(socket, s"WebSocket route not found: $requestPath")
-            socket.close()
-        }
-      } else {
-        // Try to find an HTTP handler
-        // First try exact match
-        httpRoutes.get(requestPath) match {
-          case Some(httpHandler) =>
-            httpHandler.handleGet(requestPath, headersMap, socket)
-            socket.close()
-
-          case None =>
-            // Try prefix match (for serving directories)
-            httpRoutes.find { case (routePath, _) =>
-              requestPath.startsWith(routePath)
-            } match {
-              case Some((_, httpHandler)) =>
-                httpHandler.handleGet(requestPath, headersMap, socket)
-                socket.close()
-
-              case None =>
-                HttpResponse.notFound(socket, s"Route not found: $requestPath")
-                socket.close()
-            }
-        }
-      }
       }
     }
 
     result match {
-      case Success(_) =>
-        // Connection handled successfully
+      case Success(_)   =>
+      // Connection handled successfully
       case Failure(err) =>
         println(s"Error handling connection: ${err.getMessage}")
         err.printStackTrace()

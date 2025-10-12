@@ -58,7 +58,22 @@ object Html {
     }
 
     private def isSelfClosing(tag: String): Boolean = {
-      Set("br", "hr", "img", "input", "meta", "link", "area", "base", "col", "embed", "param", "source", "track", "wbr")
+      Set(
+        "br",
+        "hr",
+        "img",
+        "input",
+        "meta",
+        "link",
+        "area",
+        "base",
+        "col",
+        "embed",
+        "param",
+        "source",
+        "track",
+        "wbr"
+      )
         .contains(tag)
     }
   }

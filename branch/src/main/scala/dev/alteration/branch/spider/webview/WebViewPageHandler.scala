@@ -6,9 +6,8 @@ import java.net.Socket
 /** An HTTP handler that serves the initial HTML page for a WebView.
   *
   * This generates an HTML page that:
-  * 1. Loads the WebView client JavaScript
-  * 2. Provides a div for the WebView to render into
-  * 3. Connects to the WebSocket endpoint
+  *   1. Loads the WebView client JavaScript 2. Provides a div for the WebView
+  *      to render into 3. Connects to the WebSocket endpoint
   *
   * Example:
   * {{{

@@ -1,7 +1,10 @@
 package dev.alteration.branch.spider.webview
 
 import dev.alteration.branch.keanu.actors.ActorSystem
-import dev.alteration.branch.spider.websocket.{WebSocketConnection, WebSocketHandler}
+import dev.alteration.branch.spider.websocket.{
+  WebSocketConnection,
+  WebSocketHandler
+}
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
@@ -46,7 +49,8 @@ class WebViewHandler[State, Event](
     session: Session = Session(),
     devToolsActorName: Option[String] = None,
     useExistingActor: Option[String] = None
-)(using eventCodec: EventCodec[Event]) extends WebSocketHandler {
+)(using eventCodec: EventCodec[Event])
+    extends WebSocketHandler {
 
   // Map to store actor names by connection (using object identity)
   private val connectionActors =
@@ -62,9 +66,10 @@ class WebViewHandler[State, Event](
           try {
             // Try to create the actor - this will fail if it already exists
             actorSystem.registerProp(
-              dev.alteration.branch.keanu.actors.ActorProps.props[WebViewActor[State, Event]](
-                Tuple1(webView)
-              )
+              dev.alteration.branch.keanu.actors.ActorProps
+                .props[WebViewActor[State, Event]](
+                  Tuple1(webView)
+                )
             )
             actorSystem.actorOf[WebViewActor[State, Event]](existingActorName)
             println(s"Created shared actor: $existingActorName")
@@ -84,9 +89,10 @@ class WebViewHandler[State, Event](
 
           // Register actor props (for actor creation)
           actorSystem.registerProp(
-            dev.alteration.branch.keanu.actors.ActorProps.props[WebViewActor[State, Event]](
-              Tuple1(webView)
-            )
+            dev.alteration.branch.keanu.actors.ActorProps
+              .props[WebViewActor[State, Event]](
+                Tuple1(webView)
+              )
           )
 
           // Spawn the actor
@@ -99,7 +105,10 @@ class WebViewHandler[State, Event](
       connectionActors.put(connection, actorName)
 
       // Send mount message to initialize (includes connection and devTools actor)
-      actorSystem.tell[WebViewActor[State, Event]](actorName, Mount(params, session, connection, devToolsActorName))
+      actorSystem.tell[WebViewActor[State, Event]](
+        actorName,
+        Mount(params, session, connection, devToolsActorName)
+      )
 
     } catch {
       case error: Throwable =>
@@ -109,7 +118,10 @@ class WebViewHandler[State, Event](
     }
   }
 
-  override def onMessage(connection: WebSocketConnection, message: String): Unit = {
+  override def onMessage(
+      connection: WebSocketConnection,
+      message: String
+  ): Unit = {
     try {
       // Get actor name from connection
       val actorNameOpt = getActorName(connection)
@@ -131,11 +143,20 @@ class WebViewHandler[State, Event](
 
               eventCodec.decodeFromClient(eventName, payload) match {
                 case scala.util.Success(typedEvent) =>
-                  actorSystem.tell[WebViewActor[State, Event]](actorName, ClientEvent(typedEvent))
-                case scala.util.Failure(error) =>
-                  println(s"[WebViewHandler] Failed to decode event '$eventName': ${error.getMessage}")
+                  actorSystem.tell[WebViewActor[State, Event]](
+                    actorName,
+                    ClientEvent(typedEvent)
+                  )
+                case scala.util.Failure(error)      =>
+                  println(
+                    s"[WebViewHandler] Failed to decode event '$eventName': ${error.getMessage}"
+                  )
                   error.printStackTrace()
-                  // Optionally send error to client
+                  // Send error to client
+                  val errorMsg = WebViewProtocol.Error(
+                    s"Failed to decode event '$eventName': ${error.getMessage}"
+                  )
+                  connection.sendText(errorMsg.toJson.toJsonString)
               }
 
             case Some(WebViewProtocol.Heartbeat) =>
@@ -146,16 +167,29 @@ class WebViewHandler[State, Event](
 
             case None =>
               println(s"Failed to parse client message: $message")
+              val errorMsg = WebViewProtocol.Error("Failed to parse message")
+              connection.sendText(errorMsg.toJson.toJsonString)
           }
 
         case None =>
           println("No actor found for connection")
+          val errorMsg = WebViewProtocol.Error("WebView session not found")
+          connection.sendText(errorMsg.toJson.toJsonString)
           connection.close()
       }
     } catch {
       case error: Throwable =>
         println(s"Error handling message: ${error.getMessage}")
         error.printStackTrace()
+        // Try to send error to client before failing
+        try {
+          val errorMsg =
+            WebViewProtocol.Error(s"Internal error: ${error.getMessage}")
+          connection.sendText(errorMsg.toJson.toJsonString)
+        } catch {
+          case _: Exception => // If we can't send, just log it
+            println("Failed to send error message to client")
+        }
     }
   }
 
@@ -166,19 +200,24 @@ class WebViewHandler[State, Event](
   ): Unit = {
     // Notify actor that client disconnected
     getActorName(connection).foreach { actorName =>
-      actorSystem.tell[WebViewActor[State, Event]](actorName, ClientDisconnected)
+      actorSystem
+        .tell[WebViewActor[State, Event]](actorName, ClientDisconnected)
     }
     // Clean up the mapping
     connectionActors.remove(connection)
   }
 
-  override def onError(connection: WebSocketConnection, error: Throwable): Unit = {
+  override def onError(
+      connection: WebSocketConnection,
+      error: Throwable
+  ): Unit = {
     println(s"WebSocket error: ${error.getMessage}")
     error.printStackTrace()
 
     // Notify actor of disconnection
     getActorName(connection).foreach { actorName =>
-      actorSystem.tell[WebViewActor[State, Event]](actorName, ClientDisconnected)
+      actorSystem
+        .tell[WebViewActor[State, Event]](actorName, ClientDisconnected)
     }
     // Clean up the mapping
     connectionActors.remove(connection)
@@ -218,5 +257,12 @@ object WebViewHandler {
       devToolsActorName: Option[String] = None,
       useExistingActor: Option[String] = None
   )(using eventCodec: EventCodec[Event]): WebViewHandler[State, Event] =
-    new WebViewHandler(actorSystem, webViewFactory, params, session, devToolsActorName, useExistingActor)
+    new WebViewHandler(
+      actorSystem,
+      webViewFactory,
+      params,
+      session,
+      devToolsActorName,
+      useExistingActor
+    )
 }
