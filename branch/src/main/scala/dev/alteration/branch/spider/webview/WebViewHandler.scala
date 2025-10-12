@@ -123,7 +123,6 @@ class WebViewHandler[State, Event](
               ()
 
             case Some(WebViewProtocol.Event(eventName, target, value)) =>
-              println(s"[WebViewHandler] Received event: $eventName, target: $target, value: $value")
               // Decode the event using EventCodec
               val payload = Map(
                 "target" -> target,
@@ -132,7 +131,6 @@ class WebViewHandler[State, Event](
 
               eventCodec.decodeFromClient(eventName, payload) match {
                 case scala.util.Success(typedEvent) =>
-                  println(s"[WebViewHandler] Successfully decoded event: $typedEvent")
                   actorSystem.tell[WebViewActor[State, Event]](actorName, ClientEvent(typedEvent))
                 case scala.util.Failure(error) =>
                   println(s"[WebViewHandler] Failed to decode event '$eventName': ${error.getMessage}")

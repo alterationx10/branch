@@ -141,18 +141,14 @@ class DevToolsWebView extends WebView[DevToolsUIState, DevToolsEvent] {
   }
 
   override def handleEvent(event: DevToolsEvent, state: DevToolsUIState): DevToolsUIState = {
-    println(s"[DevTools] Received event: $event")
     event match {
       case SelectView(viewId) =>
-        println(s"[DevTools] Selecting view: $viewId")
         state.copy(selectedView = Some(viewId))
 
       case SetFilter(filter) =>
-        println(s"[DevTools] Setting filter: $filter")
         state.copy(filter = filter)
 
       case ClearTimeline =>
-        println(s"[DevTools] Clearing timeline")
         state.selectedView match {
           case Some(viewId) =>
             state.copy(
@@ -165,7 +161,6 @@ class DevToolsWebView extends WebView[DevToolsUIState, DevToolsEvent] {
         }
 
       case Refresh =>
-        println(s"[DevTools] Refreshing")
         // In a real implementation, this would fetch latest state from actors
         state
     }
