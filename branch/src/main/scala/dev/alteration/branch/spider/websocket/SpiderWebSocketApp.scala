@@ -33,7 +33,7 @@ trait SpiderWebSocketApp {
   /** The WebSocket server instance
     */
   private lazy val websocketServer: WebSocketServer =
-    new WebSocketServer(wsPort, wsHandler)
+    new WebSocketServer(wsPort, Map("/" -> wsHandler))
 
   // Add shutdown hook for WebSocket server
   Runtime.getRuntime.addShutdownHook {

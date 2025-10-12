@@ -4,7 +4,6 @@ import Json.{JsonArray, JsonObject, JsonString}
 import dev.alteration.branch.macaroni.meta.Summons.summonHigherListOf
 
 import java.time.Instant
-import scala.compiletime.*
 import scala.deriving.Mirror
 import scala.language.implicitConversions
 
@@ -209,10 +208,42 @@ object JsonEncoder {
     }
   }
 
+  /** Encoder for sum types (sealed traits/enums).
+    *
+    * Encodes ADTs using a tagged union with a "type" field:
+    *   - Case objects: { "type": "Increment" }
+    *   - Case classes: { "type": "SetCount", "value": 42 }
+    */
+  protected class DerivedSumJsonEncoder[A](using
+      s: Mirror.SumOf[A],
+      encoders: List[JsonEncoder[?]]
+  ) extends JsonEncoder[A] {
+    def encode(a: A): Json = {
+      val ord     = s.ordinal(a)
+      val encoder = encoders(ord).asInstanceOf[JsonEncoder[Any]]
+
+      // Get the type name from the value's class
+      val typeName = a.getClass.getSimpleName.stripSuffix("$")
+
+      // Encode the value
+      encoder.encode(a) match {
+        case JsonObject(fields) =>
+          // Case class: merge type field with fields
+          JsonObject(fields + ("type" -> JsonString(typeName)))
+        case _                  =>
+          // Case object or simple value: just add type field
+          JsonObject(Map("type" -> JsonString(typeName)))
+      }
+    }
+  }
+
   inline given derived[A](using m: Mirror.Of[A]): JsonEncoder[A] = {
     inline m match {
-      case _: Mirror.SumOf[A]     =>
-        error("Auto derivation of Sum types is not currently supported")
+      case s: Mirror.SumOf[A]     =>
+        new DerivedSumJsonEncoder[A](using
+          s,
+          summonHigherListOf[s.MirroredElemTypes, JsonEncoder]
+        )
       case p: Mirror.ProductOf[A] =>
         new DerivedJsonEncoder[A](using
           summonHigherListOf[p.MirroredElemTypes, JsonEncoder]
