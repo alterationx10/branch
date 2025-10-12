@@ -153,7 +153,7 @@ class HtmlSuite extends FunSuite {
   }
 
   test("Empty attribute list renders element without attributes") {
-    val elem = Html.Element("div", List(Attr.EmptyAttr), Nil)
+    val elem = Html.Element("div", List.empty, List.empty)
     assertEquals(elem.render, "<div></div>")
   }
 

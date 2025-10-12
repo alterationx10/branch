@@ -81,7 +81,9 @@ class WebViewAttributesSuite extends FunSuite {
 
   test("wvIgnore creates ignore attribute") {
     val attr = wvIgnore := true
-    assertEquals(attr.render, """wv-ignore="true"""")
+    assertEquals(attr.render, """wv-ignore""")
+    val attr2 = wvIgnore := "true"
+    assertEquals(attr2.render, """wv-ignore="true"""")
   }
 
   test("wvAttr creates custom WebView attribute") {

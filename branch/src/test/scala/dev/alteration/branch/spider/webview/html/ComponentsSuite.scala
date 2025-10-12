@@ -182,8 +182,8 @@ class ComponentsSuite extends FunSuite {
     assert(html.contains("""name="country""""))
     assert(html.contains("""wv-change="update-country""""))
     assert(html.contains("""<option value="us" selected>United States</option>"""))
-    assert(html.contains("""<option value="uk">United Kingdom</option>"""))
-    assert(html.contains("""<option value="ca">Canada</option>"""))
+    assert(html.contains("""<option value="uk" >United Kingdom</option>"""))
+    assert(html.contains("""<option value="ca" >Canada</option>"""))
   }
 
   test("selectDropdown with no selection") {

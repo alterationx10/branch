@@ -101,7 +101,7 @@ class StyleSheetSuite extends FunSuite {
     val css = TestStyles.toCss
 
     // Should have two separate CSS rules
-    val ruleCount = css.split("\\}").length - 1
+    val ruleCount = css.split("}").length
     assertEquals(ruleCount, 2)
   }
 
