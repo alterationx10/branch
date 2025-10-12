@@ -129,4 +129,10 @@ case class PerformanceMetrics(
     if (totalEvents == 0) 0.0
     else totalRenderTimeMs.toDouble / totalEvents.toDouble
   }
+
+  /** Get display-friendly minimum render time (0 if no events). */
+  def displayMinRenderTimeMs: Long = {
+    if (totalEvents == 0) 0
+    else minRenderTimeMs
+  }
 }

@@ -291,7 +291,7 @@ class DevToolsWebView extends WebView[DevToolsUIState, DevToolsEvent] {
     div(cls := "metrics", style := "display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;")(
       renderMetricCard("Total Events", metrics.totalEvents.toString, "#667eea"),
       renderMetricCard("Avg Render", f"${metrics.avgRenderTimeMs}%.2f ms", "#48bb78"),
-      renderMetricCard("Min Render", s"${metrics.minRenderTimeMs} ms", "#38b2ac"),
+      renderMetricCard("Min Render", s"${metrics.displayMinRenderTimeMs} ms", "#38b2ac"),
       renderMetricCard("Max Render", s"${metrics.maxRenderTimeMs} ms", "#ed8936")
     )
   }
@@ -323,7 +323,7 @@ class DevToolsWebView extends WebView[DevToolsUIState, DevToolsEvent] {
     val filteredEntries = filter match {
       case TimelineFilter.All => entries
       case TimelineFilter.OnlyEvents => entries.filter(_.eventType == "Event")
-      case TimelineFilter.OnlyStateChanges => entries.filter(e => e.eventType == "Mount" || e.eventType == "Event")
+      case TimelineFilter.OnlyStateChanges => entries.filter(_.eventType == "Mount")
       case TimelineFilter.OnlyInfo => entries.filter(_.eventType == "Info")
     }
 
@@ -343,6 +343,7 @@ class DevToolsWebView extends WebView[DevToolsUIState, DevToolsEvent] {
       case "Mount" => "#667eea"
       case "Event" => "#48bb78"
       case "Info" => "#38b2ac"
+      case "Disconnect" => "#f56565"
       case _ => "#a0aec0"
     }
 

@@ -226,10 +226,30 @@ case class WebViewActor[State, Event](webView: WebView[State, Event])
           webView.terminate(None, userState)
         }
 
+      // Update DevTools state with disconnect event
+      val updatedDevToolsState = state.devToolsState.map { devTools =>
+        import dev.alteration.branch.spider.webview.devtools.{ConnectionStatus, TimelineEntry}
+        import java.time.Instant
+
+        val disconnectEntry = TimelineEntry(
+          timestamp = Instant.now(),
+          eventType = "Disconnect",
+          data = Map("message" -> "Client disconnected")
+        )
+
+        devTools
+          .copy(timeline = devTools.timeline :+ disconnectEntry)
+          .updateConnectionStatus(ConnectionStatus.Disconnected)
+      }
+
+      // Send final DevTools update
+      val finalState = state.copy(devToolsState = updatedDevToolsState)
+      sendDevToolsUpdate(finalState)
+
       // Close connection and stop actor
       state.connection.foreach(_.close())
       context.system.tell(context.self, PoisonPill)
-      state.copy(connection = None, mounted = false)
+      finalState.copy(connection = None, mounted = false)
   }
 
   /** Execute a block with error boundary protection.
