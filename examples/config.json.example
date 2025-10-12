@@ -1,0 +1,13 @@
+{
+  "appName": "Example Application",
+  "port": 8080,
+  "database": {
+    "host": "localhost",
+    "port": 5432,
+    "name": "myapp"
+  },
+  "features": {
+    "enableCache": true,
+    "maxConnections": 100
+  }
+}
