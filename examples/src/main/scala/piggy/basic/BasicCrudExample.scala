@@ -10,7 +10,7 @@ import scala.language.implicitConversions
 /** A basic example showing CRUD operations with Piggy.
   *
   * Piggy is a type-safe SQL library that provides:
-  *   - String interpolators for queries (psUpdate, psQuery)
+  *   - String interpolators for queries (psUpdate)
   *   - Automatic type class-based parsing of result sets
   *   - Transaction management with automatic rollback on failure
   *   - Monadic composition using for-comprehensions
