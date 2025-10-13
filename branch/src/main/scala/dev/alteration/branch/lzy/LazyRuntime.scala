@@ -3,6 +3,7 @@ package dev.alteration.branch.lzy
 import java.util.concurrent.{
   Executors,
   ScheduledExecutorService,
+  ThreadFactory,
   TimeoutException,
   TimeUnit
 }
@@ -22,9 +23,14 @@ private[lzy] trait LazyRuntime {
 
 object LazyRuntime extends LazyRuntime {
 
+  private val daemonThreadFactory: ThreadFactory = Thread
+    .ofVirtual()
+    .name("lazy-scheduler")
+    .factory()
+
   // Shared scheduler for timeout and sleep operations
   private val scheduler: ScheduledExecutorService =
-    Executors.newScheduledThreadPool(1)
+    Executors.newScheduledThreadPool(1, daemonThreadFactory)
 
   /** Run a Lazy value synchronously.
     */
