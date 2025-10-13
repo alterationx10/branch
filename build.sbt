@@ -78,7 +78,10 @@ lazy val examples = project
   .in(file("examples"))
   .settings(
     name           := "branch-examples",
-    publish / skip := true
+    publish / skip := true,
+    libraryDependencies ++= Seq(
+      "org.postgresql" % "postgresql" % "42.7.8"
+    )
   )
   .dependsOn(branch)
 
