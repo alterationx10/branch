@@ -544,7 +544,7 @@ class LazySpec extends LoggerFixtureSuite {
       result <- Lazy.fail[Int](new Exception("test error")).either
     } yield {
       assert(result.isLeft)
-      assertEquals(result.left.toOption.get.getMessage, "test error")
+      assertEquals(result.left.map(_.getMessage), Left("test error"))
     }
   }
 
