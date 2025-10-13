@@ -57,7 +57,7 @@ object LazyRuntime extends LazyRuntime {
       case Lazy.FlatMap(lzy, f)   =>
         lzy match {
           case Lazy.FlatMap(l, g)     => eval(l.flatMap(g(_).flatMap(f)))
-          case Lazy.Fn(a)             => eval(f(a()))
+          case Lazy.Fn(a)             => evalFlatMapFn(a, f)
           case Lazy.Fail(e)           => Future.failed(e)
           case Lazy.Recover(l, r)     => evalFlatMapRecover(l, r, f)
           case Lazy.Sleep(d)          => evalFlatMapSleep(d, f)
@@ -66,6 +66,13 @@ object LazyRuntime extends LazyRuntime {
           case Lazy.Race(left, right) => evalFlatMapRace(left, right, f)
         }
     }
+  }
+
+  private final def evalFlatMapFn[A, B](
+      a: () => A,
+      f: A => Lazy[B]
+  )(using executionContext: ExecutionContext): Future[B] = {
+    Future(a()).flatMap(result => eval(f(result)))
   }
 
   private final def evalFlatMapSleep[A](d: Duration, f: Unit => Lazy[A])(using
