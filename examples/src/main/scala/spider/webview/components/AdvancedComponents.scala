@@ -1,10 +1,16 @@
-package dev.alteration.branch.spider.webview.html
+package spider.webview.components
 
+import dev.alteration.branch.spider.webview.html.Html
+import dev.alteration.branch.spider.webview.html.Tags.*
+import dev.alteration.branch.spider.webview.html.Attributes.*
 import dev.alteration.branch.spider.webview.styling.CSSUtils.*
 
 /** Advanced reusable UI components for Branch WebView.
   *
   * Provides higher-level components like tables, modals, tabs, etc.
+  *
+  * These are example components that demonstrate how to build reusable UI elements.
+  * Feel free to copy and adapt them for your own applications.
   */
 object AdvancedComponents {
 
@@ -39,7 +45,7 @@ object AdvancedComponents {
     * @param sortAscending
     *   Sort direction
     * @param onSort
-    *   Event name for sorting (e.g., "sort-column")
+    *   Function to generate event JSON for sorting
     * @param extractValue
     *   Function to extract value from row by key
     * @tparam T
@@ -52,7 +58,7 @@ object AdvancedComponents {
       rows: List[T],
       sortColumn: Option[String] = None,
       sortAscending: Boolean = true,
-      onSort: String = "sort-column",
+      onSort: String => String,
       extractValue: (T, String) => String
   ): Html = {
     table(
@@ -64,7 +70,7 @@ object AdvancedComponents {
           columns.map { col =>
             th(
               style := s"padding: 12px; text-align: left; font-weight: 600; color: #2d3748; ${if (col.sortable) "cursor: pointer;" else ""}",
-              if (col.sortable) attr("wv-click") := s"$onSort-${col.key}"
+              if (col.sortable) attr("wv-click") := onSort(col.key)
               else attr("data-key")              := col.key
             )(
               div(style := "display: flex; align-items: center; gap: 8px;")(
@@ -119,7 +125,7 @@ object AdvancedComponents {
     * @param isOpen
     *   Whether the modal is visible
     * @param onClose
-    *   Event name to close the modal
+    *   Event JSON string to close the modal
     * @param title
     *   Modal title
     * @param content
@@ -184,7 +190,7 @@ object AdvancedComponents {
     * @param trigger
     *   The element that triggers the dropdown
     * @param items
-    *   List of menu items (label, event)
+    *   List of menu items (label, event JSON string)
     * @return
     *   Html dropdown structure
     */
@@ -221,14 +227,14 @@ object AdvancedComponents {
     * @param activeTab
     *   Currently active tab id
     * @param onTabChange
-    *   Event name for tab change
+    *   Function to generate event JSON for tab change
     * @return
     *   Html tab navigation
     */
   def tabs(
       tabs: List[(String, String)],
       activeTab: String,
-      onTabChange: String
+      onTabChange: String => String
   ): Html = {
     div(style := "border-bottom: 2px solid #e2e8f0;")(
       div(style := "display: flex; gap: 4px;")(
@@ -243,7 +249,7 @@ object AdvancedComponents {
               }; cursor: pointer; font-size: 1rem; font-weight: ${
                 if (isActive) "600" else "normal"
               }; transition: all 150ms;",
-            attr("wv-click") := s"$onTabChange-$id"
+            attr("wv-click") := s"${onTabChange(id)}"
           )(Html.Text(label))
         }*
       )
@@ -286,7 +292,7 @@ object AdvancedComponents {
     * @param isOpen
     *   Whether item is expanded
     * @param onToggle
-    *   Event name to toggle
+    *   Function to generate event JSON for toggle
     * @return
     *   Html accordion item
     */
@@ -295,7 +301,7 @@ object AdvancedComponents {
       title: String,
       content: Html,
       isOpen: Boolean,
-      onToggle: String
+      onToggle: String => String
   ): Html = {
     div(
       style := "border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 8px; overflow: hidden;"
@@ -305,7 +311,7 @@ object AdvancedComponents {
         style            := s"padding: 16px; background: ${
             if (isOpen) "#f7fafc" else "white"
           }; cursor: pointer; display: flex; justify-content: space-between; align-items: center;",
-        attr("wv-click") := s"$onToggle-$id"
+        attr("wv-click") := s"${onToggle(id)}"
       )(
         div(style := "font-weight: 600; color: #2d3748;")(Html.Text(title)),
         div(style := s"color: ${Colors.primary}; font-size: 1.2rem;")(
@@ -336,7 +342,7 @@ object AdvancedComponents {
     * @param footer
     *   Optional footer content
     * @param variant
-    *   Style variant (default, primary, success, danger)
+    *   Style variant (default, primary, success, danger, warning)
     * @return
     *   Html card
     */
@@ -386,7 +392,7 @@ object AdvancedComponents {
     * @param text
     *   Badge text
     * @param variant
-    *   Color variant
+    *   Color variant (primary, success, danger, warning, info, default)
     * @return
     *   Html badge
     */
@@ -418,7 +424,7 @@ object AdvancedComponents {
     * @param dismissible
     *   Whether alert can be dismissed
     * @param onDismiss
-    *   Event name for dismissing
+    *   Event JSON string for dismissing
     * @return
     *   Html alert
     */
@@ -462,7 +468,7 @@ object AdvancedComponents {
     * @param label
     *   Optional label to display
     * @param variant
-    *   Color variant
+    *   Color variant (primary, success, danger, warning)
     * @return
     *   Html progress bar
     */
@@ -512,14 +518,14 @@ object AdvancedComponents {
     * @param totalPages
     *   Total number of pages
     * @param onPageChange
-    *   Event name for page change
+    *   Function to generate event JSON for page change
     * @return
     *   Html pagination
     */
   def pagination(
       currentPage: Int,
       totalPages: Int,
-      onPageChange: String
+      onPageChange: String => String
   ): Html = {
     div(
       style := "display: flex; gap: 4px; justify-content: center; align-items: center;"
@@ -531,7 +537,7 @@ object AdvancedComponents {
             style            := s"padding: 8px 12px; border: 1px solid #e2e8f0; background: white; border-radius: 6px; cursor: ${
                 if (currentPage <= 1) "not-allowed" else "pointer"
               }; color: ${if (currentPage <= 1) "#a0aec0" else Colors.primary};",
-            attr("wv-click") := s"$onPageChange-${math.max(1, currentPage - 1)}",
+            attr("wv-click") := onPageChange(s"${math.max(1, currentPage - 1)}"),
             if (currentPage <= 1) attr("disabled") := "true"
             else attr("data-enabled")              := "true"
           )(Html.Text("← Prev"))
@@ -545,14 +551,14 @@ object AdvancedComponents {
                 }; background: ${
                   if (page == currentPage) Colors.primary else "white"
                 }; color: ${if (page == currentPage) "white" else "#2d3748"}; border-radius: 6px; cursor: pointer; font-weight: ${if (page == currentPage) "600" else "normal"};",
-              attr("wv-click") := s"$onPageChange-$page"
+              attr("wv-click") := onPageChange(page.toString)
             )(Html.Text(page.toString))
           } ++
           List(
             // Next button
             button(
               style            := s"padding: 8px 12px; border: 1px solid #e2e8f0; background: white; border-radius: 6px; cursor: ${if (currentPage >= totalPages) "not-allowed" else "pointer"}; color: ${if (currentPage >= totalPages) "#a0aec0" else Colors.primary};",
-              attr("wv-click") := s"$onPageChange-${math.min(totalPages, currentPage + 1)}",
+              attr("wv-click") := onPageChange(s"${math.min(totalPages, currentPage + 1)}"),
               if (currentPage >= totalPages) attr("disabled") := "true"
               else attr("data-enabled")                       := "true"
             )(Html.Text("Next →"))
