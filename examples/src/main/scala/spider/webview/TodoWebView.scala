@@ -90,14 +90,15 @@ class TodoWebView extends WebView[TodoState, TodoEvent] {
             "color: #2d3748;"
           }
 
+          // Note for wv-click, we can encode the event directly, and it will build the appropriate json
           s"""
           <div style="display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #e2e8f0;">
-            <input type="checkbox" $checkboxStyle wv-click="ToggleTodo(${todo.id})"
+            <input type="checkbox" $checkboxStyle wv-click='${EventCodec[TodoEvent].encode(ToggleTodo(todo.id))}'
                    style="width: 20px; height: 20px; margin-right: 15px; cursor: pointer;">
             <span style="flex: 1; font-size: 1.1rem; $textStyle">
               ${escapeHtml(todo.text)}
             </span>
-            <button wv-click="DeleteTodo(${todo.id})"
+            <button wv-click='${EventCodec[TodoEvent].encode(DeleteTodo(todo.id))}'
                     style="padding: 8px 12px; background: #f56565; color: white; border: none;
                            border-radius: 6px; cursor: pointer; font-size: 0.9rem;">
               Delete
@@ -109,8 +110,8 @@ class TodoWebView extends WebView[TodoState, TodoEvent] {
     }
 
     val clearCompletedButton = if (completedTodos > 0) {
-      """
-      <button wv-click="ClearCompleted"
+      s"""
+      <button wv-click='${EventCodec[TodoEvent].encode(ClearCompleted)}'
               style="padding: 10px 20px; background: #ed8936; color: white; border: none;
                      border-radius: 8px; cursor: pointer;">
         Clear Completed
@@ -127,10 +128,12 @@ class TodoWebView extends WebView[TodoState, TodoEvent] {
         <p style="margin: 10px 0 0 0; opacity: 0.9;">Manage your tasks with Branch WebView</p>
       </div>
 
+      <!--Note that the wv-submit is AddTodo, and the input name="text" -->
+      <!--This is then build as AddTodo(text)...-->
       <div style="padding: 30px;">
-        <form wv-submit="AddTodo(document.getElementById('todo-input').value); document.getElementById('todo-input').value=''"
+        <form wv-submit="AddTodo"
               style="display: flex; gap: 10px; margin-bottom: 20px;">
-          <input id="todo-input" type="text" placeholder="What needs to be done?"
+          <input name="text" type="text" placeholder="What needs to be done?"
                  style="flex: 1; padding: 12px; font-size: 1rem; border: 2px solid #e2e8f0; border-radius: 8px;">
           <button type="submit"
                   style="padding: 12px 24px; background: #48bb78; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">

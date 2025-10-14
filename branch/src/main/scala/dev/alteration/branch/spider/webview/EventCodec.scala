@@ -123,12 +123,36 @@ object EventCodec {
 
       // Extract value from payload if present
       val fields = payload.get("value") match {
-        case Some(v: String) if v.nonEmpty =>
+        case Some(Json.JsonObject(obj))    =>
+          // Form data or nested object - use fields directly
+          obj
+        case Some(Json.JsonString(v)) if v.nonEmpty =>
           // Try to parse as JSON to extract fields
           Json.parse(v).toOption match {
             case Some(Json.JsonObject(obj)) => obj
             case Some(other)                => Map("value" -> other) // Single value field
             case None                       => Map("value" -> Json.JsonString(v))
+          }
+        case Some(json: Json)              =>
+          // Other JSON types (number, bool, string, etc.)
+          Map("value" -> json)
+        case Some(v: String) if v.nonEmpty =>
+          // String value (maybe no longer needed?)
+          Json.parse(v).toOption match {
+            case Some(Json.JsonObject(obj)) => obj
+            case Some(other)                => Map("value" -> other)
+            case None                       => Map("value" -> Json.JsonString(v))
+          }
+        case Some(v: Map[_, _])            =>
+          // Form data as Map (maybe no longer needed?) - convert to JSON fields
+          v.asInstanceOf[Map[String, Any]].map { case (key, value) =>
+            key -> (value match {
+              case i: Int     => Json.JsonNumber(i)
+              case d: Double  => Json.JsonNumber(d)
+              case b: Boolean => Json.JsonBool(b)
+              case s: String  => Json.JsonString(s)
+              case other      => Json.JsonString(other.toString)
+            })
           }
         case Some(v)                       =>
           // Convert other types to JSON

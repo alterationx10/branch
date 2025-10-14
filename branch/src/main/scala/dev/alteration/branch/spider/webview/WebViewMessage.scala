@@ -109,10 +109,19 @@ object WebViewProtocol {
       case Some("ready")     => Some(ClientReady)
       case Some("event")     =>
         for {
-          event  <- (json ? "event").strOpt
           target <- (json ? "target").strOpt
           value   = (json ? "value")
-        } yield Event(event, target, value)
+        } yield {
+          // Handle both string and JSON object events
+          val eventJson = json ? "event"
+          val event = eventJson match {
+            case Some(Json.JsonString(str)) => str
+            case Some(jobj: Json.JsonObject) => jobj.toJsonString  // Pre-encoded event as object
+            case Some(j: Json)               => j.toJsonString  // Any other JSON type
+            case None                        => ""  // Fallback (shouldn't happen?)
+          }
+          Event(event, target, value)
+        }
       case Some("ping")      => Some(Heartbeat)
       case Some("heartbeat") => Some(Heartbeat)
       case _                 => None
