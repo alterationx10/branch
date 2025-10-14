@@ -137,13 +137,14 @@ class WebViewHandler[State, Event](
             case Some(WebViewProtocol.Event(eventName, target, value)) =>
               // EventCodec events are JSON. Try direct decode first.
               // For forms with dynamic data, fall back to decodeFromClient.
-              val decodedEvent = eventCodec.decode(eventName).recoverWith { case _ =>
-                val payload = Map(
-                  "target" -> target,
-                  "value"  -> value.orNull
-                )
-                eventCodec.decodeFromClient(eventName, payload)
-              }
+              val decodedEvent =
+                eventCodec.decode(eventName).recoverWith { case _ =>
+                  val payload = Map(
+                    "target" -> target,
+                    "value"  -> value.orNull
+                  )
+                  eventCodec.decodeFromClient(eventName, payload)
+                }
 
               decodedEvent match {
                 case scala.util.Success(typedEvent) =>
