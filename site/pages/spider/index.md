@@ -317,7 +317,7 @@ This is new and ambitious, so there are probably a few bugs and likely to change
 - **Error Boundaries**: Graceful error recovery with customizable error handling
 - **CSS-in-Scala**: Scoped styling with StyleSheet for collision-free CSS
 - **DevTools**: Built-in debugging and monitoring tools for development
-- **Component Library**: Some pre-built components for forms, inputs, buttons, and layouts
+- **Basic Components**: Built-in form inputs, buttons, and layout helpers (see Component Library section)
 
 ### Quick Start
 
@@ -620,7 +620,7 @@ div(
 
 #### Component Library
 
-Pre-built components for common UI patterns:
+WebView includes built-in components for common UI patterns (forms, inputs, buttons, and layouts):
 
 ```scala
 import dev.alteration.branch.spider.webview.html.Components._
@@ -678,6 +678,34 @@ flexContainer(
   div("Right")
 )(direction = "row", gap = Some("10px"), justifyContent = Some("space-between"))
 ```
+
+#### Example Components
+
+In addition to the built-in components, Branch provides example implementations of advanced UI components in the
+examples directory. These can serve as starting points you can copy and adapt:
+
+**Advanced Components Examples** (`examples/src/main/scala/spider/webview/components/AdvancedComponents.scala`):
+
+- **Data Tables** with sortable columns and custom renderers
+- **Modals** with customizable headers, footers, and overlay behavior
+- **Dropdowns** with trigger elements and item lists
+- **Tabs** with navigation and panel content switching
+- **Accordions** with collapsible sections
+- **Cards** with variants (default, primary, success, warning, danger)
+- **Badges** for status indicators
+- **Alerts** with dismissible notifications
+- **Progress Bars** with dynamic values and variants
+- **Pagination** controls for multi-page navigation
+
+These components demonstrate:
+
+- How to build reusable UI components with the HTML DSL
+- Event handling patterns for interactive elements
+- State-driven rendering and conditional display
+- Integration with the CSS utilities
+
+To use these in your application, simply copy the components you need from the examples directory and adapt them to your
+requirements. See `ComponentsShowcaseExample.scala` in the examples for a working demonstration of all these components.
 
 ### WebView Attributes
 
