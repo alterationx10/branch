@@ -1,15 +1,19 @@
 package spider.webview
 
 import dev.alteration.branch.spider.webview.*
+import dev.alteration.branch.spider.webview.html.Tags.{*, given}
+import dev.alteration.branch.spider.webview.html.Attributes.*
+import dev.alteration.branch.spider.webview.html.WebViewAttributes.*
+import scala.language.implicitConversions
 
 /** A todo list WebView example.
   *
   * This demonstrates more advanced WebView features:
-  * - Managing a list in state
-  * - Multiple event types with parameters
-  * - Dynamic rendering based on state
-  * - Input handling
-  * - Conditional rendering
+  *   - Managing a list in state
+  *   - Multiple event types with parameters
+  *   - Dynamic rendering based on state
+  *   - Input handling
+  *   - Conditional rendering
   */
 
 // State containing the list of todos
@@ -23,14 +27,17 @@ case class TodoItem(id: Int, text: String, completed: Boolean)
 // Events for the todo list
 sealed trait TodoEvent derives EventCodec
 case class AddTodo(text: String) extends TodoEvent
-case class ToggleTodo(id: Int) extends TodoEvent
-case class DeleteTodo(id: Int) extends TodoEvent
-case object ClearCompleted extends TodoEvent
+case class ToggleTodo(id: Int)   extends TodoEvent
+case class DeleteTodo(id: Int)   extends TodoEvent
+case object ClearCompleted       extends TodoEvent
 
 // The TodoList WebView
 class TodoWebView extends WebView[TodoState, TodoEvent] {
 
-  override def mount(params: Map[String, String], session: Session): TodoState = {
+  override def mount(
+      params: Map[String, String],
+      session: Session
+  ): TodoState = {
     // Start with some example todos
     TodoState(
       todos = List(
@@ -72,55 +79,86 @@ class TodoWebView extends WebView[TodoState, TodoEvent] {
   }
 
   override def render(state: TodoState): String = {
-    val totalTodos = state.todos.length
+    val totalTodos     = state.todos.length
     val completedTodos = state.todos.count(_.completed)
-    val activeTodos = totalTodos - completedTodos
+    val activeTodos    = totalTodos - completedTodos
 
     val todosHtml = if (state.todos.isEmpty) {
       """<div style="text-align: center; color: #a0aec0; padding: 40px;">
            No todos yet. Add one above!
          </div>"""
     } else {
-      state.todos
-        .map { todo =>
-          val checkboxStyle = if (todo.completed) "checked" else ""
-          val textStyle = if (todo.completed) {
-            "text-decoration: line-through; color: #a0aec0;"
-          } else {
-            "color: #2d3748;"
-          }
-
-          // Note for wv-click, we can encode the event directly, and it will build the appropriate json
-          s"""
-          <div style="display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #e2e8f0;">
-            <input type="checkbox" $checkboxStyle wv-click='${EventCodec[TodoEvent].encode(ToggleTodo(todo.id))}'
-                   style="width: 20px; height: 20px; margin-right: 15px; cursor: pointer;">
-            <span style="flex: 1; font-size: 1.1rem; $textStyle">
-              ${escapeHtml(todo.text)}
-            </span>
-            <button wv-click='${EventCodec[TodoEvent].encode(DeleteTodo(todo.id))}'
-                    style="padding: 8px 12px; background: #f56565; color: white; border: none;
-                           border-radius: 6px; cursor: pointer; font-size: 0.9rem;">
-              Delete
-            </button>
-          </div>
-          """
-        }
-        .mkString
+      state.todos.map { todo =>
+        // We don't have to just interpolate wads of HTML string - we can use our Html dsl
+        // Note for wv-click, we can encode the event directly, and it will build the appropriate json
+        div(
+          styles(
+            "display"       -> "flex",
+            "align-items"   -> "center",
+            "padding"       -> "15px",
+            "border-bottom" -> "1px solid #e2e8f0"
+          )
+        )(
+          input(
+            tpe     := "checkbox",
+            checked := todo.completed,
+            wvClick := EventCodec[TodoEvent]
+              .encode(ToggleTodo(todo.id))
+              .toJsonString,
+            styles(
+              "width"        -> "20px",
+              "height"       -> "20px",
+              "margin-right" -> "15px",
+              "cursor"       -> "pointer"
+            )
+          ),
+          span(
+            styleWhen(
+              ("flex", "1", true),
+              ("font-size", "1.1rem", true),
+              ("text-decoration", "line-through", todo.completed),
+              ("color", if (todo.completed) "#a0aec0" else "#2d3748", true)
+            )
+          )(
+            escapeHtml(todo.text)
+          ),
+          button(
+            wvClick := EventCodec[TodoEvent]
+              .encode(DeleteTodo(todo.id))
+              .toJsonString,
+            styles(
+              "padding"       -> "8px 12px",
+              "background"    -> "#f56565",
+              "color"         -> "white",
+              "border"        -> "none",
+              "border-radius" -> "6px",
+              "cursor"        -> "pointer",
+              "font-size"     -> "0.9rem"
+            )
+          )(
+            "Delete"
+          )
+        ).render
+      }.mkString
     }
 
-    val clearCompletedButton = if (completedTodos > 0) {
-      s"""
-      <button wv-click='${EventCodec[TodoEvent].encode(ClearCompleted)}'
-              style="padding: 10px 20px; background: #ed8936; color: white; border: none;
-                     border-radius: 8px; cursor: pointer;">
-        Clear Completed
-      </button>
-      """
-    } else {
-      ""
-    }
+    val clearCompletedButton = when(completedTodos > 0) {
+      button(
+        wvClick := EventCodec[TodoEvent].encode(ClearCompleted).toJsonString,
+        styles(
+          "padding"       -> "10px 20px",
+          "background"    -> "#ed8936",
+          "color"         -> "white",
+          "border"        -> "none",
+          "border-radius" -> "8px",
+          "cursor"        -> "pointer"
+        )
+      )(
+        "Clear Completed"
+      )
+    }.render
 
+    // But you can still use HTML directly if you want, or even render mustache templates!
     s"""
     <div style="font-family: sans-serif; max-width: 600px; margin: 50px auto; background: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
       <div style="padding: 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px 12px 0 0; color: white;">
