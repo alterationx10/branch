@@ -8,20 +8,20 @@ import dev.alteration.branch.spider.server.Response.{html, json}
 /** A simple HTTP server example using SpiderApp.
   *
   * This example demonstrates:
-  * - Creating a basic HTTP server
-  * - Handling different routes
-  * - Using RequestHandler with String requests/responses
-  * - Returning JSON and HTML responses
+  *   - Creating a basic HTTP server
+  *   - Handling different routes
+  *   - Using RequestHandler with String requests/responses
+  *   - Returning JSON and HTML responses
   *
   * Run this and visit:
-  * - http://localhost:8080/
-  * - http://localhost:8080/hello
-  * - http://localhost:8080/api/status
+  *   - http://localhost:9000/
+  *   - http://localhost:9000/hello
+  *   - http://localhost:9000/api/status
   */
 object HelloWorldServer {
 
-  import RequestHandler.given 
-  
+  import RequestHandler.given
+
   def main(args: Array[String]): Unit = {
     // Create handlers for different routes
     val homeHandler = new RequestHandler[String, String] {
@@ -57,7 +57,7 @@ object HelloWorldServer {
       def handle(request: Request[String]): Response[String] = {
         // Extract query parameters from URI
         val query = Option(request.uri.getQuery).getOrElse("")
-        val name = if (query.startsWith("name=")) {
+        val name  = if (query.startsWith("name=")) {
           query.stripPrefix("name=")
         } else {
           "World"
@@ -85,7 +85,8 @@ object HelloWorldServer {
 
     val statusHandler = new RequestHandler[String, String] {
       def handle(request: Request[String]): Response[String] = {
-        val uptime = java.lang.management.ManagementFactory.getRuntimeMXBean.getUptime
+        val uptime =
+          java.lang.management.ManagementFactory.getRuntimeMXBean.getUptime
         json"""
         {
           "status": "ok",
@@ -98,28 +99,34 @@ object HelloWorldServer {
     }
 
     val mainRouter = new ContextHandler("/") {
+
       /** A partial function to route requests to specific handlers.
-       */
-      override val contextRouter: PartialFunction[(HttpMethod, List[String]), RequestHandler[?, ?]] = {
-        case (GET, Nil) => homeHandler
-        case (GET, "hello" :: Nil) => helloHandler
+        */
+      override val contextRouter: PartialFunction[
+        (HttpMethod, List[String]),
+        RequestHandler[?, ?]
+      ] = {
+        case (GET, Nil)                      => homeHandler
+        case (GET, "hello" :: Nil)           => helloHandler
         case (GET, "api" :: "status" :: Nil) => statusHandler
       }
     }
-    
+
     // Create server with SpiderApp trait
     // Normally your "app" object would extend this
     val appServer = new SpiderApp {
-      override val port = 8080
+      // Need to fix the SpiderApp trait
+      // - server is given, but needs to be a lazy val so we can override settings...
+      // It will run on port 9000
       ContextHandler.registerHandler(mainRouter)
     }
 
     println()
-    println("Server started on port 8080")
+    println("Server started on port 9000")
     println("Visit:")
-    println("  - http://localhost:8080/")
-    println("  - http://localhost:8080/hello")
-    println("  - http://localhost:8080/api/status")
+    println("  - http://localhost:9000/")
+    println("  - http://localhost:9000/hello")
+    println("  - http://localhost:9000/api/status")
     println()
     println("Press Ctrl+C to stop")
     println()
