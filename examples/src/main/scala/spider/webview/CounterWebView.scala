@@ -5,9 +5,9 @@ import dev.alteration.branch.spider.webview.*
 /** A simple counter WebView example.
   *
   * This demonstrates the basics of WebView:
-  * - State management (count)
-  * - Event handling (increment, decrement, reset)
-  * - HTML rendering with event attributes
+  *   - State management (count)
+  *   - Event handling (increment, decrement, reset)
+  *   - HTML rendering with event attributes
   */
 
 // Define the state
@@ -17,22 +17,28 @@ case class CounterState(count: Int = 0)
 sealed trait CounterEvent derives EventCodec
 case object Increment extends CounterEvent
 case object Decrement extends CounterEvent
-case object Reset extends CounterEvent
+case object Reset     extends CounterEvent
 
 // Define the WebView
 class CounterWebView extends WebView[CounterState, CounterEvent] {
 
-  override def mount(params: Map[String, String], session: Session): CounterState = {
+  override def mount(
+      params: Map[String, String],
+      session: Session
+  ): CounterState = {
     // Allow initial count to be set via URL params
     val initialCount = params.get("initial").flatMap(_.toIntOption).getOrElse(0)
     CounterState(count = initialCount)
   }
 
-  override def handleEvent(event: CounterEvent, state: CounterState): CounterState = {
+  override def handleEvent(
+      event: CounterEvent,
+      state: CounterState
+  ): CounterState = {
     event match {
       case Increment => state.copy(count = state.count + 1)
       case Decrement => state.copy(count = state.count - 1)
-      case Reset => state.copy(count = 0)
+      case Reset     => state.copy(count = 0)
     }
   }
 
@@ -59,9 +65,10 @@ class CounterWebView extends WebView[CounterState, CounterEvent] {
           style="padding: 12px 24px; font-size: 1rem; background: #718096; color: white; border: none; border-radius: 8px; cursor: pointer;">
           Reset
         </button>
-
+        
+        <!--For case object events, you can use the simple String name as above with Decrement, or encode it. Don't forget  '' and not "" -->
         <button
-          wv-click="Increment"
+          wv-click='${EventCodec[CounterEvent].encode(Increment)}'
           style="padding: 12px 24px; font-size: 1.2rem; background: #48bb78; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
           +
         </button>

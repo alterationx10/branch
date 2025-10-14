@@ -79,24 +79,6 @@ object Sql {
       Sql.PreparedUpdate(_ => holder, Seq(()))
     }
 
-    /** A string interpolator for creating SELECT statements that returns a
-      * sequence of parsed results. For single-use queries.
-      * @example
-      *   {{{
-      *   psQuery[User]"SELECT * FROM users WHERE active = $active"
-      *   }}}
-      */
-    inline def psQuery[R](args: PreparedStatementArg*)(using
-        parser: ResultSetParser[R]
-    ): Sql[Seq[R]] = {
-      val holder = PsArgHolder(sc.s(args.map(_ => "?")*), args*)
-      Sql.PreparedQuery[Any, Unit, R](
-        _ => holder,
-        rs => rs.parsedList[R],
-        Seq(())
-      )
-    }
-
     /** A string interpolator for creating SQL with named parameters. Returns a
       * builder that requires calling .bindUpdate() or .bindQuery() to provide
       * parameter values. Do not use ${} interpolation - use :paramName

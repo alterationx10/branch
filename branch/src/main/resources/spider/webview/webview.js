@@ -268,10 +268,21 @@ class BranchWebView {
   /**
    * Send an event to the server
    */
-  sendEvent(eventType, eventName, target, value) {
+  sendEvent(eventType, eventJsonStr, target, value) {
+    // EventCodec events are JSON strings. Parse to avoid double-stringification.
+    // Forms may use simple event names, which will fail JSON.parse - that's fine.
+    let event = eventJsonStr;
+    if (typeof eventJsonStr === 'string') {
+      try {
+        event = JSON.parse(eventJsonStr);
+      } catch (e) {
+        // Not JSON (e.g., "AddTodo" from a form), keep as string
+      }
+    }
+
     this.send({
       type: 'event',
-      event: eventName,
+      event: event,
       target: target.id || 'unknown',
       value: value
     });

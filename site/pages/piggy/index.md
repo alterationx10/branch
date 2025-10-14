@@ -141,21 +141,15 @@ val sql = for {
 val result: Try[(Int, Seq[Person])] = sql.executePool()
 ```
 
-## Ad-hoc Queries with psUpdate and psQuery
+## Ad-hoc Updates with psUpdate
 
-For single-use SQL operations, Piggy provides convenient interpolators that return `Sql[_]` directly:
+For single-use INSERT/UPDATE/DELETE operations, Piggy provides a convenient interpolator that returns `Sql[Int]` directly:
 
 ```scala
 // Single INSERT operation
 val inserted = psUpdate"INSERT INTO users (name, email) VALUES ($name, $email)"
   .executePool
   .get // Returns Int (affected rows)
-
-// Single SELECT operation
-val users = psQuery[User]
-"SELECT * FROM users WHERE active = $active"
-  .executePool
-  .get // Returns Seq[User]
 
 // Use in for-comprehensions
 val result = for {
@@ -166,8 +160,9 @@ val result = for {
 
 **When to use:**
 
-- **psUpdate/psQuery**: Ad-hoc, single-use operations
-- **ps with prepare/prepareUpdate/prepareQuery**: Batch operations with multiple rows
+- **psUpdate**: Ad-hoc, single-use INSERT/UPDATE/DELETE operations
+- **ps with prepareUpdate**: Batch UPDATE operations with multiple rows
+- **ps with prepareQuery**: Parameterized SELECT queries
 
 ## Named Parameters
 
