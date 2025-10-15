@@ -42,13 +42,24 @@ trait Command {
     */
   val isDefaultCommand: Boolean = false
 
+  /** The central logic to implement for this Command, using a typed context.
+    * This is the preferred method to override for new commands.
+    * @param ctx
+    *   A CommandContext providing typed access to parsed flags and arguments
+    * @return
+    */
+  def actionWithContext(ctx: CommandContext): Unit =
+    action(ctx.rawArgs) // Default implementation delegates to old action
+
   /** The central logic to implement for this Command
     * @param args
     *   The cli arguments passed in, with any trigger command already stripped
     *   out.
     * @return
+    * @deprecated
+    *   Use actionWithContext instead for better type safety
     */
-  def action(args: Seq[String]): Unit
+  def action(args: Seq[String]): Unit = ()
 
   /** Indicates if the program should stop on unrecognized, missing, and/or
     * conflicting flags.
@@ -133,6 +144,7 @@ trait Command {
       args: Seq[String]
   ): Lazy[Unit] =
     for {
+      ctx              <- Lazy.fn(new CommandContextImpl(this, args))
       showHelp         <- Lazy.fn(HelpFlag.isPresent(args))
       presentFlags     <- Lazy.fn(flags.filter(_.isPresent(args)))
       unrecognizedExit <-
@@ -159,7 +171,7 @@ trait Command {
                               .fail(new IllegalArgumentException("Missing required flags"))
                               .tapError { printHelpfulError(args) }
                           }
-      _                <- Lazy.fn(action(args)).when(!showHelp)
+      _                <- Lazy.fn(actionWithContext(ctx)).when(!showHelp)
     } yield ()
 
 }
