@@ -2,8 +2,9 @@ package dev.alteration.branch.ursula.command
 
 import dev.alteration.branch.ursula.args.{BooleanFlag, Flag}
 
-/** A context object that provides typed access to parsed command-line arguments.
-  * This eliminates the need for manual flag parsing in command actions.
+/** A context object that provides typed access to parsed command-line
+  * arguments. This eliminates the need for manual flag parsing in command
+  * actions.
   */
 trait CommandContext {
 

@@ -40,21 +40,21 @@ object Flags {
       hidden: Boolean = false,
       options: Option[Set[String]] = None
   ): StringFlag = {
-    val _name = name
-    val _shortKey = shortKey
+    val _name        = name
+    val _shortKey    = shortKey
     val _description = description
-    val _default = default
-    val _required = required
-    val _hidden = hidden
-    val _options = options
+    val _default     = default
+    val _required    = required
+    val _hidden      = hidden
+    val _options     = options
 
     new StringFlag {
-      override val name: String                = _name
-      override val shortKey: String            = _shortKey
-      override val description: String         = _description
-      override val default: Option[String]     = _default
-      override val required: Boolean           = _required
-      override val hidden: Boolean             = _hidden
+      override val name: String                 = _name
+      override val shortKey: String             = _shortKey
+      override val description: String          = _description
+      override val default: Option[String]      = _default
+      override val required: Boolean            = _required
+      override val hidden: Boolean              = _hidden
       override val options: Option[Set[String]] = _options
     }
   }
@@ -83,12 +83,12 @@ object Flags {
       required: Boolean = false,
       hidden: Boolean = false
   ): IntFlag = {
-    val _name = name
-    val _shortKey = shortKey
+    val _name        = name
+    val _shortKey    = shortKey
     val _description = description
-    val _default = default
-    val _required = required
-    val _hidden = hidden
+    val _default     = default
+    val _required    = required
+    val _hidden      = hidden
 
     new IntFlag {
       override val name: String         = _name
@@ -118,10 +118,10 @@ object Flags {
       description: String,
       hidden: Boolean = false
   ): BooleanFlag = {
-    val _name = name
-    val _shortKey = shortKey
+    val _name        = name
+    val _shortKey    = shortKey
     val _description = description
-    val _hidden = hidden
+    val _hidden      = hidden
 
     new BooleanFlag {
       override val name: String        = _name
@@ -158,22 +158,24 @@ object Flags {
       hidden: Boolean = false,
       parser: String => Path = s => Path.of(s)
   ): Flag[Path] = {
-    val _name = name
-    val _shortKey = shortKey
+    val _name        = name
+    val _shortKey    = shortKey
     val _description = description
-    val _default = default
-    val _required = required
-    val _hidden = hidden
-    val _parser = parser
+    val _default     = default
+    val _required    = required
+    val _hidden      = hidden
+    val _parser      = parser
 
     new Flag[Path] {
-      override val name: String          = _name
-      override val shortKey: String      = _shortKey
-      override val description: String   = _description
-      override val default: Option[Path] = _default
-      override val required: Boolean     = _required
-      override val hidden: Boolean       = _hidden
-      override def parse: PartialFunction[String, Path] = { case s => _parser(s) }
+      override val name: String                         = _name
+      override val shortKey: String                     = _shortKey
+      override val description: String                  = _description
+      override val default: Option[Path]                = _default
+      override val required: Boolean                    = _required
+      override val hidden: Boolean                      = _hidden
+      override def parse: PartialFunction[String, Path] = { case s =>
+        _parser(s)
+      }
     }
   }
 
@@ -207,23 +209,23 @@ object Flags {
       hidden: Boolean = false,
       options: Option[Set[R]] = None
   ): Flag[R] = {
-    val _name = name
-    val _shortKey = shortKey
+    val _name        = name
+    val _shortKey    = shortKey
     val _description = description
-    val _parser = parser
-    val _default = default
-    val _required = required
-    val _hidden = hidden
-    val _options = options
+    val _parser      = parser
+    val _default     = default
+    val _required    = required
+    val _hidden      = hidden
+    val _options     = options
 
     new Flag[R] {
-      override val name: String            = _name
-      override val shortKey: String        = _shortKey
-      override val description: String     = _description
-      override val default: Option[R]      = _default
-      override val required: Boolean       = _required
-      override val hidden: Boolean         = _hidden
-      override val options: Option[Set[R]] = _options
+      override val name: String                      = _name
+      override val shortKey: String                  = _shortKey
+      override val description: String               = _description
+      override val default: Option[R]                = _default
+      override val required: Boolean                 = _required
+      override val hidden: Boolean                   = _hidden
+      override val options: Option[Set[R]]           = _options
       override def parse: PartialFunction[String, R] = { case s => _parser(s) }
     }
   }

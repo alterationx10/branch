@@ -1,7 +1,13 @@
 package dev.alteration.branch.ursula.command
 
 import dev.alteration.branch.macaroni.runtimes.BranchExecutors
-import dev.alteration.branch.ursula.args.{Argument, BooleanFlag, Flag, IntFlag, StringFlag}
+import dev.alteration.branch.ursula.args.{
+  Argument,
+  BooleanFlag,
+  Flag,
+  IntFlag,
+  StringFlag
+}
 import munit.*
 
 import scala.concurrent.ExecutionContext
@@ -32,7 +38,8 @@ object CommandContextSpec {
     override val usage: String               = "test [flags]"
     override val examples: Seq[String]       = Seq("test -p 9000")
     override val trigger: String             = "test"
-    override val flags: Seq[Flag[?]]         = Seq(TestPortFlag, TestVerboseFlag, TestNameFlag)
+    override val flags: Seq[Flag[?]]         =
+      Seq(TestPortFlag, TestVerboseFlag, TestNameFlag)
     override val arguments: Seq[Argument[?]] = Seq.empty
 
     var lastContext: Option[CommandContext] = None
@@ -49,7 +56,8 @@ class CommandContextSpec extends FunSuite {
   import CommandContextSpec._
 
   test("provide typed access to flags") {
-    val ctx = new CommandContextImpl(TestCommand, Seq("-p", "9000", "-n", "test"))
+    val ctx =
+      new CommandContextImpl(TestCommand, Seq("-p", "9000", "-n", "test"))
 
     assertEquals(ctx.flag(TestPortFlag), Some(9000))
     assertEquals(ctx.flag(TestNameFlag), Some("test"))
