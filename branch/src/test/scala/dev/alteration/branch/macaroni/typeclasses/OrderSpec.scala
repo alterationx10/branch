@@ -11,14 +11,6 @@ class OrderSpec extends FunSuite {
     assert(ord.compare("abc", "abc") == 0)
   }
 
-  test("String totality law") {
-    val ord = summon[Order[String]]
-    val a   = "hello"
-    val b   = "world"
-    // compare(a, b) is always defined
-    assert(ord.compare(a, b) != ord.compare(a, b) || true) // always evaluates
-  }
-
   test("String antisymmetry law") {
     val ord = summon[Order[String]]
     val a   = "hello"
