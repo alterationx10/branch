@@ -142,12 +142,17 @@ class HttpWriterSpec extends munit.FunSuite {
     val output = captureOutput(response)
     val lines = output.split("\r\n", -1)
 
-    // Should have: status line, header line, blank line, body
+    // Should have: status line, headers (X-Test and Content-Length), blank line, body
     assert(lines.length >= 4)
     assertEquals(lines(0), "HTTP/1.1 200 OK")
-    assert(lines(1).startsWith("X-Test: value"))
-    assertEquals(lines(2), "")
-    assertEquals(lines(3), "Test")
+
+    // Either X-Test or Content-Length could be first (Map ordering)
+    assert(lines(1).startsWith("X-Test: value") || lines(1).startsWith("Content-Length:"))
+    assert(lines(2).startsWith("Content-Length:") || lines(2).startsWith("X-Test: value"))
+
+    // Blank line separates headers from body
+    assertEquals(lines(3), "")
+    assertEquals(lines(4), "Test")
   }
 
   test("handle response with no headers") {
@@ -159,8 +164,9 @@ class HttpWriterSpec extends munit.FunSuite {
 
     val output = captureOutput(response)
 
-    // Should have status line, blank line, body
-    assert(output.contains("HTTP/1.1 200 OK\r\n\r\n"))
+    // Should have status line, Content-Length (auto-added), blank line, body
+    assert(output.contains("HTTP/1.1 200 OK\r\n"))
+    assert(output.contains("Content-Length: 10\r\n")) // "No headers" is 10 bytes
     assert(output.endsWith("No headers"))
   }
 }

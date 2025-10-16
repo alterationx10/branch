@@ -12,6 +12,9 @@ import scala.util.{Try, Success, Failure}
   */
 object HttpParser {
 
+  /** Exception thrown when the connection is closed gracefully (EOF at start). */
+  class ConnectionClosedException extends Exception("Connection closed")
+
   /** Result of parsing an HTTP request. */
   case class ParseResult(
       method: HttpMethod,
@@ -173,6 +176,11 @@ object HttpParser {
       val line = new StringBuilder
       var current: Int = input.read()
       var done = false
+
+      // If we hit EOF immediately (no bytes read), connection was closed
+      if (current == -1) {
+        throw new ConnectionClosedException
+      }
 
       while (current != -1 && !done) {
         val char = current.toChar

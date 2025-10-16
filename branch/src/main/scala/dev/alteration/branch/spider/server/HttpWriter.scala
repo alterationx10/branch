@@ -61,13 +61,27 @@ object HttpWriter {
     Try {
       val writer = new BufferedWriter(output)
 
+      // Encode body first to get length
+      val bodyBytes = encoder(response.body)
+
+      // Add Content-Length header if not already present
+      val hasContentLength = response.headers.exists { case (k, _) =>
+        k.equalsIgnoreCase("Content-Length")
+      }
+
+      val headers = if (!hasContentLength) {
+        response.headers + ("Content-Length" -> List(bodyBytes.length.toString))
+      } else {
+        response.headers
+      }
+
       // Write status line: HTTP/1.1 200 OK\r\n
       writer.writeLine(
         s"HTTP/1.1 ${response.statusCode} ${reasonPhrase(response.statusCode)}"
       )
 
-      // Write headers
-      response.headers.foreach { case (name, values) =>
+      // Write headers (including Content-Length)
+      headers.foreach { case (name, values) =>
         values.foreach { value =>
           writer.writeLine(s"$name: $value")
         }
@@ -77,7 +91,6 @@ object HttpWriter {
       writer.writeLine("")
 
       // Write body
-      val bodyBytes = encoder(response.body)
       if (bodyBytes.nonEmpty) {
         writer.writeBytes(bodyBytes)
       }
