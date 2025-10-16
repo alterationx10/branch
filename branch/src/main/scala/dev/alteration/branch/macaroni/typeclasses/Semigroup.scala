@@ -1,8 +1,11 @@
-package dev.alteration.branch.lzy.abstractions
+package dev.alteration.branch.macaroni.typeclasses
 
 import scala.annotation.targetName
 
 /** A type-class for combining two values of the same type.
+  *
+  * Laws:
+  *   - Associativity: combine(combine(a, b), c) == combine(a, combine(b, c))
   */
 trait Semigroup[T] {
 

@@ -144,7 +144,7 @@ object Sql {
     ): Sql[Seq[R]] = {
       val namedParams = params.toMap
       val holder      = NamedParameterParser.toPsArgHolder(sqlTemplate, namedParams)
-      Sql.PreparedQuery[Any, Unit, R](
+      Sql.PreparedQuery[Unit, R](
         _ => holder,
         rs => rs.parsedList[R],
         Seq(())
@@ -256,17 +256,17 @@ object Sql {
 
   }
 
-  private[piggy] final case class PreparedExec[A, P](
+  private[piggy] final case class PreparedExec[P](
       sqlFn: P => PsArgHolder,
       args: Seq[P]
   ) extends Sql[Unit]
 
-  private[piggy] final case class PreparedUpdate[A, P](
+  private[piggy] final case class PreparedUpdate[P](
       sqlFn: P => PsArgHolder,
       args: Seq[P]
   ) extends Sql[Int]
 
-  private[piggy] final case class PreparedQuery[A, P, R](
+  private[piggy] final case class PreparedQuery[P, R](
       sqlFn: P => PsArgHolder,
       rsFn: ResultSet => Seq[R],
       args: Seq[P]
