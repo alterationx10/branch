@@ -3,6 +3,11 @@ package dev.alteration.branch.spider.server
 import dev.alteration.branch.macaroni.runtimes.BranchExecutors
 import dev.alteration.branch.spider.HttpMethod
 import dev.alteration.branch.spider.server.RequestHandler.given
+import dev.alteration.branch.spider.websocket.{
+  WebSocketConnection,
+  WebSocketHandler,
+  WebSocketHandshake
+}
 
 import java.net.{ServerSocket, Socket, SocketTimeoutException}
 import java.util.concurrent.atomic.AtomicBoolean
@@ -14,12 +19,17 @@ import scala.util.{Try, Using, Success, Failure}
   * connections. Each accepted connection is dispatched to the executor service
   * for processing.
   *
+  * Supports both HTTP and WebSocket connections. WebSocket connections are
+  * established via HTTP upgrade and then handed off to WebSocketHandlers.
+  *
   * @param port
   *   The port on which the server will listen
   * @param backlog
   *   The maximum number of pending connections the server will queue
   * @param router
-  *   A partial function to route requests to handlers
+  *   A partial function to route HTTP requests to handlers
+  * @param webSocketRouter
+  *   A map from path to WebSocket handler
   * @param socketTimeout
   *   Read timeout for client connections in milliseconds (default 30s)
   */
@@ -27,6 +37,7 @@ class SocketServer(
     val port: Int = 9000,
     val backlog: Int = 0,
     val router: PartialFunction[(HttpMethod, List[String]), RequestHandler[?, ?]] = PartialFunction.empty,
+    val webSocketRouter: Map[String, WebSocketHandler] = Map.empty,
     val socketTimeout: Int = 30000
 ) {
 
@@ -74,7 +85,7 @@ class SocketServer(
   /** Handle an individual client connection.
     *
     * This method is called on a virtual thread for each accepted connection.
-    * It supports HTTP/1.1 keep-alive connections.
+    * It supports HTTP/1.1 keep-alive connections and WebSocket upgrades.
     *
     * @param socket
     *   The client socket to handle
@@ -95,46 +106,56 @@ class SocketServer(
               keepAlive = false
 
             case Success(parseResult) =>
-              // Route to appropriate handler
-              val handler = routeRequest(parseResult.method, parseResult.uri.getPath)
+              // Check if this is a WebSocket upgrade request
+              val isWebSocketUpgrade = isWebSocketUpgradeRequest(parseResult.headers)
 
-              // Convert to Request model
-              val request = HttpParser.toRequest(parseResult)
+              if (isWebSocketUpgrade) {
+                // Handle WebSocket upgrade
+                handleWebSocketUpgrade(sock, parseResult)
+                keepAlive = false // WebSocket takes over, exit HTTP loop
+              } else {
+                // Handle as normal HTTP request
+                // Route to appropriate handler
+                val handler = routeRequest(parseResult.method, parseResult.uri.getPath)
 
-              // Execute handler - we'll handle type erasure by writing raw bytes
-              val handlerResult = Try {
-                val response = handler.asInstanceOf[RequestHandler[Array[Byte], Any]].handle(request)
+                // Convert to Request model
+                val request = HttpParser.toRequest(parseResult)
 
-                // Pattern match on common response types
-                val writeResult = response.body match {
-                  case s: String =>
-                    HttpWriter.write(response.asInstanceOf[Response[String]], output)
-                  case bytes: Array[Byte] =>
-                    HttpWriter.write(response.asInstanceOf[Response[Array[Byte]]], output)
-                  case _ =>
-                    // Fallback: convert to String
-                    val stringResponse = Response(response.statusCode, response.body.toString, response.headers)
-                    HttpWriter.write(stringResponse, output)
+                // Execute handler - we'll handle type erasure by writing raw bytes
+                val handlerResult = Try {
+                  val response = handler.asInstanceOf[RequestHandler[Array[Byte], Any]].handle(request)
+
+                  // Pattern match on common response types
+                  val writeResult = response.body match {
+                    case s: String =>
+                      HttpWriter.write(response.asInstanceOf[Response[String]], output)
+                    case bytes: Array[Byte] =>
+                      HttpWriter.write(response.asInstanceOf[Response[Array[Byte]]], output)
+                    case _ =>
+                      // Fallback: convert to String
+                      val stringResponse = Response(response.statusCode, response.body.toString, response.headers)
+                      HttpWriter.write(stringResponse, output)
+                  }
+
+                  (response.statusCode, writeResult)
                 }
 
-                (response.statusCode, writeResult)
-              }
+                handlerResult match {
+                  case Success((statusCode, Success(_))) =>
+                    // Successfully handled and wrote response
+                    keepAlive = shouldKeepAlive(parseResult.headers, statusCode)
 
-              handlerResult match {
-                case Success((statusCode, Success(_))) =>
-                  // Successfully handled and wrote response
-                  keepAlive = shouldKeepAlive(parseResult.headers, statusCode)
+                  case Success((_, Failure(writeError))) =>
+                    println(s"Error writing response: ${writeError.getMessage}")
+                    keepAlive = false
 
-                case Success((_, Failure(writeError))) =>
-                  println(s"Error writing response: ${writeError.getMessage}")
-                  keepAlive = false
-
-                case Failure(handlerError) =>
-                  // Handler threw an exception, return 500
-                  println(s"Handler error: ${handlerError.getMessage}")
-                  val errorResponse = internalServerError(handlerError.getMessage)
-                  HttpWriter.write(errorResponse, output)
-                  keepAlive = false
+                  case Failure(handlerError) =>
+                    // Handler threw an exception, return 500
+                    println(s"Handler error: ${handlerError.getMessage}")
+                    val errorResponse = internalServerError(handlerError.getMessage)
+                    HttpWriter.write(errorResponse, output)
+                    keepAlive = false
+                }
               }
 
             case Failure(e) =>
@@ -158,6 +179,80 @@ class SocketServer(
         // Connection handled successfully
       case Failure(e) =>
         println(s"Error handling connection: ${e.getMessage}")
+    }
+  }
+
+  /** Check if a request is a WebSocket upgrade request.
+    *
+    * @param headers
+    *   The request headers
+    * @return
+    *   true if this is a WebSocket upgrade request
+    */
+  private def isWebSocketUpgradeRequest(
+      headers: Map[String, List[String]]
+  ): Boolean = {
+    // Look for Upgrade: websocket header (case-insensitive)
+    headers
+      .find { case (k, _) => k.equalsIgnoreCase("Upgrade") }
+      .flatMap(_._2.headOption)
+      .exists(_.equalsIgnoreCase("websocket"))
+  }
+
+  /** Handle a WebSocket upgrade request.
+    *
+    * Validates the handshake, sends 101 Switching Protocols, and hands off to
+    * the appropriate WebSocketHandler.
+    *
+    * @param socket
+    *   The client socket
+    * @param parseResult
+    *   The parsed HTTP request
+    */
+  private def handleWebSocketUpgrade(
+      socket: Socket,
+      parseResult: HttpParser.ParseResult
+  ): Unit = {
+    val path = parseResult.uri.getPath
+    val output = socket.getOutputStream
+
+    // Route to WebSocket handler
+    webSocketRouter.get(path) match {
+      case None =>
+        // No handler for this path, send 404
+        println(s"No WebSocket handler for path: $path")
+        val errorResponse = Response(404, s"No WebSocket handler for path: $path").htmlContent
+        HttpWriter.write(errorResponse, output)
+
+      case Some(handler) =>
+        // Validate WebSocket handshake
+        WebSocketHandshake.validateHandshake(parseResult.headers) match {
+          case Failure(error) =>
+            // Invalid handshake, send 400
+            println(s"Invalid WebSocket handshake: ${error.getMessage}")
+            val errorResponse = badRequest(s"Invalid WebSocket handshake: ${error.getMessage}")
+            HttpWriter.write(errorResponse, output)
+
+          case Success(secWebSocketKey) =>
+            // Send 101 Switching Protocols response
+            val responseBytes = WebSocketHandshake.createRawHandshakeResponse(secWebSocketKey)
+            output.write(responseBytes)
+            output.flush()
+
+            println(s"WebSocket connection established on $path")
+
+            // Create WebSocketConnection and hand off to handler
+            val connection = WebSocketConnection(socket)
+
+            try {
+              // Call handler lifecycle methods
+              WebSocketHandler.handleConnection(handler, connection)
+            } catch {
+              case e: Exception =>
+                println(s"Error in WebSocket handler: ${e.getMessage}")
+                e.printStackTrace()
+            }
+        }
     }
   }
 
@@ -254,7 +349,9 @@ object SocketServer {
     * @param backlog
     *   The maximum number of pending connections
     * @param router
-    *   A partial function to route requests to handlers
+    *   A partial function to route HTTP requests to handlers
+    * @param webSocketRouter
+    *   A map from path to WebSocket handler
     * @param socketTimeout
     *   Read timeout for client connections in milliseconds
     * @return
@@ -264,9 +361,10 @@ object SocketServer {
       port: Int = 9000,
       backlog: Int = 0,
       router: PartialFunction[(HttpMethod, List[String]), RequestHandler[?, ?]] = PartialFunction.empty,
+      webSocketRouter: Map[String, WebSocketHandler] = Map.empty,
       socketTimeout: Int = 30000
   ): SocketServer = {
-    val server = new SocketServer(port, backlog, router, socketTimeout)
+    val server = new SocketServer(port, backlog, router, webSocketRouter, socketTimeout)
 
     Runtime.getRuntime.addShutdownHook {
       new Thread(() => server.stop())

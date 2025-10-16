@@ -1,22 +1,31 @@
 package dev.alteration.branch.spider.server
 
 import dev.alteration.branch.spider.HttpMethod
+import dev.alteration.branch.spider.websocket.WebSocketHandler
 
-/** A trait for creating HTTP applications using SocketServer (pure ServerSocket
-  * implementation).
+/** A trait for creating HTTP and WebSocket applications using SocketServer
+  * (pure ServerSocket implementation).
   *
   * This is similar to SpiderApp but uses SocketServer instead of
-  * com.sun.net.httpserver.HttpServer.
+  * com.sun.net.httpserver.HttpServer. Supports both HTTP and WebSocket
+  * connections on the same port.
   *
   * Example usage:
   * {{{
   * object MyApp extends SocketSpiderApp {
   *   override val port = 8080
   *
+  *   // HTTP routes
   *   override val router = {
   *     case (HttpMethod.GET, "hello" :: Nil) => helloHandler
   *     case (HttpMethod.POST, "api" :: "users" :: Nil) => createUserHandler
   *   }
+  *
+  *   // WebSocket routes
+  *   override val webSocketRouter = Map(
+  *     "/ws" -> myWebSocketHandler,
+  *     "/chat" -> chatHandler
+  *   )
   * }
   * }}}
   */
@@ -36,9 +45,16 @@ trait SocketSpiderApp {
 
   /** The router that maps (HttpMethod, path segments) to RequestHandlers.
     *
-    * Override this to define your application's routes.
+    * Override this to define your application's HTTP routes.
     */
   val router: PartialFunction[(HttpMethod, List[String]), RequestHandler[?, ?]]
+
+  /** The WebSocket router that maps paths to WebSocketHandlers.
+    *
+    * Override this to define your application's WebSocket routes. Defaults to
+    * empty (no WebSocket support).
+    */
+  val webSocketRouter: Map[String, WebSocketHandler] = Map.empty
 
   /** The underlying SocketServer instance.
     */
@@ -46,13 +62,18 @@ trait SocketSpiderApp {
     port = port,
     backlog = backlog,
     router = router,
+    webSocketRouter = webSocketRouter,
     socketTimeout = socketTimeout
   )
 
-  /** The application's main entry point, which starts the HTTP server.
+  /** The application's main entry point, which starts the HTTP/WebSocket
+    * server.
     */
   final def main(args: Array[String]): Unit = {
     println(s"Starting SocketSpiderApp on port $port")
+    if (webSocketRouter.nonEmpty) {
+      println(s"WebSocket routes: ${webSocketRouter.keys.mkString(", ")}")
+    }
     server.start()
   }
 }
