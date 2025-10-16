@@ -1,7 +1,7 @@
 package dev.alteration.branch.spider.server
 
 import com.sun.net.httpserver.*
-import dev.alteration.branch.lzy.abstractions.Semigroup
+import dev.alteration.branch.macaroni.typeclasses.Semigroup
 import dev.alteration.branch.spider.HttpMethod
 
 import java.time.{Duration, Instant}
