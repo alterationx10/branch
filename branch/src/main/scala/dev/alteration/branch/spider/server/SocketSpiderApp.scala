@@ -39,9 +39,15 @@ trait SocketSpiderApp {
     */
   val backlog: Int = 0
 
-  /** Socket read timeout in milliseconds. Defaults to 30 seconds.
+  /** Server configuration with limits and settings. Defaults to
+    * ServerConfig.default.
+    *
+    * Override this to customize limits:
+    *   - ServerConfig.default: Production defaults
+    *   - ServerConfig.development: Relaxed limits for dev/testing
+    *   - ServerConfig.strict: Tighter limits for high-security environments
     */
-  val socketTimeout: Int = 30000
+  val config: ServerConfig = ServerConfig.default
 
   /** The router that maps (HttpMethod, path segments) to RequestHandlers.
     *
@@ -63,7 +69,7 @@ trait SocketSpiderApp {
     backlog = backlog,
     router = router,
     webSocketRouter = webSocketRouter,
-    socketTimeout = socketTimeout
+    config = config
   )
 
   /** The application's main entry point, which starts the HTTP/WebSocket

@@ -30,15 +30,15 @@ import scala.util.{Try, Using, Success, Failure}
   *   A partial function to route HTTP requests to handlers
   * @param webSocketRouter
   *   A map from path to WebSocket handler
-  * @param socketTimeout
-  *   Read timeout for client connections in milliseconds (default 30s)
+  * @param config
+  *   Server configuration with limits and settings
   */
 class SocketServer(
     val port: Int = 9000,
     val backlog: Int = 0,
     val router: PartialFunction[(HttpMethod, List[String]), RequestHandler[?, ?]] = PartialFunction.empty,
     val webSocketRouter: Map[String, WebSocketHandler] = Map.empty,
-    val socketTimeout: Int = 30000
+    val config: ServerConfig = ServerConfig.default
 ) {
 
   private val running = new AtomicBoolean(false)
@@ -66,7 +66,7 @@ class SocketServer(
     try {
       while (running.get()) {
         val socket = serverSocket.get.accept()
-        socket.setSoTimeout(socketTimeout)
+        socket.setSoTimeout(config.socketTimeout)
 
         executor.submit(new Runnable {
           override def run(): Unit = handleConnection(socket)
@@ -100,9 +100,16 @@ class SocketServer(
           val output = sock.getOutputStream
 
           // Parse the HTTP request
-          HttpParser.parse(input) match {
+          HttpParser.parse(input, config) match {
             case Failure(_: HttpParser.ConnectionClosedException) =>
               // Client closed connection gracefully - exit keep-alive loop
+              keepAlive = false
+
+            case Failure(e: HttpParser.LimitExceededException) =>
+              // Request exceeded limits, send 413 Payload Too Large or 431 Headers Too Large
+              println(s"Request exceeded limits: ${e.getMessage}")
+              val errorResponse = Response(413, s"Request Too Large: ${e.getMessage}").htmlContent
+              HttpWriter.write(errorResponse, output)
               keepAlive = false
 
             case Success(parseResult) =>
@@ -352,8 +359,8 @@ object SocketServer {
     *   A partial function to route HTTP requests to handlers
     * @param webSocketRouter
     *   A map from path to WebSocket handler
-    * @param socketTimeout
-    *   Read timeout for client connections in milliseconds
+    * @param config
+    *   Server configuration with limits and settings
     * @return
     *   A new SocketServer instance with shutdown hook installed
     */
@@ -362,9 +369,9 @@ object SocketServer {
       backlog: Int = 0,
       router: PartialFunction[(HttpMethod, List[String]), RequestHandler[?, ?]] = PartialFunction.empty,
       webSocketRouter: Map[String, WebSocketHandler] = Map.empty,
-      socketTimeout: Int = 30000
+      config: ServerConfig = ServerConfig.default
   ): SocketServer = {
-    val server = new SocketServer(port, backlog, router, webSocketRouter, socketTimeout)
+    val server = new SocketServer(port, backlog, router, webSocketRouter, config)
 
     Runtime.getRuntime.addShutdownHook {
       new Thread(() => server.stop())
