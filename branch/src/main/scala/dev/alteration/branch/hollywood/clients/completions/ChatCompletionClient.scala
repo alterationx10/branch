@@ -1,7 +1,7 @@
 package dev.alteration.branch.hollywood.clients.completions
 
 import dev.alteration.branch.friday.http.{JsonBodyHandler, JsonBodyPublisher}
-import dev.alteration.branch.spider.ContentType
+import dev.alteration.branch.spider.common.ContentType
 import dev.alteration.branch.spider.client.{Client, ClientRequest}
 import dev.alteration.branch.spider.client.ClientRequest.withContentType
 import dev.alteration.branch.veil.Veil

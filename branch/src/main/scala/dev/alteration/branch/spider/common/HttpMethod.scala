@@ -1,4 +1,4 @@
-package dev.alteration.branch.spider
+package dev.alteration.branch.spider.common
 
 import scala.util.Try
 

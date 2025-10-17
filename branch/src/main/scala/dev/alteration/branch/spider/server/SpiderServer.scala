@@ -1,7 +1,7 @@
 package dev.alteration.branch.spider.server
 
 import dev.alteration.branch.macaroni.runtimes.BranchExecutors
-import dev.alteration.branch.spider.HttpMethod
+import dev.alteration.branch.spider.common.HttpMethod
 import dev.alteration.branch.spider.server.RequestHandler.given
 import dev.alteration.branch.spider.websocket.{
   WebSocketConnection,
@@ -33,7 +33,7 @@ import scala.util.{Try, Using, Success, Failure}
   * @param config
   *   Server configuration with limits and settings
   */
-class SocketServer(
+class SpiderServer(
     val port: Int = 9000,
     val backlog: Int = 0,
     val router: PartialFunction[(HttpMethod, List[String]), RequestHandler[?, ?]] = PartialFunction.empty,
@@ -346,7 +346,7 @@ class SocketServer(
   def isRunning: Boolean = running.get()
 }
 
-object SocketServer {
+object SpiderServer {
 
   /** Create a SocketServer with a shutdown hook that stops the server on JVM
     * shutdown.
@@ -370,8 +370,8 @@ object SocketServer {
       router: PartialFunction[(HttpMethod, List[String]), RequestHandler[?, ?]] = PartialFunction.empty,
       webSocketRouter: Map[String, WebSocketHandler] = Map.empty,
       config: ServerConfig = ServerConfig.default
-  ): SocketServer = {
-    val server = new SocketServer(port, backlog, router, webSocketRouter, config)
+  ): SpiderServer = {
+    val server = new SpiderServer(port, backlog, router, webSocketRouter, config)
 
     Runtime.getRuntime.addShutdownHook {
       new Thread(() => server.stop())

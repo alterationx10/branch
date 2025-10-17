@@ -1,7 +1,7 @@
 package spider.server
 
-import dev.alteration.branch.spider.HttpMethod
-import dev.alteration.branch.spider.HttpMethod.GET
+import dev.alteration.branch.spider.common.HttpMethod
+import dev.alteration.branch.spider.common.HttpMethod.GET
 import dev.alteration.branch.spider.server.*
 import dev.alteration.branch.spider.server.Response.{html, json}
 
@@ -98,11 +98,11 @@ object HelloWorldServer {
       }
     }
 
-    val mainRouter = new ContextHandler("/") {
+    // Create server with SocketSpiderApp trait
+    val appServer = new SocketSpiderApp {
+      override val port: Int = 9000
 
-      /** A partial function to route requests to specific handlers.
-        */
-      override val contextRouter: PartialFunction[
+      override val router: PartialFunction[
         (HttpMethod, List[String]),
         RequestHandler[?, ?]
       ] = {
@@ -110,15 +110,6 @@ object HelloWorldServer {
         case (GET, "hello" :: Nil)           => helloHandler
         case (GET, "api" :: "status" :: Nil) => statusHandler
       }
-    }
-
-    // Create server with SpiderApp trait
-    // Normally your "app" object would extend this
-    val appServer = new SpiderApp {
-      // Need to fix the SpiderApp trait
-      // - server is given, but needs to be a lazy val so we can override settings...
-      // It will run on port 9000
-      ContextHandler.registerHandler(mainRouter)
     }
 
     println()

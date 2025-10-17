@@ -1,6 +1,6 @@
 package dev.alteration.branch.spider.server
 
-import dev.alteration.branch.spider.HttpMethod
+import dev.alteration.branch.spider.common.HttpMethod
 
 import java.io.{BufferedInputStream, InputStream}
 import java.net.URI

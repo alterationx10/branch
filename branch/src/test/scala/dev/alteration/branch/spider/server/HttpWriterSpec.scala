@@ -1,6 +1,6 @@
 package dev.alteration.branch.spider.server
 
-import dev.alteration.branch.spider.ContentType
+import dev.alteration.branch.spider.common.ContentType
 import dev.alteration.branch.spider.server.RequestHandler.given
 
 import java.io.ByteArrayOutputStream

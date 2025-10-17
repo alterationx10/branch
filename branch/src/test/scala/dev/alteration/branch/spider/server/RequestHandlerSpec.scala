@@ -1,7 +1,7 @@
 package dev.alteration.branch.spider.server
 
 import dev.alteration.branch.friday.http.JsonBodyHandler
-import dev.alteration.branch.spider.HttpMethod
+import dev.alteration.branch.spider.common.HttpMethod
 import dev.alteration.branch.spider.server.RequestHandler.given
 import dev.alteration.branch.spider.server.Response.*
 import dev.alteration.branch.testkit.fixtures.HttpFixtureSuite
@@ -53,7 +53,7 @@ class RequestHandlerSpec extends HttpFixtureSuite {
 
     val response = client.send(
       HttpRequest.newBuilder
-        .uri(URI.create(s"http://localhost:${server.getAddress.getPort}/aloha"))
+        .uri(URI.create(s"http://localhost:${server.port}/aloha"))
         .build,
       HttpResponse.BodyHandlers.ofString
     )
@@ -62,7 +62,7 @@ class RequestHandlerSpec extends HttpFixtureSuite {
     val response2 = client.send(
       HttpRequest.newBuilder
         .uri(
-          URI.create(s"http://localhost:${server.getAddress.getPort}/jaloha")
+          URI.create(s"http://localhost:${server.port}/jaloha")
         )
         .build,
       JsonBodyHandler.of[Message]
@@ -70,7 +70,7 @@ class RequestHandlerSpec extends HttpFixtureSuite {
 
     val response3 = client.send(
       HttpRequest.newBuilder
-        .uri(URI.create(s"http://localhost:${server.getAddress.getPort}/txt"))
+        .uri(URI.create(s"http://localhost:${server.port}/txt"))
         .build,
       HttpResponse.BodyHandlers.ofString
     )

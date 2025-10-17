@@ -1,7 +1,7 @@
 package spider.server
 
-import dev.alteration.branch.spider.server.{SocketServer, RequestHandler, Request, Response}
-import dev.alteration.branch.spider.HttpMethod
+import dev.alteration.branch.spider.server.{SpiderServer, RequestHandler, Request, Response}
+import dev.alteration.branch.spider.common.HttpMethod
 import dev.alteration.branch.spider.server.RequestHandler.given
 import dev.alteration.branch.spider.server.Response.*
 
@@ -66,7 +66,7 @@ object SocketServerTest {
   }
 
   def main(args: Array[String]): Unit = {
-    val server = SocketServer.withShutdownHook(
+    val server = SpiderServer.withShutdownHook(
       port = 9000,
       router = router
     )

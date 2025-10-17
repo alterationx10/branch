@@ -1,7 +1,7 @@
 package spider.server
 
 import dev.alteration.branch.spider.server.{SocketSpiderApp, RequestHandler, Request, Response}
-import dev.alteration.branch.spider.HttpMethod
+import dev.alteration.branch.spider.common.HttpMethod
 import dev.alteration.branch.spider.server.RequestHandler.given
 import dev.alteration.branch.spider.server.Response.*
 

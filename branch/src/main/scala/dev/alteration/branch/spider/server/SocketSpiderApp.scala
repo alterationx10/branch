@@ -1,6 +1,6 @@
 package dev.alteration.branch.spider.server
 
-import dev.alteration.branch.spider.HttpMethod
+import dev.alteration.branch.spider.common.HttpMethod
 import dev.alteration.branch.spider.websocket.WebSocketHandler
 
 /** A trait for creating HTTP and WebSocket applications using SocketServer
@@ -64,7 +64,7 @@ trait SocketSpiderApp {
 
   /** The underlying SocketServer instance.
     */
-  final given server: SocketServer = SocketServer.withShutdownHook(
+  final given server: SpiderServer = SpiderServer.withShutdownHook(
     port = port,
     backlog = backlog,
     router = router,

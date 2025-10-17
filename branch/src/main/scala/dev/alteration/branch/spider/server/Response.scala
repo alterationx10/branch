@@ -1,6 +1,6 @@
 package dev.alteration.branch.spider.server
 
-import dev.alteration.branch.spider.ContentType
+import dev.alteration.branch.spider.common.ContentType
 
 /** A response model for an HTTP request.
   */

@@ -6,7 +6,7 @@ import dev.alteration.branch.spider.server.{
   Request,
   Response
 }
-import dev.alteration.branch.spider.HttpMethod
+import dev.alteration.branch.spider.common.HttpMethod
 import dev.alteration.branch.spider.server.RequestHandler.given
 import dev.alteration.branch.spider.server.Response.*
 import dev.alteration.branch.spider.websocket.{
