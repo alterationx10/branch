@@ -1,6 +1,6 @@
 ---
 title: Spider
-description: A custom HTTP/1.1 server with WebSocket support and reactive UI framework
+description: A layer over the built-in Java HttpServer
 author: Mark Rudolph
 published: 2025-01-25T04:38:00Z
 lastUpdated: 2025-01-25T04:38:00Z
@@ -53,84 +53,59 @@ case class GreeterHandler() extends RequestHandler[Unit, String] {
 
 ### SpiderServer
 
-The `SpiderServer` is the core HTTP/1.1 server implementation. It uses `java.net.ServerSocket` with virtual threads for
-lightweight concurrency:
+Routes are defined using `ContextHandler`s which map HTTP methods and paths to specific `RequestHandler`s:
 
 ```scala
-import dev.alteration.branch.spider.server.*
-import dev.alteration.branch.spider.common.HttpMethod
-
-val router: PartialFunction[(HttpMethod, List[String]), RequestHandler[?, ?]] = {
-  case (HttpMethod.GET, "greet" :: Nil) => GreeterHandler()
-  case (HttpMethod.GET, "echo" :: msg :: Nil) => EchoHandler(msg)
+val handler = new ContextHandler("/api") {
+  override val contextRouter = {
+    case HttpMethod.GET -> ("greet" :: Nil) => GreeterHandler()
+    case HttpMethod.GET -> ("echo" :: msg :: Nil) => EchoHandler(msg)
+  }
 }
-
-val server = new SpiderServer(
-  port = 8080,
-  router = router,
-  config = ServerConfig.default
-).withShutdownHook()
-
-server.start() // Blocking call
 ```
 
-The server features:
+ContextHandlers support:
 
-- **Virtual threads**: Uses Project Loom for efficient concurrent connections
-- **HTTP/1.1 support**: Keep-alive, chunked transfer encoding, proper CRLF handling
-- **WebSocket support**: Integrated WebSocket upgrade handling via `webSocketRouter` parameter
-- **Type-safe routing**: PartialFunction-based routing with pattern matching
-- **Security hardening**: Configurable limits via `ServerConfig`
+- Path-based routing with pattern matching via String Lists
+- Request filters/middleware
+- Authentication via `Authenticator`
+- Default 404 handling
 
-### ServerConfig
+### FileContextHandler
 
-Spider provides built-in DoS protection and security hardening through `ServerConfig`:
+For serving static files, Spider provides a `FileContextHandler`:
 
 ```scala
-case class ServerConfig(
-  maxRequestLineLength: Int = 8192,        // 8KB
-  maxHeaderCount: Int = 100,
-  maxHeaderSize: Int = 8192,               // 8KB per header
-  maxTotalHeadersSize: Int = 65536,        // 64KB combined
-  maxRequestBodySize: Option[Long] = Some(10L * 1024 * 1024), // 10MB
-  socketTimeout: Int = 30000               // 30 seconds
+val staticFiles = FileContextHandler(
+  rootFilePath = Path.of("public"),
+  contextPath = "/static"
 )
-```
-
-Pre-configured profiles:
-
-```scala
-// Development: Relaxed limits for debugging
-ServerConfig.development
-
-// Default: Balanced for general use
-ServerConfig.default
-
-// Strict: Tight security for production
-ServerConfig.strict
-```
-
-### FileHandler
-
-For serving static files, Spider provides `FileHandler`:
-
-```scala
-import dev.alteration.branch.spider.server.*
-import java.nio.file.Path
-
-val fileHandler = new FileHandler(Path.of("public"))
-
-val router: PartialFunction[(HttpMethod, List[String]), RequestHandler[?, ?]] = {
-  case (HttpMethod.GET, path) => fileHandler
-}
 ```
 
 This will automatically:
 
 - Serve files from the specified root directory
+- Handle directory indexes (index.html)
 - Set appropriate content types based on file extensions
-- Return 404 for missing files
-- Support subdirectories
+- Support default file extensions (.html, .htm)
+
+### SpiderApp
+
+The `SpiderApp` trait provides a simple way to bootstrap your server:
+
+```scala
+object MyServer extends SpiderApp {
+  val port = 8080 // Default is 9000
+
+  val api = new ContextHandler("/api") {
+    override val contextRouter = {
+      case HttpMethod.GET -> ("hello" :: Nil) => GreeterHandler()
+    }
+  }
+
+  ContextHandler.registerHandler(api)
+}
+```
 
 ## Client
 
@@ -164,7 +139,7 @@ html"""
 <h1>Hello $name!</h1>
 """
 
-// JSON response
+// JSON response  
 json"""
 {
   "message": "Hello, $name!"
@@ -180,11 +155,23 @@ Response(200, "Hello")
 ## Content Types
 
 Spider includes a comprehensive `ContentType` enum covering common MIME types. The content type is automatically set
-based on file extensions when using `FileHandler`.
+based on file extensions when using `FileContextHandler`.
+
+## Examples
+
+See the test files for more examples of:
+
+- Route handling
+- File serving
+- Client usage
+- JSON responses
+- Authentication
+- Filters
 
 ## WebSocket Support
 
-Spider includes built-in WebSocket support for real-time bidirectional communication, fully integrated with `SpiderServer`.
+Spider includes built-in WebSocket support for real-time bidirectional communication. Unfortunately, this is not
+integrated with the `com.sun.net.httpserver.HttpServer`, so runs separate from a `SpiderApp`
 
 ### WebSocketHandler
 
@@ -256,25 +243,50 @@ The connection automatically:
 - Handles message fragmentation
 - Manages connection state and lifecycle
 
-### Integrating WebSockets with SpiderServer
+### WebSocketServer
 
-WebSockets are integrated directly into `SpiderServer` via the `webSocketRouter` parameter:
+Create a standalone WebSocket server on a specific port:
 
 ```scala
-val webSocketRouter: Map[String, WebSocketHandler] = Map(
-  "/ws/echo" -> new EchoWebSocketHandler(),
-  "/ws/chat" -> new ChatWebSocketHandler()
-)
-
-val server = new SpiderServer(
-  port = 8080,
-  router = httpRouter,
-  webSocketRouter = webSocketRouter,
-  config = ServerConfig.default
-).withShutdownHook()
-
+val handler = new EchoWebSocketHandler()
+val server = new WebSocketServer(9001, handler)
 server.start()
 ```
+
+Or start it in the background:
+
+```scala
+val server = WebSocketServer.start(9001, handler)
+// Server runs in background thread
+```
+
+### SpiderWebSocketApp
+
+The `SpiderWebSocketApp` trait provides an easy way to bootstrap a WebSocket server:
+
+```scala
+object MyWebSocketApp extends SpiderWebSocketApp {
+  override val wsPort = 9001 // Default is 9001
+
+  override def wsHandler = new WebSocketHandler {
+    override def onConnect(connection: WebSocketConnection): Unit = {
+      connection.sendText("Welcome!")
+    }
+
+    override def onMessage(connection: WebSocketConnection, message: String): Unit = {
+      // Broadcast or process message
+      connection.sendText(s"Received: $message")
+    }
+  }
+}
+```
+
+This automatically:
+
+- Starts the WebSocket server on the specified port
+- Handles the WebSocket handshake (HTTP upgrade)
+- Manages connections and message routing
+- Adds shutdown hooks for graceful termination
 
 ### WebSocket Protocol Details
 
@@ -1012,7 +1024,7 @@ Error phases:
 
 ### WebView Server
 
-The `WebViewServer` provides a fluent builder API for configuring and starting WebView applications. It uses `SpiderServer` internally to handle both HTTP and WebSocket connections:
+The `WebViewServer` provides a fluent builder API for configuring and starting WebView applications:
 
 #### Basic Server
 
@@ -1059,22 +1071,12 @@ val server = WebViewServer()
 #### With Custom HTTP Routes
 
 ```scala
-import dev.alteration.branch.spider.server.*
+import dev.alteration.branch.spider.webview.http._
 
 val server = WebViewServer()
   .withRoute("/app", new MyWebView())
   .withHttpRoute("/api/data", new JsonApiHandler())
-  .withHttpRoute("/static", new FileHandler(Path.of("public")))
-  .withHtmlPages()
-  .start(port = 8080)
-```
-
-#### With Custom WebSocket Routes
-
-```scala
-val server = WebViewServer()
-  .withRoute("/app", new MyWebView())
-  .withWebSocketRoute("/ws/echo", new EchoWebSocketHandler())
+  .withHttpRoute("/static", ResourceServer("public"))
   .withHtmlPages()
   .start(port = 8080)
 ```
