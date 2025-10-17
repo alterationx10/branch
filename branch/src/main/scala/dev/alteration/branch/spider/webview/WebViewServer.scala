@@ -7,6 +7,29 @@ import dev.alteration.branch.spider.webview.http.ResourceServer
 import scala.concurrent.ExecutionContext
 import scala.annotation.nowarn
 
+/** Represents a route in the server - either WebSocket or HTTP.
+  */
+sealed trait ServerRoute
+
+object ServerRoute {
+
+  /** A WebSocket route (including WebView routes).
+    *
+    * @param handler
+    *   The WebSocket handler
+    */
+  case class WebSocket(handler: WebSocketHandler) extends ServerRoute
+
+  /** An HTTP route.
+    *
+    * @param handler
+    *   The HTTP request handler
+    */
+  case class Http(
+      handler: dev.alteration.branch.spider.server.RequestHandler[?, ?]
+  ) extends ServerRoute
+}
+
 /** Fluent builder API for setting up Branch WebView servers.
   *
   * This provides an ergonomic way to configure and start WebView servers
@@ -18,8 +41,8 @@ import scala.annotation.nowarn
   * import dev.alteration.branch.spider.webview._
   *
   * val server = WebViewServer()
-  *   .withRoute("/counter", new CounterWebView())
-  *   .withRoute("/todos", new TodoListWebView())
+  *   .withWebViewRoute("/counter", new CounterWebView())
+  *   .withWebViewRoute("/todos", new TodoListWebView())
   *   .start(port = 8080)
   *
   * // Later...
@@ -32,10 +55,10 @@ import scala.annotation.nowarn
   * val customActorSystem = ActorSystem()
   *
   * val server = WebViewServer(customActorSystem)
-  *   .withRoute("/counter", new CounterWebView(),
+  *   .withWebViewRoute("/counter", new CounterWebView(),
   *     params = Map("initial" -> "10"),
   *     session = Session(Map("userId" -> user.id)))
-  *   .withRoute("/admin", new AdminWebView())
+  *   .withWebViewRoute("/admin", new AdminWebView())
   *   .start(port = 8080)
   * }}}
   *
@@ -44,29 +67,30 @@ import scala.annotation.nowarn
   * {{{
   * val server = WebViewServer()
   *   .withDevMode(enabled = true) // Adds DevTools at /__devtools
-  *   .withRoute("/counter", new CounterWebView())
+  *   .withWebViewRoute("/counter", new CounterWebView())
   *   .start(port = 8080)
   * }}}
   *
   * @param actorSystem
   *   The actor system to use (or create a default one)
   * @param routes
-  *   Map of paths to route configurations
+  *   Map of paths to server routes (WebSocket or HTTP)
   * @param devMode
   *   Enable development mode (adds DevTools route)
+  * @param webViewMeta
+  *   Metadata for WebView routes (params, session, etc.)
   */
 case class WebViewServer(
     actorSystem: ActorSystem = ActorSystem(),
-    routes: Map[String, WebViewRoute[?, ?]] = Map.empty,
+    routes: Map[String, ServerRoute] = Map.empty,
     devMode: Boolean = false,
-    httpRoutes: Map[
-      String,
-      dev.alteration.branch.spider.server.RequestHandler[?, ?]
-    ] = Map.empty,
-    serveHtml: Boolean = false
+    webViewMeta: Map[String, WebViewRoute[?, ?]] = Map.empty
 ) {
 
   /** Add a WebView route to the server.
+    *
+    * This automatically creates both a WebSocket endpoint for the WebView and
+    * an HTTP endpoint that serves an HTML page with the WebView client.
     *
     * @param path
     *   The URL path for this WebView (e.g., "/counter")
@@ -85,24 +109,26 @@ case class WebViewServer(
     * @return
     *   A new WebViewServer with the route added
     */
-  def withRoute[State, Event](
+  def withWebViewRoute[State, Event](
       path: String,
       webView: WebView[State, Event],
       params: Map[String, String] = Map.empty,
       session: Session = Session()
   )(using eventCodec: EventCodec[Event]): WebViewServer = {
-    val route = WebViewRoute[State, Event](
+    val meta = WebViewRoute[State, Event](
       factory = () => webView,
       params = params,
       session = session,
       eventCodec = eventCodec
     )
-    copy(routes = routes + (path -> route))
+    // Store metadata for later handler creation in start()
+    copy(webViewMeta = webViewMeta + (path -> meta))
   }
 
   /** Add a WebView route using a factory function.
     *
-    * Useful when you need to create a new instance for each connection.
+    * Useful when you need to create a new instance for each connection. This
+    * automatically creates both a WebSocket endpoint and an HTTP page.
     *
     * @param path
     *   The URL path for this WebView
@@ -121,19 +147,38 @@ case class WebViewServer(
     * @return
     *   A new WebViewServer with the route added
     */
-  def withRouteFactory[State, Event](
+  def withWebViewRouteFactory[State, Event](
       path: String,
       factory: () => WebView[State, Event],
       params: Map[String, String] = Map.empty,
       session: Session = Session()
   )(using eventCodec: EventCodec[Event]): WebViewServer = {
-    val route = WebViewRoute[State, Event](
+    val meta = WebViewRoute[State, Event](
       factory = factory,
       params = params,
       session = session,
       eventCodec = eventCodec
     )
-    copy(routes = routes + (path -> route))
+    copy(webViewMeta = webViewMeta + (path -> meta))
+  }
+
+  /** Add a raw WebSocket route (without HTML page generation).
+    *
+    * Use this for WebSocket endpoints that don't need the WebView framework or
+    * for custom WebSocket handlers.
+    *
+    * @param path
+    *   The URL path for this WebSocket
+    * @param handler
+    *   The WebSocket handler
+    * @return
+    *   A new WebViewServer with the WebSocket route added
+    */
+  def withWebSocketRoute(
+      path: String,
+      handler: WebSocketHandler
+  ): WebViewServer = {
+    copy(routes = routes + (path -> ServerRoute.WebSocket(handler)))
   }
 
   /** Enable or disable development mode.
@@ -150,30 +195,10 @@ case class WebViewServer(
     copy(devMode = enabled)
   }
 
-  /** Enable automatic HTML page serving for WebView routes.
-    *
-    * When enabled, creates HTTP endpoints that serve HTML pages with the
-    * WebView client JavaScript for each WebView route.
-    *
-    * Example: If you have a route at "/counter", this will create:
-    *   - HTTP GET /counter - Serves HTML page
-    *   - WebSocket /ws/counter - WebView WebSocket endpoint
-    *   - HTTP GET /js/webview.js - Serves the WebView client library
-    *
-    * @param enabled
-    *   Whether to enable HTML serving (default: true)
-    * @return
-    *   A new WebViewServer with HTML serving enabled/disabled
-    */
-  def withHtmlPages(enabled: Boolean = true): WebViewServer = {
-    copy(serveHtml = enabled)
-  }
-
   /** Add a custom HTTP route.
     *
     * This allows you to serve custom pages, static files, or APIs alongside
-    * your WebView routes. Now supports full REST capabilities via
-    * RequestHandler.
+    * your WebView routes. Supports full REST capabilities via RequestHandler.
     *
     * @param path
     *   The HTTP path (e.g., "/api/data")
@@ -186,7 +211,7 @@ case class WebViewServer(
       path: String,
       handler: dev.alteration.branch.spider.server.RequestHandler[?, ?]
   ): WebViewServer = {
-    copy(httpRoutes = httpRoutes + (path -> handler))
+    copy(routes = routes + (path -> ServerRoute.Http(handler)))
   }
 
   /** Start the WebView server on the specified port.
@@ -208,14 +233,14 @@ case class WebViewServer(
     import scala.concurrent.Future
     import scala.concurrent.ExecutionContext.Implicits.global
 
-    if (routes.isEmpty) {
+    if (routes.isEmpty && webViewMeta.isEmpty) {
       throw new IllegalStateException(
-        "Cannot start WebViewServer with no routes. Use withRoute() to add at least one route."
+        "Cannot start WebViewServer with no routes. Use withWebViewRoute(), withWebSocketRoute(), or withHttpRoute() to add at least one route."
       )
     }
 
-    // Add DevTools route if devMode is enabled
-    val finalRoutes = if (devMode) {
+    // Add DevTools to webViewMeta if devMode is enabled
+    val finalWebViewMeta = if (devMode) {
       import dev.alteration.branch.spider.webview.devtools.*
       import dev.alteration.branch.spider.webview.devtools.DevToolsEvent.given
 
@@ -226,51 +251,67 @@ case class WebViewServer(
         eventCodec = summon[EventCodec[DevToolsEvent]]
       )
 
-      routes + ("/__devtools" -> devToolsRoute)
+      webViewMeta + ("/__devtools" -> devToolsRoute)
     } else {
-      routes
+      webViewMeta
     }
 
-    // Create handlers for all routes
     val devToolsActorName = if (devMode) Some("__devtools-actor") else None
 
-    val wsHandlers = finalRoutes.map { case (path, route) =>
-      if (path == "/__devtools") {
-        path -> createHandler(
-          route,
+    // Partition user-defined routes by type
+    val (userWsRoutes, userHttpRoutes) = routes.partition { case (_, route) =>
+      route.isInstanceOf[ServerRoute.WebSocket]
+    }
+
+    // For each WebView, create both WebSocket handler and HTML page handler
+    val webViewWsHandlers = finalWebViewMeta.map { case (path, meta) =>
+      // Create WebSocket handler
+      val wsHandler = if (path == "/__devtools") {
+        createHandler(
+          meta.asInstanceOf[WebViewRoute[Any, Any]],
           devToolsActorName = None,
           useSharedActorName = devToolsActorName
         )
       } else {
-        path -> createHandler(
-          route,
+        createHandler(
+          meta.asInstanceOf[WebViewRoute[Any, Any]],
           devToolsActorName = devToolsActorName,
           useSharedActorName = None
         )
       }
+      path -> wsHandler
     }
 
-    // Build HTTP routes if HTML serving is enabled
-    val finalHttpRoutes = if (serveHtml) {
-      // Create HTML page handlers for each WebView route
-      val pageHandlers = finalRoutes.map { case (path, _) =>
-        val wsPath = if (path.startsWith("/")) path else s"/$path"
-        path -> WebViewPageHandler(
-          wsUrl = s"ws://$host:$port$wsPath",
-          title = s"WebView - ${path.stripPrefix("/")}",
-          jsPath = "/js/webview.js",
-          debug = devMode
-        )
-      }
+    val webViewHttpHandlers = finalWebViewMeta.map { case (path, _) =>
+      // Create HTML page handler
+      val wsPath      = if (path.startsWith("/")) path else s"/$path"
+      val pageHandler = WebViewPageHandler(
+        wsUrl = s"ws://$host:$port$wsPath",
+        title = s"WebView - ${path.stripPrefix("/")}",
+        jsPath = "/js/webview.js",
+        debug = devMode
+      )
+      path -> pageHandler
+    }
 
-      // Add resource server for webview.js
+    // Add resource server for webview.js if we have any WebViews
+    val jsHandler = if (finalWebViewMeta.nonEmpty) {
       val resourceServer =
         ResourceServer("spider/webview", stripPrefix = Some("/js"))
-
-      httpRoutes ++ pageHandlers + ("/js" -> resourceServer)
+      Map("/js" -> resourceServer)
     } else {
-      httpRoutes
+      Map.empty
     }
+
+    // Combine WebSocket handlers
+    val wsHandlers = userWsRoutes.map { case (path, route) =>
+      path -> route.asInstanceOf[ServerRoute.WebSocket].handler
+    } ++ webViewWsHandlers
+
+    // Combine HTTP handlers
+    val httpHandlerMap = userHttpRoutes.map { case (path, route) =>
+      path -> route.asInstanceOf[ServerRoute.Http].handler
+    } ++ webViewHttpHandlers ++ jsHandler
 
     // Convert HTTP routes to SpiderServer router (PartialFunction)
     val httpRouter: PartialFunction[
@@ -280,11 +321,11 @@ case class WebViewServer(
       val path = "/" + pathSegments.mkString("/")
 
       // Try exact match first
-      finalHttpRoutes.get(path) match {
+      httpHandlerMap.get(path) match {
         case Some(handler) => handler
         case None          =>
           // Try prefix match for resource serving
-          finalHttpRoutes
+          httpHandlerMap
             .find { case (routePath, _) =>
               path.startsWith(routePath)
             }
@@ -300,6 +341,7 @@ case class WebViewServer(
                 ): dev.alteration.branch.spider.server.Response[String] = {
                   dev.alteration.branch.spider.server
                     .Response(404, s"Not found: $path")
+                    .htmlContent
                 }
               }
             )
@@ -308,15 +350,15 @@ case class WebViewServer(
 
     println(s"Starting Branch WebView server on $host:$port")
 
-    if (finalHttpRoutes.nonEmpty) {
+    if (httpHandlerMap.nonEmpty) {
       println("HTTP routes:")
-      finalHttpRoutes.keys.foreach(path =>
-        println(s"  http://$host:$port$path")
-      )
+      httpHandlerMap.keys.foreach(path => println(s"  http://$host:$port$path"))
     }
 
-    println("WebSocket routes:")
-    finalRoutes.keys.foreach(path => println(s"  ws://$host:$port$path"))
+    if (wsHandlers.nonEmpty) {
+      println("WebSocket routes:")
+      wsHandlers.keys.foreach(path => println(s"  ws://$host:$port$path"))
+    }
 
     if (devMode) {
       println(s"[DevMode] DevTools available at ws://$host:$port/__devtools")
@@ -339,9 +381,9 @@ case class WebViewServer(
       server = spiderServer,
       port = port,
       host = host,
-      routes = finalRoutes,
+      routes = finalWebViewMeta,
       devMode = devMode,
-      httpEnabled = finalHttpRoutes.nonEmpty
+      httpEnabled = httpHandlerMap.nonEmpty
     )
   }
 
