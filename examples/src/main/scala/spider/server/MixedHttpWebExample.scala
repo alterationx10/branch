@@ -34,7 +34,7 @@ import dev.alteration.branch.spider.websocket.{
   *   ws.onmessage = (e) => console.log('Received:', e.data);
   *   ws.onopen = () => ws.send('Hello WebSocket!');
   */
-object MixedHttpWebExample$ extends SpiderApp {
+object MixedHttpWebExample extends SpiderApp {
 
   // ==================== HTTP Handlers ====================
 

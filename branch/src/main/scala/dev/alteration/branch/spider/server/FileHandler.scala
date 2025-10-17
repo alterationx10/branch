@@ -52,8 +52,8 @@ case class DefaultFileHandler(file: File) extends RequestHandler[Unit, File] {
 
 /** Utilities for creating file-serving routers.
   *
-  * These helpers make it easy to serve static files with SpiderApp or
-  * other server implementations.
+  * These helpers make it easy to serve static files with SpiderApp or other
+  * server implementations.
   */
 object FileServing {
   import dev.alteration.branch.macaroni.extensions.PathExtensions.*
