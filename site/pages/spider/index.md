@@ -16,8 +16,8 @@ tags:
 *Oh, what a tangled web we weave when first we practice http*
 
 Spider is a lightweight HTTP framework with a custom HTTP/1.1 server implementation built on `java.net.ServerSocket`. It
-provides both server and client functionality with a clean Scala API, WebSocket support, and a reactive UI framework called
-WebView.
+provides both server and client functionality with a clean Scala API, WebSocket support, and a reactive UI framework
+called WebView.
 
 ## Server Components
 
@@ -88,13 +88,13 @@ Spider provides built-in DoS protection and security hardening through `ServerCo
 
 ```scala
 case class ServerConfig(
-  maxRequestLineLength: Int = 8192,        // 8KB
-  maxHeaderCount: Int = 100,
-  maxHeaderSize: Int = 8192,               // 8KB per header
-  maxTotalHeadersSize: Int = 65536,        // 64KB combined
-  maxRequestBodySize: Option[Long] = Some(10L * 1024 * 1024), // 10MB
-  socketTimeout: Int = 30000               // 30 seconds
-)
+                         maxRequestLineLength: Int = 8192, // 8KB
+                         maxHeaderCount: Int = 100,
+                         maxHeaderSize: Int = 8192, // 8KB per header
+                         maxTotalHeadersSize: Int = 65536, // 64KB combined
+                         maxRequestBodySize: Option[Long] = Some(10L * 1024 * 1024), // 10MB
+                         socketTimeout: Int = 30000 // 30 seconds
+                       )
 ```
 
 Pre-configured profiles:
@@ -184,7 +184,8 @@ based on file extensions when using `FileHandler`.
 
 ## WebSocket Support
 
-Spider includes built-in WebSocket support for real-time bidirectional communication, fully integrated with `SpiderServer`.
+Spider includes built-in WebSocket support for real-time bidirectional communication, fully integrated with
+`SpiderServer`.
 
 ### WebSocketHandler
 
@@ -1012,111 +1013,85 @@ Error phases:
 
 ### WebView Server
 
-The `WebViewServer` provides a fluent builder API for configuring and starting WebView applications. It uses `SpiderServer` internally to handle both HTTP and WebSocket connections:
+The WebViewServer provides a fluent builder API for configuring WebView applications. It automatically handles both HTTP
+page serving and WebSocket connections using SpiderServer internally.
 
-#### Basic Server
+#### Basic Setup
 
 ```scala
 val server = WebViewServer()
-  .withRoute("/counter", new CounterWebView())
-  .withRoute("/todos", new TodoWebView())
+  .withWebViewRoute("/counter", new CounterWebView())
+  .withWebViewRoute("/todos", new TodoWebView())
   .start(port = 8080)
 
-// Later
+// WebViewServer automatically creates:
+// - WebSocket endpoints: ws://localhost:8080/counter, ws://localhost:8080/todos
+// - HTTP pages: http://localhost:8080/counter, http://localhost:8080/todos
+// - JavaScript client: http://localhost:8080/js/webview.js
+
 server.stop()
 ```
 
-#### With Automatic HTML Pages
+#### With Development Tools
 
 ```scala
 val server = WebViewServer()
-  .withRoute("/counter", new CounterWebView())
-  .withHtmlPages() // Automatically serve HTML pages + webview.js
+  .withDevMode(true) // Adds /__devtools route
+  .withWebViewRoute("/app", new MyWebView())
   .start(port = 8080)
 
-// Now you can visit:
-// http://localhost:8080/counter (HTML page)
-// ws://localhost:8080/counter (WebSocket endpoint)
-// http://localhost:8080/js/webview.js (Client library)
+// Visit http://localhost:8080/__devtools for real-time debugging
 ```
 
-#### With DevMode
-
-```scala
-val server = WebViewServer()
-  .withRoute("/app", new MyWebView())
-  .withDevMode(true) // Adds DevTools at /__devtools
-  .withHtmlPages()
-  .start(port = 8080)
-
-// Visit http://localhost:8080/__devtools to see:
-// - Component hierarchy
-// - State timeline
-// - Event log
-// - Performance metrics
-```
-
-#### With Custom HTTP Routes
+#### Mixing WebViews with Custom Routes
 
 ```scala
 import dev.alteration.branch.spider.server.*
+import java.nio.file.Path
 
 val server = WebViewServer()
-  .withRoute("/app", new MyWebView())
-  .withHttpRoute("/api/data", new JsonApiHandler())
+  .withWebViewRoute("/app", new MyWebView())
   .withHttpRoute("/static", new FileHandler(Path.of("public")))
-  .withHtmlPages()
-  .start(port = 8080)
-```
-
-#### With Custom WebSocket Routes
-
-```scala
-val server = WebViewServer()
-  .withRoute("/app", new MyWebView())
   .withWebSocketRoute("/ws/echo", new EchoWebSocketHandler())
-  .withHtmlPages()
   .start(port = 8080)
 ```
 
-#### With Route Factory
-
 ```scala
-// Create new instance per connection
+With Route Factory(Per - Connection Instances)
+
 val server = WebViewServer()
-  .withRouteFactory("/chat", () => new ChatWebView())
+  .withWebViewRouteFactory("/chat", () => new ChatWebView())
   .start(port = 8080)
+
+// Creates a new ChatWebView instance for each WebSocket connection
 ```
 
 #### With Parameters and Session
 
 ```scala
 val server = WebViewServer()
-  .withRoute(
-    path = "/app",
-    webView = new MyWebView(),
-    params = Map("theme" -> "dark", "lang" -> "en"),
-    session = Session(Map("userId" -> user.id))
+  .withWebViewRoute(
+    path = "/app", webView = new MyWebView(), params = Map("theme" -> "dark"), session = Session(Map("userId" -> "123"))
   )
   .start(port = 8080)
 
-// Access in mount:
+// Access in mount():
 override def mount(params: Map[String, String], session: Session): MyState = {
-  val theme = params.get("theme")
-  val userId = session.get[String]("userId")
+  val theme = params.get("theme") //
+  Some("dark")
+  val userId = session.get[String]("userId") // Some("123")
   MyState(theme = theme, userId = userId)
 }
 ```
 
-#### Custom Actor System
+#### Key Methods:
 
-```scala
-val actorSystem = ActorSystem()
-
-val server = WebViewServer(actorSystem)
-  .withRoute("/app", new MyWebView())
-  .start(port = 8080)
-```
+- .withWebViewRoute(path, webView) - Add a WebView with automatic page serving
+- .withWebViewRouteFactory(path, factory) - Use factory for per-connection instances
+- .withHttpRoute(path, handler) - Add custom HTTP endpoints
+- .withWebSocketRoute(path, handler) - Add custom WebSocket endpoints (non-WebView)
+- .withDevMode(enabled) - Enable DevTools at /__devtools
+- .start(port, host) - Start the server and return RunningWebViewServer
 
 ### DevTools
 
@@ -1129,18 +1104,6 @@ WebView includes built-in DevTools for debugging and monitoring (enabled with `.
 - **Performance Metrics**: Track render times, event processing, and memory usage
 - **Connection Status**: Monitor WebSocket connections and disconnections
 - **State Diff**: Compare state before and after events
-
-#### Accessing DevTools
-
-```scala
-val server = WebViewServer()
-  .withRoute("/app", new MyWebView())
-  .withDevMode(true)
-  .withHtmlPages()
-  .start(port = 8080)
-
-// Visit http://localhost:8080/__devtools
-```
 
 #### DevTools Integration
 
