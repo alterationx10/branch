@@ -100,8 +100,8 @@ object HttpWriter {
     }
   }
 
-  /** A simple buffered writer for writing HTTP responses with proper CRLF
-    * line endings.
+  /** A simple buffered writer for writing HTTP responses with proper CRLF line
+    * endings.
     *
     * @param output
     *   The underlying OutputStream

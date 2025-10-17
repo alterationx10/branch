@@ -4,15 +4,16 @@ import dev.alteration.branch.spider.common.HttpMethod
 
 import java.io.{BufferedInputStream, InputStream}
 import java.net.URI
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 import scala.collection.mutable
-import scala.util.{Try, Success, Failure}
+import scala.util.{Failure, Success, Try}
 
 /** Parses HTTP/1.1 requests from an InputStream into Request objects.
   */
 object HttpParser {
 
-  /** Exception thrown when the connection is closed gracefully (EOF at start). */
+  /** Exception thrown when the connection is closed gracefully (EOF at start).
+    */
   class ConnectionClosedException extends Exception("Connection closed")
 
   /** Exception thrown when a request exceeds configured limits. */
@@ -70,10 +71,10 @@ object HttpParser {
     val buffered = new BufferedInputStream(input)
 
     for {
-      requestLine <- parseRequestLine(buffered, config)
+      requestLine           <- parseRequestLine(buffered, config)
       (method, uri, version) = requestLine
-      headers <- parseHeaders(buffered, config)
-      body <- readBody(buffered, headers, config)
+      headers               <- parseHeaders(buffered, config)
+      body                  <- readBody(buffered, headers, config)
     } yield ParseResult(method, uri, version, headers, body)
   }
 
@@ -92,9 +93,11 @@ object HttpParser {
           for {
             httpMethod <- HttpMethod
                             .fromString(method)
-                            .toRight(new IllegalArgumentException(
-                              s"Invalid HTTP method: $method"
-                            ))
+                            .toRight(
+                              new IllegalArgumentException(
+                                s"Invalid HTTP method: $method"
+                              )
+                            )
                             .toTry
             uri        <- Try(new URI(path))
           } yield (httpMethod, uri, version)
@@ -150,10 +153,10 @@ object HttpParser {
 
           // Parse "HeaderName: value"
           line.indexOf(':') match {
-            case -1 =>
+            case -1       =>
               Failure(new IllegalArgumentException(s"Invalid header: $line"))
             case colonIdx =>
-              val name = line.substring(0, colonIdx).trim
+              val name  = line.substring(0, colonIdx).trim
               val value = line.substring(colonIdx + 1).trim
 
               // Check individual header value size
@@ -248,8 +251,8 @@ object HttpParser {
                 )
               }
 
-              val buffer = new Array[Byte](length.toInt)
-              var offset = 0
+              val buffer    = new Array[Byte](length.toInt)
+              var offset    = 0
               var remaining = length.toInt
 
               // Read until we have the full content-length
@@ -283,9 +286,9 @@ object HttpParser {
       config: ServerConfig
   ): Try[Array[Byte]] = {
     Try {
-      val chunks = mutable.ArrayBuffer.empty[Array[Byte]]
+      val chunks    = mutable.ArrayBuffer.empty[Array[Byte]]
       var totalSize = 0L
-      var done = false
+      var done      = false
 
       while (!done) {
         // Read chunk size line (hex number followed by \r\n)
@@ -295,17 +298,18 @@ object HttpParser {
         }
 
         // Parse chunk size (hex)
-        val chunkSize = try {
-          // Handle chunk extensions (e.g., "1a; name=value")
-          val sizeStr = sizeLine.split(";")(0).trim
-          Integer.parseInt(sizeStr, 16)
-        } catch {
-          case e: NumberFormatException =>
-            throw new IllegalArgumentException(
-              s"Invalid chunk size: $sizeLine",
-              e
-            )
-        }
+        val chunkSize =
+          try {
+            // Handle chunk extensions (e.g., "1a; name=value")
+            val sizeStr = sizeLine.split(";")(0).trim
+            Integer.parseInt(sizeStr, 16)
+          } catch {
+            case e: NumberFormatException =>
+              throw new IllegalArgumentException(
+                s"Invalid chunk size: $sizeLine",
+                e
+              )
+          }
 
         if (chunkSize == 0) {
           // Last chunk, read trailing headers (if any) and final \r\n
@@ -313,8 +317,8 @@ object HttpParser {
           while (!trailingDone) {
             readLine(input, 8192) match {
               case Success(line) if line.isEmpty => trailingDone = true
-              case Success(_) => // Ignore trailing headers
-              case Failure(e) => throw e
+              case Success(_)                    => // Ignore trailing headers
+              case Failure(e)                    => throw e
             }
           }
           done = true
@@ -324,12 +328,12 @@ object HttpParser {
           config.maxRequestBodySize match {
             case Some(maxSize) if totalSize > maxSize =>
               throw new RequestBodyTooLargeException(totalSize, maxSize)
-            case _ => // OK
+            case _                                    => // OK
           }
 
           // Read chunk data
-          val chunk = new Array[Byte](chunkSize)
-          var offset = 0
+          val chunk     = new Array[Byte](chunkSize)
+          var offset    = 0
           var remaining = chunkSize
 
           while (remaining > 0) {
@@ -370,14 +374,15 @@ object HttpParser {
     * @return
     *   The line without the \r\n terminator
     */
+  @nowarn // For some reason Int.MaxValue warns as unused private member
   private def readLine(
       input: InputStream,
       maxLength: Int = Int.MaxValue
   ): Try[String] = {
     Try {
-      val line = new StringBuilder
+      val line         = new StringBuilder
       var current: Int = input.read()
-      var done = false
+      var done         = false
 
       // If we hit EOF immediately (no bytes read), connection was closed
       if (current == -1) {

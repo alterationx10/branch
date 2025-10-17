@@ -32,17 +32,17 @@ package dev.alteration.branch.spider.server
   * @param enableKeepAlive
   *   Enable HTTP/1.1 keep-alive connections. Default: true.
   * @param maxKeepAliveRequests
-  *   Maximum number of requests per keep-alive connection. Default: 100. Set
-  *   to None for unlimited.
+  *   Maximum number of requests per keep-alive connection. Default: 100. Set to
+  *   None for unlimited.
   */
 case class ServerConfig(
-    maxRequestLineLength: Int = 8192, // 8 KB
+    maxRequestLineLength: Int = 8192,                           // 8 KB
     maxHeaderCount: Int = 100,
-    maxHeaderSize: Int = 8192, // 8 KB
-    maxTotalHeadersSize: Int = 65536, // 64 KB
+    maxHeaderSize: Int = 8192,                                  // 8 KB
+    maxTotalHeadersSize: Int = 65536,                           // 64 KB
     maxRequestBodySize: Option[Long] = Some(10L * 1024 * 1024), // 10 MB
-    socketTimeout: Int = 30000, // 30 seconds
-    requestTimeout: Int = 60000, // 60 seconds
+    socketTimeout: Int = 30000,                                 // 30 seconds
+    requestTimeout: Int = 60000,                                // 60 seconds
     enableChunkedEncoding: Boolean = true,
     enableKeepAlive: Boolean = true,
     maxKeepAliveRequests: Option[Int] = Some(100)
@@ -58,14 +58,14 @@ object ServerConfig {
     * Higher limits and longer timeouts for easier debugging.
     */
   def development: ServerConfig = ServerConfig(
-    maxRequestLineLength = 16384, // 16 KB
+    maxRequestLineLength = 16384,                  // 16 KB
     maxHeaderCount = 200,
-    maxHeaderSize = 16384, // 16 KB
-    maxTotalHeadersSize = 131072, // 128 KB
+    maxHeaderSize = 16384,                         // 16 KB
+    maxTotalHeadersSize = 131072,                  // 128 KB
     maxRequestBodySize = Some(100L * 1024 * 1024), // 100 MB
-    socketTimeout = 120000, // 2 minutes
-    requestTimeout = 300000, // 5 minutes
-    maxKeepAliveRequests = None // unlimited
+    socketTimeout = 120000,                        // 2 minutes
+    requestTimeout = 300000,                       // 5 minutes
+    maxKeepAliveRequests = None                    // unlimited
   )
 
   /** Strict configuration for high-security environments.
@@ -73,13 +73,13 @@ object ServerConfig {
     * Lower limits and shorter timeouts to minimize attack surface.
     */
   def strict: ServerConfig = ServerConfig(
-    maxRequestLineLength = 4096, // 4 KB
+    maxRequestLineLength = 4096,                 // 4 KB
     maxHeaderCount = 50,
-    maxHeaderSize = 4096, // 4 KB
-    maxTotalHeadersSize = 32768, // 32 KB
+    maxHeaderSize = 4096,                        // 4 KB
+    maxTotalHeadersSize = 32768,                 // 32 KB
     maxRequestBodySize = Some(1L * 1024 * 1024), // 1 MB
-    socketTimeout = 10000, // 10 seconds
-    requestTimeout = 30000, // 30 seconds
+    socketTimeout = 10000,                       // 10 seconds
+    requestTimeout = 30000,                      // 30 seconds
     maxKeepAliveRequests = Some(10)
   )
 }

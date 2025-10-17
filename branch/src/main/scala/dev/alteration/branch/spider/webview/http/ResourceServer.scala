@@ -62,7 +62,11 @@ class ResourceServer(
         Response(200, content, Map("Content-Type" -> List(contentType)))
 
       case scala.util.Failure(_) =>
-        Response(404, s"Resource not found: $actualPath", Map(ContentType.txt.toHeader))
+        Response(
+          404,
+          s"Resource not found: $actualPath",
+          Map(ContentType.txt.toHeader)
+        )
     }
   }
 

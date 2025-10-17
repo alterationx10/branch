@@ -2,7 +2,7 @@ package dev.alteration.branch.spider.client
 
 import dev.alteration.branch.testkit.fixtures.HttpFixtureSuite
 import ClientRequest.uri
-import dev.alteration.branch.friday.http.{JsonBodyHandler, JsonBody}
+import dev.alteration.branch.friday.http.{JsonBody, JsonBodyHandler}
 import dev.alteration.branch.friday.http.JsonConversions.*
 import dev.alteration.branch.friday.http.JsonBody.given
 import dev.alteration.branch.spider.server.RequestHandler.given
@@ -15,7 +15,8 @@ class ClientSpec extends HttpFixtureSuite {
 
   case class Person(name: String)
 
-  case class PersonHandler(name: String) extends RequestHandler[Unit, JsonBody[Person]] {
+  case class PersonHandler(name: String)
+      extends RequestHandler[Unit, JsonBody[Person]] {
     override def handle(request: Request[Unit]): Response[JsonBody[Person]] =
       Response(200, Person(name)).jsonBody()
   }

@@ -51,9 +51,9 @@ class HttpWriterSpec extends munit.FunSuite {
       statusCode = 200,
       body = "Test",
       headers = Map(
-        "Content-Type" -> List("text/plain"),
+        "Content-Type"  -> List("text/plain"),
         "Cache-Control" -> List("no-cache"),
-        "X-Custom" -> List("value1", "value2")
+        "X-Custom"      -> List("value1", "value2")
       )
     )
 
@@ -95,7 +95,7 @@ class HttpWriterSpec extends munit.FunSuite {
 
   test("write response with byte array body") {
     val bodyBytes = "Binary data".getBytes(StandardCharsets.UTF_8)
-    val response = Response(
+    val response  = Response(
       statusCode = 200,
       body = bodyBytes,
       headers = Map(ContentType.bin.toHeader)
@@ -140,15 +140,23 @@ class HttpWriterSpec extends munit.FunSuite {
     )
 
     val output = captureOutput(response)
-    val lines = output.split("\r\n", -1)
+    val lines  = output.split("\r\n", -1)
 
     // Should have: status line, headers (X-Test and Content-Length), blank line, body
     assert(lines.length >= 4)
     assertEquals(lines(0), "HTTP/1.1 200 OK")
 
     // Either X-Test or Content-Length could be first (Map ordering)
-    assert(lines(1).startsWith("X-Test: value") || lines(1).startsWith("Content-Length:"))
-    assert(lines(2).startsWith("Content-Length:") || lines(2).startsWith("X-Test: value"))
+    assert(
+      lines(1).startsWith("X-Test: value") || lines(1).startsWith(
+        "Content-Length:"
+      )
+    )
+    assert(
+      lines(2).startsWith("Content-Length:") || lines(2).startsWith(
+        "X-Test: value"
+      )
+    )
 
     // Blank line separates headers from body
     assertEquals(lines(3), "")
@@ -166,7 +174,9 @@ class HttpWriterSpec extends munit.FunSuite {
 
     // Should have status line, Content-Length (auto-added), blank line, body
     assert(output.contains("HTTP/1.1 200 OK\r\n"))
-    assert(output.contains("Content-Length: 10\r\n")) // "No headers" is 10 bytes
+    assert(
+      output.contains("Content-Length: 10\r\n")
+    ) // "No headers" is 10 bytes
     assert(output.endsWith("No headers"))
   }
 }

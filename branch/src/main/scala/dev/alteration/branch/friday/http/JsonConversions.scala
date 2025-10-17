@@ -9,8 +9,10 @@ import dev.alteration.branch.spider.common.ContentType
   * This type preserves the original type information while holding the
   * serialized JSON bytes, making APIs more self-documenting.
   *
-  * @param bytes The JSON-encoded bytes
-  * @tparam A The type that was serialized to JSON
+  * @param bytes
+  *   The JSON-encoded bytes
+  * @tparam A
+  *   The type that was serialized to JSON
   */
 case class JsonBody[A](bytes: Array[Byte])
 

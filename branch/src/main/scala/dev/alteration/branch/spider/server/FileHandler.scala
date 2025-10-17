@@ -26,8 +26,7 @@ object FileHandler {
 
 /** A built-in handler for serving files from the file system.
   */
-case class FileHandler(rootFilePath: Path)
-    extends RequestHandler[Unit, File] {
+case class FileHandler(rootFilePath: Path) extends RequestHandler[Unit, File] {
 
   override def handle(request: Request[Unit]): Response[File] = {
     val filePath = {
@@ -42,8 +41,7 @@ case class FileHandler(rootFilePath: Path)
 
 /** A built-in handler for serving default files (e.g. an index.html file).
   */
-case class DefaultFileHandler(file: File)
-    extends RequestHandler[Unit, File] {
+case class DefaultFileHandler(file: File) extends RequestHandler[Unit, File] {
 
   override def handle(request: Request[Unit]): Response[File] =
     Response(
@@ -54,24 +52,24 @@ case class DefaultFileHandler(file: File)
 
 /** Utilities for creating file-serving routers.
   *
-  * These helpers make it easy to serve static files with SocketSpiderApp or other
-  * server implementations.
+  * These helpers make it easy to serve static files with SocketSpiderApp or
+  * other server implementations.
   */
 object FileServing {
   import dev.alteration.branch.macaroni.extensions.PathExtensions.*
   import java.nio.file.Files
   import dev.alteration.branch.spider.common.HttpMethod
 
-  /** A list of default files to look for when a directory is requested.
-    * E.g. /some/path -> /some/path/index.html
+  /** A list of default files to look for when a directory is requested. E.g.
+    * /some/path -> /some/path/index.html
     */
   val defaultFiles: List[String] = List(
     "index.html",
     "index.htm"
   )
 
-  /** A list of default file endings to look for when a file is requested.
-    * E.g. /some/path -> /some/path.html
+  /** A list of default file endings to look for when a file is requested. E.g.
+    * /some/path -> /some/path.html
     */
   val defaultEndings: List[String] = List(
     ".html",
@@ -117,7 +115,8 @@ object FileServing {
 
   /** Get the default file at the given path.
     *
-    * @throws IllegalArgumentException if no default file exists
+    * @throws IllegalArgumentException
+    *   if no default file exists
     */
   def defaultFile(rootFilePath: Path, path: Path): File = {
     defaultFiles.iterator
@@ -143,13 +142,17 @@ object FileServing {
     * }
     * }}}
     */
-  def createRouter(rootFilePath: Path): PartialFunction[(HttpMethod, List[String]), RequestHandler[?, ?]] = {
+  def createRouter(
+      rootFilePath: Path
+  ): PartialFunction[(HttpMethod, List[String]), RequestHandler[?, ?]] = {
     val fileHandler = FileHandler(rootFilePath)
 
     {
-      case HttpMethod.GET -> anyPath if fileExists(rootFilePath, pathFromStrList(anyPath)) =>
+      case HttpMethod.GET -> anyPath
+          if fileExists(rootFilePath, pathFromStrList(anyPath)) =>
         fileHandler
-      case HttpMethod.GET -> anyPath if defaultExists(rootFilePath, pathFromStrList(anyPath)) =>
+      case HttpMethod.GET -> anyPath
+          if defaultExists(rootFilePath, pathFromStrList(anyPath)) =>
         DefaultFileHandler(defaultFile(rootFilePath, pathFromStrList(anyPath)))
     }
   }

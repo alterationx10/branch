@@ -4,7 +4,7 @@ import dev.alteration.branch.spider.common.HttpMethod
 import dev.alteration.branch.spider.server.{RequestHandler, SpiderServer}
 import munit.FunSuite
 
-import scala.concurrent.{Future, ExecutionContext}
+import scala.concurrent.{ExecutionContext, Future}
 
 trait HttpFixtureSuite extends FunSuite {
 

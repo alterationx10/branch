@@ -12,7 +12,7 @@ import dev.alteration.branch.friday.http.JsonBody
 
 import java.net.{ServerSocket, Socket, SocketTimeoutException}
 import java.util.concurrent.atomic.AtomicBoolean
-import scala.util.{Try, Using, Success, Failure}
+import scala.util.{Failure, Success, Try, Using}
 
 /** A simple HTTP/1.1 server built directly on ServerSocket.
   *
@@ -37,12 +37,15 @@ import scala.util.{Try, Using, Success, Failure}
 class SpiderServer(
     val port: Int = 9000,
     val backlog: Int = 0,
-    val router: PartialFunction[(HttpMethod, List[String]), RequestHandler[?, ?]] = PartialFunction.empty,
+    val router: PartialFunction[
+      (HttpMethod, List[String]),
+      RequestHandler[?, ?]
+    ] = PartialFunction.empty,
     val webSocketRouter: Map[String, WebSocketHandler] = Map.empty,
     val config: ServerConfig = ServerConfig.default
 ) extends AutoCloseable {
 
-  private val running = new AtomicBoolean(false)
+  private val running                            = new AtomicBoolean(false)
   private var serverSocket: Option[ServerSocket] = None
 
   /** The executor service used for handling connections. Uses virtual threads
@@ -77,7 +80,7 @@ class SpiderServer(
       case _: java.net.SocketException if !running.get() =>
         // Socket closed during shutdown, this is expected
         println("Server socket closed")
-      case e: Exception =>
+      case e: Exception                                  =>
         println(s"Error in accept loop: ${e.getMessage}")
         e.printStackTrace()
     }
@@ -85,8 +88,8 @@ class SpiderServer(
 
   /** Handle an individual client connection.
     *
-    * This method is called on a virtual thread for each accepted connection.
-    * It supports HTTP/1.1 keep-alive connections and WebSocket upgrades.
+    * This method is called on a virtual thread for each accepted connection. It
+    * supports HTTP/1.1 keep-alive connections and WebSocket upgrades.
     *
     * @param socket
     *   The client socket to handle
@@ -97,7 +100,7 @@ class SpiderServer(
 
       while (keepAlive && !sock.isClosed) {
         try {
-          val input = sock.getInputStream
+          val input  = sock.getInputStream
           val output = sock.getOutputStream
 
           // Parse the HTTP request
@@ -109,13 +112,15 @@ class SpiderServer(
             case Failure(e: HttpParser.LimitExceededException) =>
               // Request exceeded limits, send 413 Payload Too Large or 431 Headers Too Large
               println(s"Request exceeded limits: ${e.getMessage}")
-              val errorResponse = Response(413, s"Request Too Large: ${e.getMessage}").htmlContent
+              val errorResponse =
+                Response(413, s"Request Too Large: ${e.getMessage}").htmlContent
               HttpWriter.write(errorResponse, output)
               keepAlive = false
 
             case Success(parseResult) =>
               // Check if this is a WebSocket upgrade request
-              val isWebSocketUpgrade = isWebSocketUpgradeRequest(parseResult.headers)
+              val isWebSocketUpgrade =
+                isWebSocketUpgradeRequest(parseResult.headers)
 
               if (isWebSocketUpgrade) {
                 // Handle WebSocket upgrade
@@ -124,28 +129,45 @@ class SpiderServer(
               } else {
                 // Handle as normal HTTP request
                 // Route to appropriate handler
-                val handler = routeRequest(parseResult.method, parseResult.uri.getPath)
+                val handler =
+                  routeRequest(parseResult.method, parseResult.uri.getPath)
 
                 // Convert to Request model
                 val request = HttpParser.toRequest(parseResult)
 
                 // Execute handler - we'll handle type erasure by writing raw bytes
                 val handlerResult = Try {
-                  val response = handler.asInstanceOf[RequestHandler[Array[Byte], Any]].handle(request)
+                  val response = handler
+                    .asInstanceOf[RequestHandler[Array[Byte], Any]]
+                    .handle(request)
 
                   // Pattern match on common response types
                   val writeResult = response.body match {
-                    case s: String =>
-                      HttpWriter.write(response.asInstanceOf[Response[String]], output)
-                    case bytes: Array[Byte] =>
-                      HttpWriter.write(response.asInstanceOf[Response[Array[Byte]]], output)
+                    case _: String             =>
+                      HttpWriter.write(
+                        response.asInstanceOf[Response[String]],
+                        output
+                      )
+                    case _: Array[Byte]        =>
+                      HttpWriter.write(
+                        response.asInstanceOf[Response[Array[Byte]]],
+                        output
+                      )
                     case jsonBody: JsonBody[?] =>
                       // JsonBody wraps bytes, extract them and write
-                      val bytesResponse = Response(response.statusCode, jsonBody.bytes, response.headers)
+                      val bytesResponse = Response(
+                        response.statusCode,
+                        jsonBody.bytes,
+                        response.headers
+                      )
                       HttpWriter.write(bytesResponse, output)
-                    case _ =>
+                    case _                     =>
                       // Fallback: convert to String
-                      val stringResponse = Response(response.statusCode, response.body.toString, response.headers)
+                      val stringResponse = Response(
+                        response.statusCode,
+                        response.body.toString,
+                        response.headers
+                      )
                       HttpWriter.write(stringResponse, output)
                   }
 
@@ -164,7 +186,8 @@ class SpiderServer(
                   case Failure(handlerError) =>
                     // Handler threw an exception, return 500
                     println(s"Handler error: ${handlerError.getMessage}")
-                    val errorResponse = internalServerError(handlerError.getMessage)
+                    val errorResponse =
+                      internalServerError(handlerError.getMessage)
                     HttpWriter.write(errorResponse, output)
                     keepAlive = false
                 }
@@ -173,7 +196,8 @@ class SpiderServer(
             case Failure(e) =>
               // Failed to parse request, send 400 Bad Request
               println(s"Failed to parse request: ${e.getMessage}")
-              val errorResponse = badRequest(s"Invalid HTTP request: ${e.getMessage}")
+              val errorResponse =
+                badRequest(s"Invalid HTTP request: ${e.getMessage}")
               HttpWriter.write(errorResponse, output)
               keepAlive = false
           }
@@ -181,14 +205,14 @@ class SpiderServer(
           case _: SocketTimeoutException =>
             println("Socket read timeout")
             keepAlive = false
-          case e: Exception =>
+          case e: Exception              =>
             println(s"Error processing request: ${e.getMessage}")
             keepAlive = false
         }
       }
     } match {
       case Success(_) =>
-        // Connection handled successfully
+      // Connection handled successfully
       case Failure(e) =>
         println(s"Error handling connection: ${e.getMessage}")
     }
@@ -225,7 +249,7 @@ class SpiderServer(
       socket: Socket,
       parseResult: HttpParser.ParseResult
   ): Unit = {
-    val path = parseResult.uri.getPath
+    val path   = parseResult.uri.getPath
     val output = socket.getOutputStream
 
     // Route to WebSocket handler
@@ -233,7 +257,8 @@ class SpiderServer(
       case None =>
         // No handler for this path, send 404
         println(s"No WebSocket handler for path: $path")
-        val errorResponse = Response(404, s"No WebSocket handler for path: $path").htmlContent
+        val errorResponse =
+          Response(404, s"No WebSocket handler for path: $path").htmlContent
         HttpWriter.write(errorResponse, output)
 
       case Some(handler) =>
@@ -242,12 +267,15 @@ class SpiderServer(
           case Failure(error) =>
             // Invalid handshake, send 400
             println(s"Invalid WebSocket handshake: ${error.getMessage}")
-            val errorResponse = badRequest(s"Invalid WebSocket handshake: ${error.getMessage}")
+            val errorResponse = badRequest(
+              s"Invalid WebSocket handshake: ${error.getMessage}"
+            )
             HttpWriter.write(errorResponse, output)
 
           case Success(secWebSocketKey) =>
             // Send 101 Switching Protocols response
-            val responseBytes = WebSocketHandshake.createRawHandshakeResponse(secWebSocketKey)
+            val responseBytes =
+              WebSocketHandshake.createRawHandshakeResponse(secWebSocketKey)
             output.write(responseBytes)
             output.flush()
 
@@ -378,11 +406,15 @@ object SpiderServer {
   def withShutdownHook(
       port: Int = 9000,
       backlog: Int = 0,
-      router: PartialFunction[(HttpMethod, List[String]), RequestHandler[?, ?]] = PartialFunction.empty,
+      router: PartialFunction[
+        (HttpMethod, List[String]),
+        RequestHandler[?, ?]
+      ] = PartialFunction.empty,
       webSocketRouter: Map[String, WebSocketHandler] = Map.empty,
       config: ServerConfig = ServerConfig.default
   ): SpiderServer = {
-    val server = new SpiderServer(port, backlog, router, webSocketRouter, config)
+    val server =
+      new SpiderServer(port, backlog, router, webSocketRouter, config)
 
     Runtime.getRuntime.addShutdownHook {
       new Thread(() => server.stop())
