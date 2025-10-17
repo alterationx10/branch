@@ -6,12 +6,11 @@ import dev.alteration.branch.spider.webview.*
   *
   * This example shows how easy it is to get started with WebView:
   *   - Define your WebView
-  *   - Add it to the server with .withRoute()
-  *   - Enable HTML serving with .withHtmlPages()
+  *   - Add it to the server with .withWebViewRoute()
   *   - Start the server
   *
   * The server automatically:
-  *   - Serves HTML pages for each route
+  *   - Serves HTML pages for each WebView route
   *   - Loads the webview.js client library
   *   - Sets up WebSocket connections
   *
@@ -22,8 +21,7 @@ object CounterExample {
   def main(args: Array[String]): Unit = {
     // Create a WebView server with automatic HTML serving and DevTools
     val server = WebViewServer()
-      .withRoute("/counter", new CounterWebView())
-      .withHtmlPages()   // Enable automatic HTML page generation
+      .withWebViewRoute("/counter", new CounterWebView())
       .withDevMode(true) // Enable DevTools for debugging
       .start(port = 8080)
 

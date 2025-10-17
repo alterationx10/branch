@@ -17,8 +17,7 @@ object TodoExample {
 
   def main(args: Array[String]): Unit = {
     val server = WebViewServer()
-      .withRoute("/todos", new TodoWebView())
-      .withHtmlPages()
+      .withWebViewRoute("/todos", new TodoWebView())
       .withDevMode(true)
       .start(port = 8080)
 

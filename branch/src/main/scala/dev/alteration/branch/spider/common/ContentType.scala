@@ -1,4 +1,4 @@
-package dev.alteration.branch.spider
+package dev.alteration.branch.spider.common
 
 /** A helper class for Content-Type headers
   * @param content

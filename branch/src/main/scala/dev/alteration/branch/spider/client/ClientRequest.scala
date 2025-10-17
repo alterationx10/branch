@@ -1,6 +1,6 @@
 package dev.alteration.branch.spider.client
 
-import dev.alteration.branch.spider.ContentType
+import dev.alteration.branch.spider.common.ContentType
 import java.net.URI
 import java.net.http.HttpRequest
 

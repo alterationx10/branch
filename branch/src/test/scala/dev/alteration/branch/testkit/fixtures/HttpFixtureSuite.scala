@@ -1,31 +1,35 @@
 package dev.alteration.branch.testkit.fixtures
 
-import com.sun.net.httpserver.HttpServer
-import dev.alteration.branch.macaroni.runtimes.BranchExecutors
-import dev.alteration.branch.spider.HttpMethod
-import dev.alteration.branch.spider.server.{ContextHandler, RequestHandler}
+import dev.alteration.branch.spider.common.HttpMethod
+import dev.alteration.branch.spider.server.{RequestHandler, SpiderServer}
 import munit.FunSuite
 
-import java.net.InetSocketAddress
+import scala.concurrent.{ExecutionContext, Future}
 
 trait HttpFixtureSuite extends FunSuite {
 
   type PF = PartialFunction[(HttpMethod, List[String]), RequestHandler[?, ?]]
 
-  def httpFixture(routes: PF): FunFixture[HttpServer] =
-    FunFixture[HttpServer](
+  case class ServerFixture(server: SpiderServer, port: Int)
+
+  def httpFixture(routes: PF): FunFixture[ServerFixture] =
+    FunFixture[ServerFixture](
       setup = { _ =>
-        val port: Int = scala.util.Random.between(10000, 11000)
-        val server    = HttpServer.create(new InetSocketAddress(port), 0)
-        server.setExecutor(BranchExecutors.executorService)
-        server.start()
-        ContextHandler.registerHandler(new ContextHandler("/") {
-          override val contextRouter: PF = routes
-        })(using server)
-        server
+        val port   = scala.util.Random.between(10000, 11000)
+        val server = new SpiderServer(port = port, router = routes)
+
+        // Start server in background
+        Future {
+          server.start()
+        }(ExecutionContext.global)
+
+        // Give server time to start
+        Thread.sleep(100)
+
+        ServerFixture(server, port)
       },
-      teardown = { server =>
-        server.stop(0)
+      teardown = { fixture =>
+        fixture.server.stop()
       }
     )
 

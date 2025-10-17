@@ -22,8 +22,7 @@ object ComponentsShowcaseExample {
 
   def main(args: Array[String]): Unit = {
     val server = WebViewServer()
-      .withRoute("/components", new ComponentsShowcaseWebView())
-      .withHtmlPages()
+      .withWebViewRoute("/components", new ComponentsShowcaseWebView())
       .withDevMode(true)
       .start(port = 8080)
 
