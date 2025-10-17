@@ -98,8 +98,8 @@ object HelloWorldServer {
       }
     }
 
-    // Create server with SocketSpiderApp trait
-    val appServer = new SocketSpiderApp {
+    // Create server with SpiderApp trait
+    val appServer = new SpiderApp {
       override val port: Int = 9000
 
       override val router: PartialFunction[

@@ -1,7 +1,7 @@
 package spider.server
 
 import dev.alteration.branch.spider.server.{
-  SocketSpiderApp,
+  SpiderApp,
   RequestHandler,
   Request,
   Response
@@ -34,7 +34,7 @@ import dev.alteration.branch.spider.websocket.{
   *   ws.onmessage = (e) => console.log('Received:', e.data);
   *   ws.onopen = () => ws.send('Hello WebSocket!');
   */
-object MixedHttpWebSocketExample extends SocketSpiderApp {
+object MixedHttpWebExample$ extends SpiderApp {
 
   // ==================== HTTP Handlers ====================
 

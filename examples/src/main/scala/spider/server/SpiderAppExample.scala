@@ -1,11 +1,11 @@
 package spider.server
 
-import dev.alteration.branch.spider.server.{SocketSpiderApp, RequestHandler, Request, Response}
+import dev.alteration.branch.spider.server.{SpiderApp, RequestHandler, Request, Response}
 import dev.alteration.branch.spider.common.HttpMethod
 import dev.alteration.branch.spider.server.RequestHandler.given
 import dev.alteration.branch.spider.server.Response.*
 
-/** Example application using SocketSpiderApp.
+/** Example application using SpiderApp.
   *
   * This demonstrates how to use the SocketServer-based infrastructure with
   * a simple router pattern.
@@ -17,7 +17,7 @@ import dev.alteration.branch.spider.server.Response.*
   *   curl http://localhost:9000/admin/dashboard
   *   curl http://localhost:9000/notfound
   */
-object SocketSpiderAppExample extends SocketSpiderApp {
+object SpiderAppExample extends SpiderApp {
 
   // API handlers
   val statusHandler = new RequestHandler[Array[Byte], String] {
@@ -63,7 +63,7 @@ object SocketSpiderAppExample extends SocketSpiderApp {
   val homeHandler = new RequestHandler[Array[Byte], String] {
     override def handle(request: Request[Array[Byte]]): Response[String] = {
       html"""
-      <h1>Welcome to SocketSpiderApp</h1>
+      <h1>Welcome to SpiderApp</h1>
       <p>Available endpoints:</p>
       <ul>
         <li><a href="/api/status">/api/status</a> - API status</li>
@@ -87,6 +87,6 @@ object SocketSpiderAppExample extends SocketSpiderApp {
     case (HttpMethod.GET, "admin" :: "dashboard" :: Nil) => dashboardHandler
   }
 
-  // Port is inherited from SocketSpiderApp (default 9000)
+  // Port is inherited from SpiderApp (default 9000)
   // Can override: override val port = 8080
 }

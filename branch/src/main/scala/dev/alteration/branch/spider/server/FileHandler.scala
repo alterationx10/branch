@@ -52,7 +52,7 @@ case class DefaultFileHandler(file: File) extends RequestHandler[Unit, File] {
 
 /** Utilities for creating file-serving routers.
   *
-  * These helpers make it easy to serve static files with SocketSpiderApp or
+  * These helpers make it easy to serve static files with SpiderApp or
   * other server implementations.
   */
 object FileServing {
@@ -130,14 +130,14 @@ object FileServing {
       .getOrElse(throw new IllegalArgumentException("Not found"))
   }
 
-  /** Create a file-serving router for SocketSpiderApp.
+  /** Create a file-serving router for SpiderApp.
     *
     * This router will serve files from rootFilePath, including support for
     * default files (index.html) and default endings (.html).
     *
     * Example:
     * {{{
-    * object MyApp extends SocketSpiderApp {
+    * object MyApp extends SpiderApp {
     *   override val router = FileServing.createRouter(Path.of("public"))
     * }
     * }}}

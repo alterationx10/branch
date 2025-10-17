@@ -1,7 +1,7 @@
 package spider.server
 
 import dev.alteration.branch.spider.server.{
-  SocketSpiderApp,
+  SpiderApp,
   ServerConfig,
   RequestHandler,
   Request,
@@ -37,7 +37,7 @@ import dev.alteration.branch.spider.server.Response.*
   * 5. Chunked encoding (should work if enabled):
   *    echo "Hello World" | curl -X POST -H "Transfer-Encoding: chunked" --data-binary @- http://localhost:9000/upload
   */
-object HardenedServerExample extends SocketSpiderApp {
+object HardenedServerExample extends SpiderApp {
 
   // Use strict configuration
   override val config: ServerConfig = ServerConfig.strict

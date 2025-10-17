@@ -12,7 +12,7 @@ import dev.alteration.branch.spider.websocket.WebSocketHandler
   *
   * Example usage:
   * {{{
-  * object MyApp extends SocketSpiderApp {
+  * object MyApp extends SpiderApp {
   *   override val port = 8080
   *
   *   // HTTP routes
@@ -29,7 +29,7 @@ import dev.alteration.branch.spider.websocket.WebSocketHandler
   * }
   * }}}
   */
-trait SocketSpiderApp {
+trait SpiderApp {
 
   /** The port on which the server will listen. Defaults to 9000.
     */
@@ -76,7 +76,7 @@ trait SocketSpiderApp {
     * server.
     */
   final def main(args: Array[String]): Unit = {
-    println(s"Starting SocketSpiderApp on port $port")
+    println(s"Starting SpiderApp on port $port")
     if (webSocketRouter.nonEmpty) {
       println(s"WebSocket routes: ${webSocketRouter.keys.mkString(", ")}")
     }
