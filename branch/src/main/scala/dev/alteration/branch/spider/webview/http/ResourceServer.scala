@@ -1,6 +1,8 @@
 package dev.alteration.branch.spider.webview.http
 
-import java.net.Socket
+import dev.alteration.branch.spider.server.{Request, RequestHandler, Response}
+import dev.alteration.branch.spider.server.RequestHandler.given
+import dev.alteration.branch.spider.common.ContentType
 import scala.io.Source
 import scala.util.{Try, Using}
 
@@ -27,13 +29,11 @@ import scala.util.{Try, Using}
 class ResourceServer(
     resourceBasePath: String,
     stripPrefix: Option[String] = None
-) extends HttpHandler {
+) extends RequestHandler[Unit, String] {
 
-  override def handleGet(
-      path: String,
-      headers: Map[String, List[String]],
-      socket: Socket
-  ): Unit = {
+  override def handle(request: Request[Unit]): Response[String] = {
+    val path = request.uri.getPath
+
     // Strip prefix if configured
     val actualPath = stripPrefix match {
       case Some(prefix) if path.startsWith(prefix) =>
@@ -59,10 +59,10 @@ class ResourceServer(
       case scala.util.Success(content) =>
         // Determine content type from file extension
         val contentType = getContentType(actualPath)
-        HttpResponse.ok(socket, content, contentType)
+        Response(200, content, Map("Content-Type" -> List(contentType)))
 
       case scala.util.Failure(_) =>
-        HttpResponse.notFound(socket, s"Resource not found: $actualPath")
+        Response(404, s"Resource not found: $actualPath", Map(ContentType.txt.toHeader))
     }
   }
 

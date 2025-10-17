@@ -8,6 +8,7 @@ import dev.alteration.branch.spider.websocket.{
   WebSocketHandler,
   WebSocketHandshake
 }
+import dev.alteration.branch.friday.http.JsonBody
 
 import java.net.{ServerSocket, Socket, SocketTimeoutException}
 import java.util.concurrent.atomic.AtomicBoolean
@@ -39,7 +40,7 @@ class SpiderServer(
     val router: PartialFunction[(HttpMethod, List[String]), RequestHandler[?, ?]] = PartialFunction.empty,
     val webSocketRouter: Map[String, WebSocketHandler] = Map.empty,
     val config: ServerConfig = ServerConfig.default
-) {
+) extends AutoCloseable {
 
   private val running = new AtomicBoolean(false)
   private var serverSocket: Option[ServerSocket] = None
@@ -138,6 +139,10 @@ class SpiderServer(
                       HttpWriter.write(response.asInstanceOf[Response[String]], output)
                     case bytes: Array[Byte] =>
                       HttpWriter.write(response.asInstanceOf[Response[Array[Byte]]], output)
+                    case jsonBody: JsonBody[?] =>
+                      // JsonBody wraps bytes, extract them and write
+                      val bytesResponse = Response(response.statusCode, jsonBody.bytes, response.headers)
+                      HttpWriter.write(bytesResponse, output)
                     case _ =>
                       // Fallback: convert to String
                       val stringResponse = Response(response.statusCode, response.body.toString, response.headers)
@@ -340,6 +345,12 @@ class SpiderServer(
       println("Server stopped")
     }
   }
+
+  /** Close the server (implements AutoCloseable).
+    *
+    * This calls stop() to gracefully shut down the server.
+    */
+  override def close(): Unit = stop()
 
   /** Check if the server is currently running.
     */

@@ -1,7 +1,8 @@
 package dev.alteration.branch.spider.webview
 
-import dev.alteration.branch.spider.webview.http.{HttpHandler, HttpResponse}
-import java.net.Socket
+import dev.alteration.branch.spider.server.{Request, RequestHandler, Response}
+import dev.alteration.branch.spider.server.RequestHandler.given
+import dev.alteration.branch.spider.common.ContentType
 
 /** An HTTP handler that serves the initial HTML page for a WebView.
   *
@@ -35,15 +36,11 @@ class WebViewPageHandler(
     jsPath: String = "/js/webview.js",
     rootId: String = "root",
     debug: Boolean = false
-) extends HttpHandler {
+) extends RequestHandler[Unit, String] {
 
-  override def handleGet(
-      path: String,
-      headers: Map[String, List[String]],
-      socket: Socket
-  ): Unit = {
+  override def handle(request: Request[Unit]): Response[String] = {
     val html = generateHtml()
-    HttpResponse.ok(socket, html)
+    Response(200, html, Map(ContentType.html.toHeader))
   }
 
   private def generateHtml(): String = {

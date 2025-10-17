@@ -2,8 +2,9 @@ package dev.alteration.branch.spider.client
 
 import dev.alteration.branch.testkit.fixtures.HttpFixtureSuite
 import ClientRequest.uri
-import dev.alteration.branch.friday.JsonEncoder
-import dev.alteration.branch.friday.http.JsonBodyHandler
+import dev.alteration.branch.friday.http.{JsonBodyHandler, JsonBody}
+import dev.alteration.branch.friday.http.JsonConversions.*
+import dev.alteration.branch.friday.http.JsonBody.given
 import dev.alteration.branch.spider.server.RequestHandler.given
 import dev.alteration.branch.spider.common.HttpMethod
 import dev.alteration.branch.macaroni.extensions.StringContextExtensions.*
@@ -14,18 +15,14 @@ class ClientSpec extends HttpFixtureSuite {
 
   case class Person(name: String)
 
-  given Conversion[Person, Array[Byte]] = { person =>
-    summon[JsonEncoder[Person]].encode(person).toJsonString.getBytes
-  }
-
-  case class PersonHandler(name: String) extends RequestHandler[Unit, Person] {
-    override def handle(request: Request[Unit]): Response[Person] =
-      Response(200, Person(name))
+  case class PersonHandler(name: String) extends RequestHandler[Unit, JsonBody[Person]] {
+    override def handle(request: Request[Unit]): Response[JsonBody[Person]] =
+      Response(200, Person(name)).jsonBody()
   }
 
   val personHandler: PartialFunction[(HttpMethod, List[String]), RequestHandler[
     Unit,
-    Person
+    JsonBody[Person]
   ]] = { case HttpMethod.GET -> (ci"person" :: s"$name" :: Nil) =>
     PersonHandler(name)
   }
