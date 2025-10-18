@@ -21,6 +21,12 @@ object Request {
 
     /** Get query parameters from the request URI */
     def queryParams: Map[String, String] = parseQueryParams(r.uri.getQuery)
+
+    /** Get all cookies from the request as a Map of name -> value */
+    def cookies: Map[String, String] = Cookie.fromHeaders(r.headers)
+
+    /** Get a specific cookie value by name */
+    def cookie(name: String): Option[String] = cookies.get(name)
   }
 
 }
