@@ -1,9 +1,10 @@
 package dev.alteration.branch.spider.server.middleware
 
-import dev.alteration.branch.blammo.BaseLogger
+import dev.alteration.branch.blammo.JsonConsoleLogger
+import dev.alteration.branch.friday.JsonCodec
 import dev.alteration.branch.spider.server.{Request, Response}
 
-import java.util.logging.{ConsoleHandler, Level}
+import java.util.logging.Level
 
 /** Middleware for logging HTTP requests and responses.
   *
@@ -16,15 +17,23 @@ import java.util.logging.{ConsoleHandler, Level}
   *   val handler = myHandler.withMiddleware(LoggingMiddleware())
   * }}}
   */
-class LoggingMiddleware[I, O] extends Middleware[I, O] with BaseLogger {
+class LoggingMiddleware[I, O] extends Middleware[I, O] with JsonConsoleLogger {
 
-  val handler = new ConsoleHandler()
+  case class MiddlewareLog(
+      direction: String,
+      headers: String,
+      status: Option[Int]
+  ) derives JsonCodec
 
   override def preProcess(
       request: Request[I]
   ): MiddlewareResult[Response[O], Request[I]] = {
     logger.info(
-      s"→ ${request.uri.getPath} | Headers: ${request.headers.keys.mkString(", ")}"
+      MiddlewareLog(
+        direction = s"→ ${request.uri.getPath}",
+        headers = request.headers.keys.mkString(", "),
+        status = None
+      ).toJsonString
     )
     Continue(request)
   }
@@ -34,7 +43,11 @@ class LoggingMiddleware[I, O] extends Middleware[I, O] with BaseLogger {
       response: Response[O]
   ): Response[O] = {
     logger.info(
-      s"← ${request.uri.getPath} | Status: ${response.statusCode}"
+      MiddlewareLog(
+        direction = s"← ${request.uri.getPath}",
+        headers = response.headers.keys.mkString(", "),
+        status = Some(response.statusCode)
+      ).toJsonString
     )
     response
   }
@@ -55,9 +68,13 @@ object LoggingMiddleware {
   *   val handler = myHandler.withMiddleware(TimingMiddleware())
   * }}}
   */
-class TimingMiddleware[I, O] extends Middleware[I, O] with BaseLogger {
+class TimingMiddleware[I, O] extends Middleware[I, O] with JsonConsoleLogger {
 
-  val handler = new ConsoleHandler()
+  case class TimingLog(
+      direction: String,
+      statusCode: Option[Int] = None,
+      timing: Option[Double] = None
+  ) derives JsonCodec
 
   // Thread-local storage for request start times
   private val startTimes = ThreadLocal.withInitial[Long](() => 0L)
@@ -66,7 +83,11 @@ class TimingMiddleware[I, O] extends Middleware[I, O] with BaseLogger {
       request: Request[I]
   ): MiddlewareResult[Response[O], Request[I]] = {
     startTimes.set(System.nanoTime())
-    logger.info(s"→ ${request.uri}")
+    logger.info(
+      TimingLog(
+        direction = s"→ ${request.uri}"
+      ).toJsonString
+    )
     Continue(request)
   }
 
@@ -76,7 +97,11 @@ class TimingMiddleware[I, O] extends Middleware[I, O] with BaseLogger {
   ): Response[O] = {
     val elapsedMs = (System.nanoTime() - startTimes.get()) / 1_000_000.0
     logger.info(
-      s"← ${request.uri.getPath} | ${response.statusCode} | ${elapsedMs}ms"
+      TimingLog(
+        direction = s"→ ${request.uri}",
+        statusCode = Some(response.statusCode),
+        timing = Some(elapsedMs)
+      ).toJsonString
     )
     startTimes.remove() // Clean up thread-local storage
     response
