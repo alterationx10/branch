@@ -98,7 +98,7 @@ class TimingMiddleware[I, O] extends Middleware[I, O] with JsonConsoleLogger {
     val elapsedMs = (System.nanoTime() - startTimes.get()) / 1_000_000.0
     logger.info(
       TimingLog(
-        direction = s"→ ${request.uri}",
+        direction = s"← ${request.uri.getPath}",
         statusCode = Some(response.statusCode),
         timing = Some(elapsedMs)
       ).toJsonString

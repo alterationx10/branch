@@ -1,7 +1,9 @@
 package dev.alteration.branch.spider.server.middleware
 
 import dev.alteration.branch.macaroni.typeclasses.*
-import dev.alteration.branch.spider.server.{Request, Response, RequestHandler}
+import dev.alteration.branch.spider.server.{Request, RequestHandler, Response}
+
+import scala.annotation.nowarn
 
 /** Middleware for HTTP request/response processing.
   *
@@ -38,6 +40,7 @@ trait Middleware[I, O] {
     * @return
     *   The modified response
     */
+  @nowarn
   def postProcess(request: Request[I], response: Response[O]): Response[O] =
     response
 
@@ -57,8 +60,8 @@ trait Middleware[I, O] {
           request: Request[I]
       ): MiddlewareResult[Response[O], Request[I]] =
         self.preProcess(request) match {
-          case Continue(req)  => other.preProcess(req)
-          case Respond(resp)  => Respond(resp)
+          case Continue(req) => other.preProcess(req)
+          case Respond(resp) => Respond(resp)
         }
 
       override def postProcess(

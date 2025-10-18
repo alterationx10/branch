@@ -47,10 +47,9 @@ class RequestIdMiddleware[I, O](
       .flatMap(_.headOption) match {
       case Some(requestId) =>
         response.copy(
-          headers =
-            response.headers + (responseHeaderName -> List(requestId))
+          headers = response.headers + (responseHeaderName -> List(requestId))
         )
-      case None =>
+      case None            =>
         response // Should never happen if preProcess ran
     }
   }

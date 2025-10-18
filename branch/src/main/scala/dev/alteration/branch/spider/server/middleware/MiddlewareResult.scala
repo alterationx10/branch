@@ -40,8 +40,8 @@ object MiddlewareResult {
         fab: MiddlewareResult[A, B]
     )(f: A => C, g: B => D): MiddlewareResult[C, D] =
       fab match {
-        case Continue(req)  => Continue(g(req))
-        case Respond(resp)  => Respond(f(resp))
+        case Continue(req) => Continue(g(req))
+        case Respond(resp) => Respond(f(resp))
       }
   }
 
@@ -54,8 +54,8 @@ object MiddlewareResult {
         fa: MiddlewareResult[Resp, A]
     )(f: A => B): MiddlewareResult[Resp, B] =
       fa match {
-        case Continue(req)  => Continue(f(req))
-        case Respond(resp)  => Respond(resp)
+        case Continue(req) => Continue(f(req))
+        case Respond(resp) => Respond(resp)
       }
   }
 
@@ -83,16 +83,16 @@ object MiddlewareResult {
         fa: MiddlewareResult[Resp, A]
     )(f: A => MiddlewareResult[Resp, B]): MiddlewareResult[Resp, B] =
       fa match {
-        case Continue(req)  => f(req)
-        case Respond(resp)  => Respond(resp)
+        case Continue(req) => f(req)
+        case Respond(resp) => Respond(resp)
       }
 
     override def map[A, B](
         fa: MiddlewareResult[Resp, A]
     )(f: A => B): MiddlewareResult[Resp, B] =
       fa match {
-        case Continue(req)  => Continue(f(req))
-        case Respond(resp)  => Respond(resp)
+        case Continue(req) => Continue(f(req))
+        case Respond(resp) => Respond(resp)
       }
   }
 
@@ -109,8 +109,8 @@ object MiddlewareResult {
         b: MiddlewareResult[Resp, Req]
     ): MiddlewareResult[Resp, Req] =
       a match {
-        case Respond(resp)  => Respond(resp) // Short-circuit wins
-        case Continue(_)    => b             // Continue to next result
+        case Respond(resp) => Respond(resp) // Short-circuit wins
+        case Continue(_)   => b             // Continue to next result
       }
   }
 
