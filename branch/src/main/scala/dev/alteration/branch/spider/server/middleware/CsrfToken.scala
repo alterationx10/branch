@@ -122,8 +122,8 @@ object CsrfToken {
     def withNewCsrfToken(
         config: CsrfConfig
     ): (Response[O], String) = {
-      val token            = generate(config.tokenLength)
-      val updatedResponse  = response.withCsrfToken(token, config)
+      val token           = generate(config.tokenLength)
+      val updatedResponse = response.withCsrfToken(token, config)
       (updatedResponse, token)
     }
   }

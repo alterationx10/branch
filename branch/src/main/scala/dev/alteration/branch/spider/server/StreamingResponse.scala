@@ -8,10 +8,10 @@ import java.io.OutputStream
   * allows you to write data to the response stream as it becomes available.
   *
   * This is useful for:
-  * - Large file downloads
-  * - Server-Sent Events (SSE)
-  * - Streaming data processing
-  * - Real-time data feeds
+  *   - Large file downloads
+  *   - Server-Sent Events (SSE)
+  *   - Streaming data processing
+  *   - Real-time data feeds
   *
   * Example usage:
   * {{{
@@ -31,10 +31,11 @@ trait StreamingResponse {
 
   /** Write the stream to the output stream.
     *
-    * This method is called by the server to write the streaming data.
-    * The headers have already been sent at this point.
+    * This method is called by the server to write the streaming data. The
+    * headers have already been sent at this point.
     *
-    * @param output The output stream to write to
+    * @param output
+    *   The output stream to write to
     */
   def writeTo(output: OutputStream): Unit
 
@@ -44,8 +45,10 @@ object StreamingResponse {
 
   /** Create a StreamingResponse from a function.
     *
-    * @param fn A function that writes data using a StreamWriter
-    * @return A StreamingResponse that executes the function
+    * @param fn
+    *   A function that writes data using a StreamWriter
+    * @return
+    *   A StreamingResponse that executes the function
     */
   def create(fn: StreamWriter => Unit): StreamingResponse = {
     new StreamingResponse {
@@ -60,7 +63,8 @@ object StreamingResponse {
   /** Convert StreamingResponse to Array[Byte] - not directly supported.
     *
     * This is required for the RequestHandler's encoder, but streaming responses
-    * are handled specially by the server and this conversion is never actually used.
+    * are handled specially by the server and this conversion is never actually
+    * used.
     */
   given Conversion[StreamingResponse, Array[Byte]] = { _ =>
     // This should never be called - streaming responses are handled specially

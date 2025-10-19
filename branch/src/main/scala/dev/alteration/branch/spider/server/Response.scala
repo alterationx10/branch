@@ -65,22 +65,30 @@ object Response {
 
   /** Creates a 422 Unprocessable Entity response.
     */
-  def unprocessableEntity(message: String = "Unprocessable Entity"): Response[String] =
+  def unprocessableEntity(
+      message: String = "Unprocessable Entity"
+  ): Response[String] =
     Response(422, message, Map(ContentType.txt.toHeader))
 
   /** Creates a 429 Too Many Requests response.
     */
-  def tooManyRequests(message: String = "Too Many Requests", retryAfter: Option[Int] = None): Response[String] = {
+  def tooManyRequests(
+      message: String = "Too Many Requests",
+      retryAfter: Option[Int] = None
+  ): Response[String] = {
     val headers = retryAfter match {
-      case Some(seconds) => Map(ContentType.txt.toHeader, "Retry-After" -> List(seconds.toString))
-      case None => Map(ContentType.txt.toHeader)
+      case Some(seconds) =>
+        Map(ContentType.txt.toHeader, "Retry-After" -> List(seconds.toString))
+      case None          => Map(ContentType.txt.toHeader)
     }
     Response(429, message, headers)
   }
 
   /** Creates a 500 Internal Server Error response.
     */
-  def internalServerError(message: String = "Internal Server Error"): Response[String] =
+  def internalServerError(
+      message: String = "Internal Server Error"
+  ): Response[String] =
     Response(500, message, Map(ContentType.txt.toHeader))
 
   /** Creates a 501 Not Implemented response.
@@ -95,10 +103,14 @@ object Response {
 
   /** Creates a 503 Service Unavailable response.
     */
-  def serviceUnavailable(message: String = "Service Unavailable", retryAfter: Option[Int] = None): Response[String] = {
+  def serviceUnavailable(
+      message: String = "Service Unavailable",
+      retryAfter: Option[Int] = None
+  ): Response[String] = {
     val headers = retryAfter match {
-      case Some(seconds) => Map(ContentType.txt.toHeader, "Retry-After" -> List(seconds.toString))
-      case None => Map(ContentType.txt.toHeader)
+      case Some(seconds) =>
+        Map(ContentType.txt.toHeader, "Retry-After" -> List(seconds.toString))
+      case None          => Map(ContentType.txt.toHeader)
     }
     Response(503, message, headers)
   }
@@ -183,7 +195,11 @@ object Response {
       withCookie(Cookie(name, value))
 
     /** Delete a cookie by setting Max-Age to 0 */
-    def deleteCookie(name: String, domain: Option[String] = None, path: Option[String] = Some("/")): Response[A] = {
+    def deleteCookie(
+        name: String,
+        domain: Option[String] = None,
+        path: Option[String] = Some("/")
+    ): Response[A] = {
       val cookie = Cookie(name, "", domain, path, maxAge = Some(0))
       withCookie(cookie)
     }

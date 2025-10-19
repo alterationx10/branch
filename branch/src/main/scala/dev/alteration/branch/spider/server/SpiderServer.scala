@@ -140,8 +140,9 @@ class SpiderServer(
                 keepAlive = false // WebSocket takes over, exit HTTP loop
               } else {
                 // Determine route from headers
-                val pathSegments = headersResult.uri.getPath.split("/").toList.filter(_.nonEmpty)
-                val routeKey = headersResult.method -> pathSegments
+                val pathSegments =
+                  headersResult.uri.getPath.split("/").toList.filter(_.nonEmpty)
+                val routeKey     = headersResult.method -> pathSegments
 
                 val isStreamingHandler = streamingRouter.isDefinedAt(routeKey)
 
@@ -156,7 +157,8 @@ class SpiderServer(
                 handlerResult match {
                   case Success((statusCode, Success(_))) =>
                     // Successfully handled and wrote response
-                    keepAlive = shouldKeepAlive(headersResult.headers, statusCode)
+                    keepAlive =
+                      shouldKeepAlive(headersResult.headers, statusCode)
 
                   case Success((_, Failure(writeError))) =>
                     println(s"Error writing response: ${writeError.getMessage}")
@@ -199,10 +201,14 @@ class SpiderServer(
 
   /** Handle a regular buffered HTTP request.
     *
-    * @param headersResult The parsed headers with buffered stream
-    * @param output The output stream to write the response to
-    * @param routeKey The route key (method, path segments)
-    * @return Try containing (statusCode, writeResult)
+    * @param headersResult
+    *   The parsed headers with buffered stream
+    * @param output
+    *   The output stream to write the response to
+    * @param routeKey
+    *   The route key (method, path segments)
+    * @return
+    *   Try containing (statusCode, writeResult)
     */
   private def handleBufferedRequest(
       headersResult: HttpParser.HeadersOnlyResult,
@@ -222,7 +228,7 @@ class SpiderServer(
         config
       ) match {
         case Success(bodyBytes) => bodyBytes
-        case Failure(e) => throw e
+        case Failure(e)         => throw e
       }
 
       // Create full ParseResult with body
@@ -243,7 +249,7 @@ class SpiderServer(
 
       // Pattern match on common response types
       val writeResult = response.body match {
-        case _: StreamingResponse =>
+        case _: StreamingResponse  =>
           // Handle streaming responses specially
           HttpWriter.writeStreamingResponse(
             response.asInstanceOf[Response[StreamingResponse]],
@@ -283,10 +289,14 @@ class SpiderServer(
 
   /** Handle a streaming HTTP request.
     *
-    * @param headersResult The parsed headers with buffered stream
-    * @param output The output stream to write the response to
-    * @param routeKey The route key (method, path segments)
-    * @return Try containing (statusCode, writeResult)
+    * @param headersResult
+    *   The parsed headers with buffered stream
+    * @param output
+    *   The output stream to write the response to
+    * @param routeKey
+    *   The route key (method, path segments)
+    * @return
+    *   Try containing (statusCode, writeResult)
     */
   private def handleStreamingRequest(
       headersResult: HttpParser.HeadersOnlyResult,
@@ -322,17 +332,17 @@ class SpiderServer(
             response.asInstanceOf[Response[StreamingResponse]],
             output
           )
-        case _: String             =>
+        case _: String            =>
           HttpWriter.write(
             response.asInstanceOf[Response[String]],
             output
           )
-        case _: Array[Byte]        =>
+        case _: Array[Byte]       =>
           HttpWriter.write(
             response.asInstanceOf[Response[Array[Byte]]],
             output
           )
-        case _                     =>
+        case _                    =>
           val stringResponse = Response(
             response.statusCode,
             response.body.toString,
@@ -432,16 +442,6 @@ class SpiderServer(
     * @return
     *   The handler to use (or notFoundHandler if no match)
     */
-  private def routeRequest(
-      method: HttpMethod,
-      path: String
-  ): RequestHandler[?, ?] = {
-    val pathSegments = path.split("/").toList.filter(_.nonEmpty)
-
-    router
-      .lift(method -> pathSegments)
-      .getOrElse(RequestHandler.notFoundHandler)
-  }
 
   /** Determine if the connection should be kept alive.
     *
@@ -545,7 +545,14 @@ object SpiderServer {
       config: ServerConfig = ServerConfig.default
   ): SpiderServer = {
     val server =
-      new SpiderServer(port, backlog, router, streamingRouter, webSocketRouter, config)
+      new SpiderServer(
+        port,
+        backlog,
+        router,
+        streamingRouter,
+        webSocketRouter,
+        config
+      )
 
     Runtime.getRuntime.addShutdownHook {
       new Thread(() => server.stop())

@@ -1,6 +1,7 @@
 package dev.alteration.branch.spider.server
 
 import java.io.InputStream
+import scala.annotation.nowarn
 import scala.util.Try
 
 /** A handler for requests with streaming bodies.
@@ -25,16 +26,21 @@ import scala.util.Try
   * }
   * }}}
   *
-  * @tparam O The type of the response body (must have a `Conversion[O, Array[Byte]]` in scope)
+  * @tparam O
+  *   The type of the response body (must have a `Conversion[O, Array[Byte]]` in
+  *   scope)
   */
+@nowarn
 trait StreamingRequestHandler[O](using
     responseEncoder: Conversion[O, Array[Byte]]
 ) {
 
   /** Handle a request with a streaming body and return a response.
     *
-    * @param request The request with StreamingRequest body
-    * @return The response
+    * @param request
+    *   The request with StreamingRequest body
+    * @return
+    *   The response
     */
   def handle(request: Request[StreamingRequest]): Response[O]
 
@@ -72,7 +78,7 @@ trait StreamingRequestHandler[O](using
 
 object StreamingRequestHandler {
 
-  given Conversion[String, Array[Byte]] = _.getBytes()
+  given Conversion[String, Array[Byte]]      = _.getBytes()
   given Conversion[Array[Byte], Array[Byte]] = identity
 
 }

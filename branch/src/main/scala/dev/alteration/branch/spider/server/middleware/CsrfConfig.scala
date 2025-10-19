@@ -29,7 +29,8 @@ case class CsrfConfig(
     cookieName: String = "XSRF-TOKEN",
     headerName: String = "X-XSRF-TOKEN",
     fieldName: String = "csrf_token",
-    exemptMethods: Set[HttpMethod] = Set(HttpMethod.GET, HttpMethod.HEAD, HttpMethod.OPTIONS),
+    exemptMethods: Set[HttpMethod] =
+      Set(HttpMethod.GET, HttpMethod.HEAD, HttpMethod.OPTIONS),
     exemptPaths: Set[String] = Set.empty,
     cookieSecure: Boolean = true,
     cookieHttpOnly: Boolean = false, // Must be false so JS can read it

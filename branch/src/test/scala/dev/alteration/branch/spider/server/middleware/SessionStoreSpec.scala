@@ -43,9 +43,9 @@ class SessionStoreSpec extends munit.FunSuite {
   }
 
   test("InMemorySessionStore cleanup removes expired sessions") {
-    val store           = InMemorySessionStore()
-    val validSession    = Session.create(3600)
-    val expiredSession  = Session(
+    val store          = InMemorySessionStore()
+    val validSession   = Session.create(3600)
+    val expiredSession = Session(
       id = "expired-id",
       expiresAt = Instant.now().minusSeconds(1)
     )
@@ -78,9 +78,9 @@ class SessionStoreSpec extends munit.FunSuite {
   }
 
   test("InMemorySessionStore overwrites existing sessions") {
-    val store           = InMemorySessionStore()
-    val session         = Session.create(Map("user" -> "john"), 3600)
-    val updatedSession  = session.set("role", "admin")
+    val store          = InMemorySessionStore()
+    val session        = Session.create(Map("user" -> "john"), 3600)
+    val updatedSession = session.set("role", "admin")
 
     store.save(session)
     store.save(updatedSession)
@@ -96,7 +96,8 @@ class SessionStoreSpec extends munit.FunSuite {
 
     try {
       val store   = FileSessionStore(tmpDir)
-      val session = Session.create(Map("user" -> "john", "role" -> "admin"), 3600)
+      val session =
+        Session.create(Map("user" -> "john", "role" -> "admin"), 3600)
 
       store.save(session)
       val retrieved = store.get(session.id)

@@ -2,8 +2,8 @@ package dev.alteration.branch.spider.server
 
 /** Server-Sent Events (SSE) support for real-time server-to-client streaming.
   *
-  * SSE is a standard for pushing updates from server to client over HTTP.
-  * It's simpler than WebSockets and perfect for one-way real-time updates.
+  * SSE is a standard for pushing updates from server to client over HTTP. It's
+  * simpler than WebSockets and perfect for one-way real-time updates.
   *
   * Example usage:
   * {{{
@@ -35,10 +35,14 @@ class ServerSentEvents(writer: StreamWriter) {
 
   /** Send an SSE event.
     *
-    * @param data The event data
-    * @param eventType Optional event type (appears as "event: type" in SSE)
-    * @param id Optional event ID (for client reconnection)
-    * @param retry Optional retry time in milliseconds
+    * @param data
+    *   The event data
+    * @param eventType
+    *   Optional event type (appears as "event: type" in SSE)
+    * @param id
+    *   Optional event ID (for client reconnection)
+    * @param retry
+    *   Optional retry time in milliseconds
     */
   def sendEvent(
       data: String,

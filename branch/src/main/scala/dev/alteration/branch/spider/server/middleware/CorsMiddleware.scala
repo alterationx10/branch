@@ -69,7 +69,7 @@ class CorsMiddleware[I, O](config: CorsConfig) extends Middleware[I, O] {
     origin match {
       case Some(originValue) if config.isOriginAllowed(originValue) =>
         addCorsHeaders(response, originValue)
-      case _ =>
+      case _                                                        =>
         // No origin or origin not allowed - don't add CORS headers
         response
     }
@@ -116,7 +116,10 @@ class CorsMiddleware[I, O](config: CorsConfig) extends Middleware[I, O] {
   }
 
   /** Add CORS headers to a regular response. */
-  private def addCorsHeaders(response: Response[O], origin: String): Response[O] = {
+  private def addCorsHeaders(
+      response: Response[O],
+      origin: String
+  ): Response[O] = {
     val allowOrigin =
       if (config.allowedOrigins.contains("*") && !config.allowCredentials) {
         "*"

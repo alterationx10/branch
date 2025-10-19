@@ -1,6 +1,5 @@
 package dev.alteration.branch.spider.server
 
-
 /** A model for an HTTP cookie with standard attributes.
   *
   * @param name

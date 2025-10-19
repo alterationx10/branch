@@ -52,7 +52,9 @@ class CorsMiddlewareSpec extends munit.FunSuite {
     assertEquals(allowOrigin, Some(List("https://example.com")))
   }
 
-  test("CorsMiddleware adds wildcard for permissive config without credentials") {
+  test(
+    "CorsMiddleware adds wildcard for permissive config without credentials"
+  ) {
     val middleware = CorsMiddleware.permissive[String, String]
 
     val request = Request(
@@ -69,7 +71,7 @@ class CorsMiddlewareSpec extends munit.FunSuite {
   }
 
   test("CorsMiddleware does not add wildcard when credentials enabled") {
-    val config =
+    val config     =
       CorsConfig.permissive.withCredentials.withOrigins("https://example.com")
     val middleware = CorsMiddleware[String, String](config)
 
@@ -107,7 +109,7 @@ class CorsMiddlewareSpec extends munit.FunSuite {
   }
 
   test("CorsMiddleware adds exposed headers") {
-    val config =
+    val config     =
       CorsConfig().withOrigins("*").withExposedHeaders("X-Custom-Header")
     val middleware = CorsMiddleware[String, String](config)
 
@@ -188,7 +190,9 @@ class CorsMiddlewareSpec extends munit.FunSuite {
       headers = Map(
         "Origin"                         -> List("https://example.com"),
         "Access-Control-Request-Method"  -> List("POST"),
-        "Access-Control-Request-Headers" -> List("X-Custom-Header") // Disallowed
+        "Access-Control-Request-Headers" -> List(
+          "X-Custom-Header"
+        ) // Disallowed
       ),
       body = ""
     )
@@ -201,7 +205,8 @@ class CorsMiddlewareSpec extends munit.FunSuite {
   }
 
   test("CorsMiddleware adds max age to preflight response") {
-    val config     = CorsConfig().withOrigins("https://example.com").withMaxAge(7200)
+    val config     =
+      CorsConfig().withOrigins("https://example.com").withMaxAge(7200)
     val middleware = CorsMiddleware[String, String](config)
 
     val request = Request(

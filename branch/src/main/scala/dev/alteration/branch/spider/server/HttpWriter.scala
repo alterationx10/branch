@@ -108,11 +108,11 @@ object HttpWriter {
 
   /** Write a streaming HTTP response to an output stream.
     *
-    * This is used for responses that don't buffer the entire body upfront,
-    * such as Server-Sent Events (SSE) or large file downloads.
+    * This is used for responses that don't buffer the entire body upfront, such
+    * as Server-Sent Events (SSE) or large file downloads.
     *
-    * Uses chunked transfer encoding (Content-Length: 0) since the body size
-    * is not known in advance.
+    * Uses chunked transfer encoding (Content-Length: 0) since the body size is
+    * not known in advance.
     *
     * @param response
     *   The Response with StreamingResponse body

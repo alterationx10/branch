@@ -56,7 +56,7 @@ class CsrfMiddleware[I, O](config: CsrfConfig) extends Middleware[I, O] {
       case Some(token) =>
         // Token exists - ensure it's in the response cookie
         response.withCsrfToken(token, config)
-      case None =>
+      case None        =>
         // No token - generate a new one
         val (updatedResponse, _) = response.withNewCsrfToken(config)
         updatedResponse
@@ -154,7 +154,7 @@ class CsrfMiddlewareWithMethod[I, O](
     existingToken match {
       case Some(token) =>
         response.withCsrfToken(token, config)
-      case None =>
+      case None        =>
         val (updatedResponse, _) = response.withNewCsrfToken(config)
         updatedResponse
     }

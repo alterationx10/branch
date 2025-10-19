@@ -7,10 +7,10 @@ import java.io.InputStream
   * Unlike regular Request[Array[Byte]] which buffers the entire body in memory,
   * StreamingRequest provides access to the raw input stream to read data as it
   * arrives. This is useful for:
-  * - Large file uploads
-  * - Chunked transfer encoding processing
-  * - Streaming data ingestion
-  * - Memory-efficient request handling
+  *   - Large file uploads
+  *   - Chunked transfer encoding processing
+  *   - Streaming data ingestion
+  *   - Memory-efficient request handling
   *
   * Example usage:
   * {{{
@@ -30,10 +30,14 @@ import java.io.InputStream
   * }
   * }}}
   *
-  * @param input The input stream to read from
-  * @param contentLength Optional content length from headers
-  * @param isChunked Whether the request uses chunked transfer encoding
-  * @param maxBodySize Optional maximum body size limit
+  * @param input
+  *   The input stream to read from
+  * @param contentLength
+  *   Optional content length from headers
+  * @param isChunked
+  *   Whether the request uses chunked transfer encoding
+  * @param maxBodySize
+  *   Optional maximum body size limit
   */
 class StreamingRequest(
     private val input: InputStream,
@@ -53,8 +57,8 @@ class StreamingRequest(
     } else {
       contentLength match {
         case Some(length) =>
-          val buffer = new Array[Byte](length.toInt)
-          var offset = 0
+          val buffer    = new Array[Byte](length.toInt)
+          var offset    = 0
           var remaining = length.toInt
 
           while (remaining > 0) {
@@ -75,12 +79,14 @@ class StreamingRequest(
 
   /** Read and process chunks as they arrive.
     *
-    * This method calls the provided function for each chunk of data.
-    * For chunked encoding, each chunk is the actual HTTP chunk.
-    * For Content-Length, data is read in reasonable buffer sizes.
+    * This method calls the provided function for each chunk of data. For
+    * chunked encoding, each chunk is the actual HTTP chunk. For Content-Length,
+    * data is read in reasonable buffer sizes.
     *
-    * @param chunkSize The buffer size to use when reading (default 8KB)
-    * @param fn Function to call for each chunk
+    * @param chunkSize
+    *   The buffer size to use when reading (default 8KB)
+    * @param fn
+    *   Function to call for each chunk
     */
   def readChunks(chunkSize: Int = 8192)(fn: Array[Byte] => Unit): Unit = {
     if (isChunked) {
@@ -94,7 +100,8 @@ class StreamingRequest(
     *
     * This provides a more convenient API for reading data.
     *
-    * @param fn Function that processes the stream using StreamReader
+    * @param fn
+    *   Function that processes the stream using StreamReader
     */
   def withReader[A](fn: StreamReader => A): A = {
     val reader = new StreamReader(input, contentLength, isChunked, maxBodySize)
@@ -123,8 +130,8 @@ class StreamingRequest(
           }
 
           val bufferSize = Math.min(chunkSize.toLong, remaining).toInt
-          val buffer = new Array[Byte](bufferSize)
-          val bytesRead = input.read(buffer, 0, bufferSize)
+          val buffer     = new Array[Byte](bufferSize)
+          val bytesRead  = input.read(buffer, 0, bufferSize)
 
           if (bytesRead == -1) {
             throw new IllegalStateException("Unexpected end of stream")
@@ -150,12 +157,12 @@ class StreamingRequest(
   /** Read chunks from a chunked transfer encoded request.
     */
   private def readChunksFromChunkedBody(fn: Array[Byte] => Unit): Unit = {
-    var done = false
+    var done      = false
     var totalSize = 0L
 
     while (!done) {
       // Read chunk size line
-      val sizeLine = readLine(input)
+      val sizeLine  = readLine(input)
       val chunkSize = Integer.parseInt(sizeLine.split(";")(0).trim, 16)
 
       if (chunkSize == 0) {
@@ -178,8 +185,8 @@ class StreamingRequest(
         }
 
         // Read chunk data
-        val chunk = new Array[Byte](chunkSize)
-        var offset = 0
+        val chunk     = new Array[Byte](chunkSize)
+        var offset    = 0
         var remaining = chunkSize
 
         while (remaining > 0) {
@@ -213,7 +220,7 @@ class StreamingRequest(
   /** Read a line from the input stream (CRLF terminated).
     */
   private def readLine(input: InputStream): String = {
-    val line = new StringBuilder
+    val line    = new StringBuilder
     var current = input.read()
 
     if (current == -1) {
@@ -245,8 +252,8 @@ class StreamingRequest(
 
   /** Get direct access to the underlying InputStream for advanced usage.
     *
-    * Warning: Using this directly bypasses chunk parsing and size limits.
-    * Only use if you know what you're doing.
+    * Warning: Using this directly bypasses chunk parsing and size limits. Only
+    * use if you know what you're doing.
     */
   def inputStream: InputStream = input
 }
@@ -281,8 +288,10 @@ class StreamReader(
 
   /** Read a chunk of data up to the specified size.
     *
-    * @param maxBytes Maximum bytes to read
-    * @return The chunk of data, or empty array if EOF
+    * @param maxBytes
+    *   Maximum bytes to read
+    * @return
+    *   The chunk of data, or empty array if EOF
     */
   def read(maxBytes: Int): Array[Byte] = {
     // Check size limit
@@ -294,7 +303,7 @@ class StreamReader(
       }
     }
 
-    val buffer = new Array[Byte](maxBytes)
+    val buffer    = new Array[Byte](maxBytes)
     val bytesRead = input.read(buffer, 0, maxBytes)
 
     if (bytesRead == -1) {
@@ -311,10 +320,14 @@ class StreamReader(
 
   /** Read data into a provided buffer.
     *
-    * @param buffer The buffer to read into
-    * @param offset Offset in the buffer to start writing
-    * @param length Maximum number of bytes to read
-    * @return Number of bytes actually read, or -1 if EOF
+    * @param buffer
+    *   The buffer to read into
+    * @param offset
+    *   Offset in the buffer to start writing
+    * @param length
+    *   Maximum number of bytes to read
+    * @return
+    *   Number of bytes actually read, or -1 if EOF
     */
   def read(buffer: Array[Byte], offset: Int, length: Int): Int = {
     // Check size limit

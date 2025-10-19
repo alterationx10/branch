@@ -15,7 +15,9 @@ class SessionSpec extends munit.FunSuite {
     val expectedExpiry = Instant.now().plusSeconds(durationSeconds)
     // Allow 1 second tolerance for test execution time
     assert(
-      Math.abs(session.expiresAt.getEpochSecond - expectedExpiry.getEpochSecond) <= 1
+      Math.abs(
+        session.expiresAt.getEpochSecond - expectedExpiry.getEpochSecond
+      ) <= 1
     )
   }
 
@@ -84,7 +86,8 @@ class SessionSpec extends munit.FunSuite {
   }
 
   test("Session.remove deletes values from data") {
-    val session = Session.create(Map("key1" -> "value1", "key2" -> "value2"), 3600)
+    val session =
+      Session.create(Map("key1" -> "value1", "key2" -> "value2"), 3600)
     val updated = session.remove("key1")
 
     assertEquals(updated.get("key1"), None)
@@ -92,7 +95,8 @@ class SessionSpec extends munit.FunSuite {
   }
 
   test("Session.clear removes all data") {
-    val session = Session.create(Map("key1" -> "value1", "key2" -> "value2"), 3600)
+    val session =
+      Session.create(Map("key1" -> "value1", "key2" -> "value2"), 3600)
     val cleared = session.clear
 
     assert(cleared.data.isEmpty)
@@ -125,7 +129,9 @@ class SessionSpec extends munit.FunSuite {
     // Should be approximately 3600 seconds after now
     val expectedExpiry = Instant.now().plusSeconds(3600)
     assert(
-      Math.abs(extended.expiresAt.getEpochSecond - expectedExpiry.getEpochSecond) <= 1
+      Math.abs(
+        extended.expiresAt.getEpochSecond - expectedExpiry.getEpochSecond
+      ) <= 1
     )
   }
 }

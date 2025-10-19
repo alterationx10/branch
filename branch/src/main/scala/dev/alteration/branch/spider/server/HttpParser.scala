@@ -80,11 +80,16 @@ object HttpParser {
 
   /** Result of parsing headers only, including the buffered stream.
     *
-    * @param method The HTTP method
-    * @param uri The request URI
-    * @param httpVersion The HTTP version string
-    * @param headers The parsed headers
-    * @param bufferedInput The BufferedInputStream positioned after headers
+    * @param method
+    *   The HTTP method
+    * @param uri
+    *   The request URI
+    * @param httpVersion
+    *   The HTTP version string
+    * @param headers
+    *   The parsed headers
+    * @param bufferedInput
+    *   The BufferedInputStream positioned after headers
     */
   case class HeadersOnlyResult(
       method: HttpMethod,
@@ -98,8 +103,8 @@ object HttpParser {
     *
     * This is useful for streaming request handlers that want to process the
     * body incrementally without buffering it in memory. Returns the
-    * BufferedInputStream positioned right after the headers so the body
-    * can be read from it.
+    * BufferedInputStream positioned right after the headers so the body can be
+    * read from it.
     *
     * @param input
     *   The input stream to read from (typically from a Socket)
@@ -233,8 +238,8 @@ object HttpParser {
 
   /** Read the request body from an input stream based on headers.
     *
-    * Public helper method for reading body after headers have been parsed.
-    * This is used internally and by the server for buffered request handling.
+    * Public helper method for reading body after headers have been parsed. This
+    * is used internally and by the server for buffered request handling.
     *
     * @param input
     *   The input stream to read from
