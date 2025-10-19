@@ -10,6 +10,7 @@ import dev.alteration.branch.spider.websocket.{
 }
 import dev.alteration.branch.friday.http.JsonBody
 
+import java.io.{InputStream, OutputStream}
 import java.net.{ServerSocket, Socket, SocketTimeoutException}
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.util.{Failure, Success, Try, Using}
@@ -40,6 +41,10 @@ class SpiderServer(
     val router: PartialFunction[
       (HttpMethod, List[String]),
       RequestHandler[?, ?]
+    ] = PartialFunction.empty,
+    val streamingRouter: PartialFunction[
+      (HttpMethod, List[String]),
+      StreamingRequestHandler[?]
     ] = PartialFunction.empty,
     val webSocketRouter: Map[String, WebSocketHandler] = Map.empty,
     val config: ServerConfig = ServerConfig.default
@@ -128,56 +133,18 @@ class SpiderServer(
                 keepAlive = false // WebSocket takes over, exit HTTP loop
               } else {
                 // Handle as normal HTTP request
-                // Route to appropriate handler
-                val handler =
-                  routeRequest(parseResult.method, parseResult.uri.getPath)
+                // Check if this is a streaming request handler first
+                val pathSegments = parseResult.uri.getPath.split("/").toList.filter(_.nonEmpty)
+                val routeKey = parseResult.method -> pathSegments
 
-                // Convert to Request model
-                val request = HttpParser.toRequest(parseResult)
+                val isStreamingHandler = streamingRouter.isDefinedAt(routeKey)
 
-                // Execute handler - we'll handle type erasure by writing raw bytes
-                val handlerResult = Try {
-                  val response = handler
-                    .asInstanceOf[RequestHandler[Array[Byte], Any]]
-                    .handle(request)
-
-                  // Pattern match on common response types
-                  val writeResult = response.body match {
-                    case _: StreamingResponse =>
-                      // Handle streaming responses specially
-                      HttpWriter.writeStreamingResponse(
-                        response.asInstanceOf[Response[StreamingResponse]],
-                        output
-                      )
-                    case _: String             =>
-                      HttpWriter.write(
-                        response.asInstanceOf[Response[String]],
-                        output
-                      )
-                    case _: Array[Byte]        =>
-                      HttpWriter.write(
-                        response.asInstanceOf[Response[Array[Byte]]],
-                        output
-                      )
-                    case jsonBody: JsonBody[?] =>
-                      // JsonBody wraps bytes, extract them and write
-                      val bytesResponse = Response(
-                        response.statusCode,
-                        jsonBody.bytes,
-                        response.headers
-                      )
-                      HttpWriter.write(bytesResponse, output)
-                    case _                     =>
-                      // Fallback: convert to String
-                      val stringResponse = Response(
-                        response.statusCode,
-                        response.body.toString,
-                        response.headers
-                      )
-                      HttpWriter.write(stringResponse, output)
-                  }
-
-                  (response.statusCode, writeResult)
+                val handlerResult = if (isStreamingHandler) {
+                  // Handle streaming request - don't buffer the body
+                  handleStreamingRequest(parseResult, input, output, routeKey)
+                } else {
+                  // Handle regular buffered request
+                  handleBufferedRequest(parseResult, output, routeKey)
                 }
 
                 handlerResult match {
@@ -221,6 +188,137 @@ class SpiderServer(
       // Connection handled successfully
       case Failure(e) =>
         println(s"Error handling connection: ${e.getMessage}")
+    }
+  }
+
+  /** Handle a regular buffered HTTP request.
+    *
+    * @param parseResult The parsed request with buffered body
+    * @param output The output stream to write the response to
+    * @param routeKey The route key (method, path segments)
+    * @return Try containing (statusCode, writeResult)
+    */
+  private def handleBufferedRequest(
+      parseResult: HttpParser.ParseResult,
+      output: OutputStream,
+      routeKey: (HttpMethod, List[String])
+  ): Try[(Int, Try[Unit])] = {
+    Try {
+      // Route to appropriate handler
+      val handler = router
+        .lift(routeKey)
+        .getOrElse(RequestHandler.notFoundHandler)
+
+      // Convert to Request model
+      val request = HttpParser.toRequest(parseResult)
+
+      val response = handler
+        .asInstanceOf[RequestHandler[Array[Byte], Any]]
+        .handle(request)
+
+      // Pattern match on common response types
+      val writeResult = response.body match {
+        case _: StreamingResponse =>
+          // Handle streaming responses specially
+          HttpWriter.writeStreamingResponse(
+            response.asInstanceOf[Response[StreamingResponse]],
+            output
+          )
+        case _: String             =>
+          HttpWriter.write(
+            response.asInstanceOf[Response[String]],
+            output
+          )
+        case _: Array[Byte]        =>
+          HttpWriter.write(
+            response.asInstanceOf[Response[Array[Byte]]],
+            output
+          )
+        case jsonBody: JsonBody[?] =>
+          // JsonBody wraps bytes, extract them and write
+          val bytesResponse = Response(
+            response.statusCode,
+            jsonBody.bytes,
+            response.headers
+          )
+          HttpWriter.write(bytesResponse, output)
+        case _                     =>
+          // Fallback: convert to String
+          val stringResponse = Response(
+            response.statusCode,
+            response.body.toString,
+            response.headers
+          )
+          HttpWriter.write(stringResponse, output)
+      }
+
+      (response.statusCode, writeResult)
+    }
+  }
+
+  /** Handle a streaming HTTP request.
+    *
+    * @param parseResult The parsed request headers (body not buffered)
+    * @param input The input stream to read the body from
+    * @param output The output stream to write the response to
+    * @param routeKey The route key (method, path segments)
+    * @return Try containing (statusCode, writeResult)
+    */
+  private def handleStreamingRequest(
+      parseResult: HttpParser.ParseResult,
+      input: InputStream,
+      output: OutputStream,
+      routeKey: (HttpMethod, List[String])
+  ): Try[(Int, Try[Unit])] = {
+    Try {
+      val handler = streamingRouter(routeKey)
+
+      // Create StreamingRequest from the input stream (body not buffered)
+      val streamingRequestBody = handler.createStreamingRequest(
+        input,
+        parseResult.headers,
+        config
+      )
+
+      // Create Request with StreamingRequest body
+      val request = Request(
+        uri = parseResult.uri,
+        headers = parseResult.headers,
+        body = streamingRequestBody
+      )
+
+      // Handle the request
+      val response = handler
+        .asInstanceOf[StreamingRequestHandler[Any]]
+        .handle(request)
+
+      // Write response (similar to buffered handling)
+      val writeResult = response.body match {
+        case _: StreamingResponse =>
+          HttpWriter.writeStreamingResponse(
+            response.asInstanceOf[Response[StreamingResponse]],
+            output
+          )
+        case _: String             =>
+          HttpWriter.write(
+            response.asInstanceOf[Response[String]],
+            output
+          )
+        case _: Array[Byte]        =>
+          HttpWriter.write(
+            response.asInstanceOf[Response[Array[Byte]]],
+            output
+          )
+        case _                     =>
+          val stringResponse = Response(
+            response.statusCode,
+            response.body.toString,
+            response.headers
+          )
+          HttpWriter.write(stringResponse, output)
+      }
+
+      (response.statusCode, writeResult)
     }
   }
 
@@ -416,11 +514,15 @@ object SpiderServer {
         (HttpMethod, List[String]),
         RequestHandler[?, ?]
       ] = PartialFunction.empty,
+      streamingRouter: PartialFunction[
+        (HttpMethod, List[String]),
+        StreamingRequestHandler[?]
+      ] = PartialFunction.empty,
       webSocketRouter: Map[String, WebSocketHandler] = Map.empty,
       config: ServerConfig = ServerConfig.default
   ): SpiderServer = {
     val server =
-      new SpiderServer(port, backlog, router, webSocketRouter, config)
+      new SpiderServer(port, backlog, router, streamingRouter, webSocketRouter, config)
 
     Runtime.getRuntime.addShutdownHook {
       new Thread(() => server.stop())
