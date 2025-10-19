@@ -78,6 +78,50 @@ object HttpParser {
     } yield ParseResult(method, uri, version, headers, body)
   }
 
+  /** Result of parsing headers only, including the buffered stream.
+    *
+    * @param method The HTTP method
+    * @param uri The request URI
+    * @param httpVersion The HTTP version string
+    * @param headers The parsed headers
+    * @param bufferedInput The BufferedInputStream positioned after headers
+    */
+  case class HeadersOnlyResult(
+      method: HttpMethod,
+      uri: URI,
+      httpVersion: String,
+      headers: Map[String, List[String]],
+      bufferedInput: BufferedInputStream
+  )
+
+  /** Parse only the HTTP request line and headers, without reading the body.
+    *
+    * This is useful for streaming request handlers that want to process the
+    * body incrementally without buffering it in memory. Returns the
+    * BufferedInputStream positioned right after the headers so the body
+    * can be read from it.
+    *
+    * @param input
+    *   The input stream to read from (typically from a Socket)
+    * @param config
+    *   Server configuration with limits (optional, uses defaults if not
+    *   provided)
+    * @return
+    *   Try containing HeadersOnlyResult with the buffered stream
+    */
+  def parseHeadersOnly(
+      input: InputStream,
+      config: ServerConfig = ServerConfig.default
+  ): Try[HeadersOnlyResult] = {
+    val buffered = new BufferedInputStream(input)
+
+    for {
+      requestLine           <- parseRequestLine(buffered, config)
+      (method, uri, version) = requestLine
+      headers               <- parseHeaders(buffered, config)
+    } yield HeadersOnlyResult(method, uri, version, headers, buffered)
+  }
+
   /** Parse the HTTP request line: METHOD /path HTTP/1.1
     *
     * @return
@@ -186,6 +230,26 @@ object HttpParser {
 
     readHeaderLines(mutable.Map.empty, 0)
   }
+
+  /** Read the request body from an input stream based on headers.
+    *
+    * Public helper method for reading body after headers have been parsed.
+    * This is used internally and by the server for buffered request handling.
+    *
+    * @param input
+    *   The input stream to read from
+    * @param headers
+    *   The parsed headers map
+    * @param config
+    *   Server configuration with body size limit
+    * @return
+    *   The request body as a byte array
+    */
+  def readBodyFromStream(
+      input: InputStream,
+      headers: Map[String, List[String]],
+      config: ServerConfig
+  ): Try[Array[Byte]] = readBody(input, headers, config)
 
   /** Read the request body based on the Content-Length or Transfer-Encoding
     * header.
