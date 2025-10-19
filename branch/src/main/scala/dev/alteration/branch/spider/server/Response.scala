@@ -76,6 +76,23 @@ object Response {
       val contentType = ContentType.contentPF(sanitized)
       r.withContentType(contentType)
     }
+
+    /** Set a cookie on the response using a Cookie model */
+    def withCookie(cookie: Cookie): Response[A] = {
+      val cookieHeader = cookie.toSetCookieHeader
+      val existing     = r.headers.getOrElse("Set-Cookie", List.empty)
+      r.copy(headers = r.headers + ("Set-Cookie" -> (existing :+ cookieHeader)))
+    }
+
+    /** Set a simple cookie with just name and value */
+    def withCookie(name: String, value: String): Response[A] =
+      withCookie(Cookie(name, value))
+
+    /** Delete a cookie by setting Max-Age to 0 */
+    def deleteCookie(name: String, domain: Option[String] = None, path: Option[String] = Some("/")): Response[A] = {
+      val cookie = Cookie(name, "", domain, path, maxAge = Some(0))
+      withCookie(cookie)
+    }
   }
 
 }
