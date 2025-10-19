@@ -16,15 +16,21 @@ object HttpWriter {
     301 -> "Moved Permanently",
     302 -> "Found",
     304 -> "Not Modified",
+    307 -> "Temporary Redirect",
+    308 -> "Permanent Redirect",
     400 -> "Bad Request",
     401 -> "Unauthorized",
     403 -> "Forbidden",
     404 -> "Not Found",
     405 -> "Method Not Allowed",
+    409 -> "Conflict",
+    422 -> "Unprocessable Entity",
+    429 -> "Too Many Requests",
     500 -> "Internal Server Error",
     501 -> "Not Implemented",
     502 -> "Bad Gateway",
-    503 -> "Service Unavailable"
+    503 -> "Service Unavailable",
+    504 -> "Gateway Timeout"
   )
 
   /** Get the reason phrase for a status code, or a generic message.
@@ -97,6 +103,51 @@ object HttpWriter {
 
       // Flush to ensure all data is sent
       writer.flush()
+    }
+  }
+
+  /** Write a streaming HTTP response to an output stream.
+    *
+    * This is used for responses that don't buffer the entire body upfront,
+    * such as Server-Sent Events (SSE) or large file downloads.
+    *
+    * Uses chunked transfer encoding (Content-Length: 0) since the body size
+    * is not known in advance.
+    *
+    * @param response
+    *   The Response with StreamingResponse body
+    * @param output
+    *   The OutputStream to write to (typically from a Socket)
+    * @return
+    *   Try indicating success or failure
+    */
+  def writeStreamingResponse(
+      response: Response[StreamingResponse],
+      output: OutputStream
+  ): Try[Unit] = {
+    Try {
+      val writer = new BufferedWriter(output)
+
+      // Write status line: HTTP/1.1 200 OK\r\n
+      writer.writeLine(
+        s"HTTP/1.1 ${response.statusCode} ${reasonPhrase(response.statusCode)}"
+      )
+
+      // Write headers (no Content-Length for streaming)
+      response.headers.foreach { case (name, values) =>
+        values.foreach { value =>
+          writer.writeLine(s"$name: $value")
+        }
+      }
+
+      // Blank line to separate headers from body
+      writer.writeLine("")
+
+      // Flush headers before starting to stream body
+      writer.flush()
+
+      // Now let the StreamingResponse write its data
+      response.body.writeTo(output)
     }
   }
 

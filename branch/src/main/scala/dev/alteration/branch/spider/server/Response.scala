@@ -14,6 +14,100 @@ case class Response[A](
 
 object Response {
 
+  // Redirect helpers
+
+  /** Creates a 301 Moved Permanently redirect response.
+    */
+  def movedPermanently(location: String): Response[String] =
+    Response(301, "", Map("Location" -> List(location)))
+
+  /** Creates a 302 Found (temporary redirect) response.
+    */
+  def found(location: String): Response[String] =
+    Response(302, "", Map("Location" -> List(location)))
+
+  /** Creates a 307 Temporary Redirect response (preserves HTTP method).
+    */
+  def temporaryRedirect(location: String): Response[String] =
+    Response(307, "", Map("Location" -> List(location)))
+
+  /** Creates a 308 Permanent Redirect response (preserves HTTP method).
+    */
+  def permanentRedirect(location: String): Response[String] =
+    Response(308, "", Map("Location" -> List(location)))
+
+  // Error response builders
+
+  /** Creates a 400 Bad Request response.
+    */
+  def badRequest(message: String = "Bad Request"): Response[String] =
+    Response(400, message, Map(ContentType.txt.toHeader))
+
+  /** Creates a 401 Unauthorized response.
+    */
+  def unauthorized(message: String = "Unauthorized"): Response[String] =
+    Response(401, message, Map(ContentType.txt.toHeader))
+
+  /** Creates a 403 Forbidden response.
+    */
+  def forbidden(message: String = "Forbidden"): Response[String] =
+    Response(403, message, Map(ContentType.txt.toHeader))
+
+  /** Creates a 404 Not Found response.
+    */
+  def notFound(message: String = "Not Found"): Response[String] =
+    Response(404, message, Map(ContentType.txt.toHeader))
+
+  /** Creates a 409 Conflict response.
+    */
+  def conflict(message: String = "Conflict"): Response[String] =
+    Response(409, message, Map(ContentType.txt.toHeader))
+
+  /** Creates a 422 Unprocessable Entity response.
+    */
+  def unprocessableEntity(message: String = "Unprocessable Entity"): Response[String] =
+    Response(422, message, Map(ContentType.txt.toHeader))
+
+  /** Creates a 429 Too Many Requests response.
+    */
+  def tooManyRequests(message: String = "Too Many Requests", retryAfter: Option[Int] = None): Response[String] = {
+    val headers = retryAfter match {
+      case Some(seconds) => Map(ContentType.txt.toHeader, "Retry-After" -> List(seconds.toString))
+      case None => Map(ContentType.txt.toHeader)
+    }
+    Response(429, message, headers)
+  }
+
+  /** Creates a 500 Internal Server Error response.
+    */
+  def internalServerError(message: String = "Internal Server Error"): Response[String] =
+    Response(500, message, Map(ContentType.txt.toHeader))
+
+  /** Creates a 501 Not Implemented response.
+    */
+  def notImplemented(message: String = "Not Implemented"): Response[String] =
+    Response(501, message, Map(ContentType.txt.toHeader))
+
+  /** Creates a 502 Bad Gateway response.
+    */
+  def badGateway(message: String = "Bad Gateway"): Response[String] =
+    Response(502, message, Map(ContentType.txt.toHeader))
+
+  /** Creates a 503 Service Unavailable response.
+    */
+  def serviceUnavailable(message: String = "Service Unavailable", retryAfter: Option[Int] = None): Response[String] = {
+    val headers = retryAfter match {
+      case Some(seconds) => Map(ContentType.txt.toHeader, "Retry-After" -> List(seconds.toString))
+      case None => Map(ContentType.txt.toHeader)
+    }
+    Response(503, message, headers)
+  }
+
+  /** Creates a 504 Gateway Timeout response.
+    */
+  def gatewayTimeout(message: String = "Gateway Timeout"): Response[String] =
+    Response(504, message, Map(ContentType.txt.toHeader))
+
   extension (sc: StringContext) {
 
     /** A string interpolator for creating a text/html response.

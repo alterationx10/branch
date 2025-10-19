@@ -143,6 +143,12 @@ class SpiderServer(
 
                   // Pattern match on common response types
                   val writeResult = response.body match {
+                    case _: StreamingResponse =>
+                      // Handle streaming responses specially
+                      HttpWriter.writeStreamingResponse(
+                        response.asInstanceOf[Response[StreamingResponse]],
+                        output
+                      )
                     case _: String             =>
                       HttpWriter.write(
                         response.asInstanceOf[Response[String]],
