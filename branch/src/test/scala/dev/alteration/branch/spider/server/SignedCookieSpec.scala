@@ -25,8 +25,8 @@ class SignedCookieSpec extends munit.FunSuite {
   }
 
   test("SignedCookie.unsign rejects tampered value") {
-    val value  = "abc123"
-    val signed = SignedCookie.sign(value, secret)
+    val value    = "abc123"
+    val signed   = SignedCookie.sign(value, secret)
     // Tamper with the value
     val tampered = signed.replace("abc123", "xyz789")
     val result   = SignedCookie.verify(tampered, secret)
@@ -64,9 +64,7 @@ class SignedCookieSpec extends munit.FunSuite {
   }
 
   test("Cookie.signed extension method") {
-    val cookie = Cookie("session", "abc123")
-      .withSecure
-      .withHttpOnly
+    val cookie = Cookie("session", "abc123").withSecure.withHttpOnly
       .signed(secret)
 
     assert(cookie.value.contains("."))

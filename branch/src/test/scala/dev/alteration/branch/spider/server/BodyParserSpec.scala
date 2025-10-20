@@ -218,16 +218,16 @@ class BodyParserSpec extends munit.FunSuite {
   }
 
   test("Request.parseJsonBodySafe fails when body too large") {
-    val largeData = "x" * 1000000  // 1MB of data
-    val json    = s"""{"data":"$largeData"}""" // Large JSON
-    val bytes   = json.getBytes(StandardCharsets.UTF_8)
-    val request = Request(
+    val largeData = "x" * 1000000                    // 1MB of data
+    val json      = s"""{"data":"$largeData"}"""     // Large JSON
+    val bytes     = json.getBytes(StandardCharsets.UTF_8)
+    val request   = Request(
       uri = URI.create("http://localhost/"),
       headers = Map.empty,
       body = bytes
     )
-    val config  = ParserConfig(maxJsonSize = 1000)  // 1KB limit
-    val result  = request.parseJsonBodySafe[User](config)
+    val config    = ParserConfig(maxJsonSize = 1000) // 1KB limit
+    val result    = request.parseJsonBodySafe[User](config)
     assertEquals(result, BodyTooLarge)
   }
 
@@ -289,16 +289,16 @@ class BodyParserSpec extends munit.FunSuite {
   }
 
   test("Request.parseBodyAuto returns BodyTooLarge for JSON") {
-    val largeData = "x" * 1000000  // 1MB of data
-    val json    = s"""{"data":"$largeData"}"""
-    val bytes   = json.getBytes(StandardCharsets.UTF_8)
-    val request = Request(
+    val largeData = "x" * 1000000 // 1MB of data
+    val json      = s"""{"data":"$largeData"}"""
+    val bytes     = json.getBytes(StandardCharsets.UTF_8)
+    val request   = Request(
       uri = URI.create("http://localhost/"),
       headers = Map("Content-Type" -> List("application/json")),
       body = bytes
     )
-    val config  = ParserConfig(maxJsonSize = 1000)
-    val result  = request.parseBodyAuto[User](config)
+    val config    = ParserConfig(maxJsonSize = 1000)
+    val result    = request.parseBodyAuto[User](config)
     assertEquals(result, BodyTooLarge)
   }
 

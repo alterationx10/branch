@@ -101,8 +101,8 @@ class CsrfTokenSpec extends munit.FunSuite {
   }
 
   test("Response.withNewCsrfToken generates and adds token") {
-    val config                 = CsrfConfig.default
-    val response               = Response(200, "OK")
+    val config                   = CsrfConfig.default
+    val response                 = Response(200, "OK")
     val (result, generatedToken) = response.withNewCsrfToken(config)
 
     assert(generatedToken.nonEmpty)

@@ -123,8 +123,7 @@ object SessionMiddleware {
       InMemorySessionStore()
     )
 
-  /** Create a session middleware with strict configuration and in-memory
-    * store.
+  /** Create a session middleware with strict configuration and in-memory store.
     */
   def strict[I, O]: SessionMiddleware[I, O] =
     new SessionMiddleware[I, O](SessionConfig.strict, InMemorySessionStore())
@@ -158,7 +157,7 @@ object SessionContext {
   def getOrCreate(config: SessionConfig): Session = {
     get() match {
       case Some(session) => session
-      case None =>
+      case None          =>
         val newSession = Session.create(config.maxAge)
         set(newSession)
         newSession

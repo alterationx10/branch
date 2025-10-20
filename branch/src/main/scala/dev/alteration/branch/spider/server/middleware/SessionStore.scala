@@ -137,15 +137,15 @@ class FileSessionStore(directory: java.io.File) extends SessionStore {
     } else {
       Try {
         Using(Source.fromFile(file)) { source =>
-          val lines  = source.getLines().toList
-          val id     = lines(0)
-          val created = Instant.ofEpochMilli(lines(1).toLong)
+          val lines        = source.getLines().toList
+          val id           = lines(0)
+          val created      = Instant.ofEpochMilli(lines(1).toLong)
           val lastAccessed = Instant.ofEpochMilli(lines(2).toLong)
-          val expires = Instant.ofEpochMilli(lines(3).toLong)
-          val dataSize = lines(4).toInt
+          val expires      = Instant.ofEpochMilli(lines(3).toLong)
+          val dataSize     = lines(4).toInt
 
           val dataLines = lines.drop(5)
-          val data = (0 until dataSize).map { i =>
+          val data      = (0 until dataSize).map { i =>
             val key   = dataLines(i * 2)
             val value = dataLines(i * 2 + 1)
             key -> value
@@ -170,7 +170,7 @@ class FileSessionStore(directory: java.io.File) extends SessionStore {
       files.filter(_.getName.endsWith(".session")).foreach { file =>
         val id = file.getName.stripSuffix(".session")
         get(id) match {
-          case Some(_) => // Session is valid, keep it
+          case Some(_) =>               // Session is valid, keep it
           case None    => file.delete() // Session expired or invalid, delete
         }
       }

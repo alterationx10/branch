@@ -41,7 +41,9 @@ class CsrfMiddlewareSpec extends munit.FunSuite {
 
     val setCookieHeaders = result.headers.get("Set-Cookie")
     assert(setCookieHeaders.isDefined)
-    assert(setCookieHeaders.get.exists(_.contains(s"XSRF-TOKEN=$existingToken")))
+    assert(
+      setCookieHeaders.get.exists(_.contains(s"XSRF-TOKEN=$existingToken"))
+    )
   }
 
   test("CsrfMiddleware validates matching tokens") {
@@ -137,7 +139,7 @@ class CsrfMiddlewareSpec extends munit.FunSuite {
   }
 
   test("CsrfMiddlewareWithMethod exempts configured paths") {
-    val config = CsrfConfig.development.withExemptPaths("/api/webhook/*")
+    val config     = CsrfConfig.development.withExemptPaths("/api/webhook/*")
     val middleware = CsrfMiddlewareWithMethod[String, String](
       config,
       _ => Some(HttpMethod.POST) // POST (normally requires CSRF)
@@ -154,7 +156,7 @@ class CsrfMiddlewareSpec extends munit.FunSuite {
   }
 
   test("CsrfMiddlewareWithMethod validates non-exempt paths") {
-    val config = CsrfConfig.development.withExemptPaths("/api/public")
+    val config     = CsrfConfig.development.withExemptPaths("/api/public")
     val middleware = CsrfMiddlewareWithMethod[String, String](
       config,
       _ => Some(HttpMethod.POST)
@@ -235,17 +237,19 @@ class CsrfMiddlewareSpec extends munit.FunSuite {
     )
 
     // Step 1: Generate token for initial response
-    val initialRequest  = Request(
+    val initialRequest    = Request(
       uri = URI.create("http://localhost/"),
       headers = Map.empty,
       body = ""
     )
-    val initialResponse = Response(200, "OK")
-    val responseWithToken = middleware.postProcess(initialRequest, initialResponse)
+    val initialResponse   = Response(200, "OK")
+    val responseWithToken =
+      middleware.postProcess(initialRequest, initialResponse)
 
     // Extract the generated token from the Set-Cookie header
     val setCookieHeader = responseWithToken.headers.get("Set-Cookie").get.head
-    val tokenMatch      = """XSRF-TOKEN=([^;]+)""".r.findFirstMatchIn(setCookieHeader)
+    val tokenMatch      =
+      """XSRF-TOKEN=([^;]+)""".r.findFirstMatchIn(setCookieHeader)
     val generatedToken  = tokenMatch.get.group(1)
 
     // Step 2: Make a subsequent request with the token

@@ -105,7 +105,7 @@ class SessionMiddlewareSpec extends munit.FunSuite {
     val middleware = SessionMiddleware[String, String](config, store)
 
     // Create a session that's about to expire
-    val session = Session.create(3600)
+    val session   = Session.create(3600)
     val oldExpiry = session.expiresAt
     store.save(session)
 
@@ -131,7 +131,7 @@ class SessionMiddlewareSpec extends munit.FunSuite {
     val config     = SessionConfig.development.copy(slidingExpiration = false)
     val middleware = SessionMiddleware[String, String](config, store)
 
-    val session = Session.create(3600)
+    val session   = Session.create(3600)
     val oldExpiry = session.expiresAt
     val oldAccess = session.lastAccessedAt
     store.save(session)
@@ -163,7 +163,7 @@ class SessionMiddlewareSpec extends munit.FunSuite {
     val config     = SessionConfig.strict
     val middleware = SessionMiddleware[String, String](config, store)
 
-    val session = SessionContext.getOrCreate(config)
+    SessionContext.getOrCreate(config)
 
     val request  = Request(
       uri = URI.create("http://localhost/"),
@@ -199,8 +199,8 @@ class SessionMiddlewareSpec extends munit.FunSuite {
   }
 
   test("SessionContext.update modifies session") {
-    val config  = SessionConfig.development
-    val session = SessionContext.getOrCreate(config)
+    val config = SessionConfig.development
+    SessionContext.getOrCreate(config)
 
     SessionContext.update(_.set("user", "john"))
 

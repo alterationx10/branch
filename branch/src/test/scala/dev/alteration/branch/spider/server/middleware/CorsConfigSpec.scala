@@ -88,7 +88,8 @@ class CorsConfigSpec extends munit.FunSuite {
   }
 
   test("isMethodAllowed checks method") {
-    val config = CorsConfig(allowedMethods = Set(HttpMethod.GET, HttpMethod.POST))
+    val config =
+      CorsConfig(allowedMethods = Set(HttpMethod.GET, HttpMethod.POST))
     assert(config.isMethodAllowed(HttpMethod.GET))
     assert(config.isMethodAllowed(HttpMethod.POST))
     assert(!config.isMethodAllowed(HttpMethod.DELETE))
@@ -101,7 +102,8 @@ class CorsConfigSpec extends munit.FunSuite {
   }
 
   test("areHeadersAllowed with specific headers") {
-    val config = CorsConfig(allowedHeaders = Set("content-type", "authorization"))
+    val config =
+      CorsConfig(allowedHeaders = Set("content-type", "authorization"))
     assert(config.areHeadersAllowed(List("Content-Type")))
     assert(config.areHeadersAllowed(List("Authorization")))
     assert(config.areHeadersAllowed(List("Content-Type", "Authorization")))

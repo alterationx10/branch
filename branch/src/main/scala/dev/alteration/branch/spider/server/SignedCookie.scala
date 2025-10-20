@@ -5,8 +5,8 @@ import dev.alteration.branch.macaroni.crypto.Crypto
 /** Utilities for creating and validating signed cookies using HMAC.
   *
   * Signed cookies provide tamper protection by appending an HMAC signature to
-  * the cookie value. This prevents clients from modifying cookie values
-  * without detection.
+  * the cookie value. This prevents clients from modifying cookie values without
+  * detection.
   *
   * The signed cookie format is: `value.signature` where the signature is an
   * HMAC-SHA256 hash of the value.
@@ -141,7 +141,11 @@ object SignedCookie {
       * @return
       *   Response with the signed cookie set
       */
-    def withSignedCookie(name: String, value: String, secret: String): Response[A] = {
+    def withSignedCookie(
+        name: String,
+        value: String,
+        secret: String
+    ): Response[A] = {
       r.withCookie(create(name, value, secret))
     }
   }

@@ -55,6 +55,17 @@ trait SpiderApp {
     */
   val router: PartialFunction[(HttpMethod, List[String]), RequestHandler[?, ?]]
 
+  /** The streaming router that maps (HttpMethod, path segments) to
+    * StreamingRequestHandlers.
+    *
+    * Override this to define routes that handle streaming request bodies.
+    * Defaults to empty (no streaming routes).
+    */
+  val streamingRouter: PartialFunction[
+    (HttpMethod, List[String]),
+    StreamingRequestHandler[?]
+  ] = PartialFunction.empty
+
   /** The WebSocket router that maps paths to WebSocketHandlers.
     *
     * Override this to define your application's WebSocket routes. Defaults to
@@ -68,6 +79,7 @@ trait SpiderApp {
     port = port,
     backlog = backlog,
     router = router,
+    streamingRouter = streamingRouter,
     webSocketRouter = webSocketRouter,
     config = config
   )

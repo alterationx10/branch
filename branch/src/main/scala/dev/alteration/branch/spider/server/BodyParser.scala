@@ -4,7 +4,7 @@ import dev.alteration.branch.friday.JsonDecoder
 
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
-import scala.util.{Try, Success, Failure}
+import scala.util.{Failure, Success, Try}
 
 /** Utilities for parsing HTTP request bodies.
   */
@@ -12,31 +12,31 @@ object BodyParser {
 
   /** Result of parsing a request body. */
   sealed trait ParseResult[+A]
-  case class ParseSuccess[A](value: A) extends ParseResult[A]
+  case class ParseSuccess[A](value: A)   extends ParseResult[A]
   case class ParseFailure(error: String) extends ParseResult[Nothing]
-  case object UnsupportedContentType extends ParseResult[Nothing]
-  case object BodyTooLarge extends ParseResult[Nothing]
+  case object UnsupportedContentType     extends ParseResult[Nothing]
+  case object BodyTooLarge               extends ParseResult[Nothing]
 
   /** Configuration for body parsing. */
   case class ParserConfig(
       maxJsonSize: Long = 10 * 1024 * 1024, // 10MB
-      maxFormSize: Long = 1 * 1024 * 1024,   // 1MB
-      maxTextSize: Long = 5 * 1024 * 1024    // 5MB
+      maxFormSize: Long = 1 * 1024 * 1024,  // 1MB
+      maxTextSize: Long = 5 * 1024 * 1024   // 5MB
   )
 
   object ParserConfig {
     val default: ParserConfig = ParserConfig()
 
     val strict: ParserConfig = ParserConfig(
-      maxJsonSize = 1 * 1024 * 1024,   // 1MB
-      maxFormSize = 512 * 1024,         // 512KB
-      maxTextSize = 1 * 1024 * 1024     // 1MB
+      maxJsonSize = 1 * 1024 * 1024, // 1MB
+      maxFormSize = 512 * 1024,      // 512KB
+      maxTextSize = 1 * 1024 * 1024  // 1MB
     )
 
     val permissive: ParserConfig = ParserConfig(
-      maxJsonSize = 50 * 1024 * 1024,  // 50MB
-      maxFormSize = 10 * 1024 * 1024,  // 10MB
-      maxTextSize = 25 * 1024 * 1024   // 25MB
+      maxJsonSize = 50 * 1024 * 1024, // 50MB
+      maxFormSize = 10 * 1024 * 1024, // 10MB
+      maxTextSize = 25 * 1024 * 1024  // 25MB
     )
   }
 
@@ -55,7 +55,7 @@ object BodyParser {
         .split("&")
         .flatMap { pair =>
           pair.split("=", 2) match {
-            case Array(key) =>
+            case Array(key)        =>
               Some(
                 URLDecoder.decode(key, StandardCharsets.UTF_8) -> ""
               )
@@ -64,7 +64,7 @@ object BodyParser {
                 URLDecoder.decode(key, StandardCharsets.UTF_8) ->
                   URLDecoder.decode(value, StandardCharsets.UTF_8)
               )
-            case _ => None
+            case _                 => None
           }
         }
         .toMap
