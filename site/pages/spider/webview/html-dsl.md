@@ -345,6 +345,6 @@ override def render(state: TodoState): String = {
 
 ## Next Steps
 
-- Learn about [Styling](styling.md) for CSS-in-Scala
-- Explore [Advanced Topics](advanced.md) for lifecycle hooks and actor integration
-- Return to [WebView Overview](index.md)
+- Learn about [Styling](/spider/webview/styling) for CSS-in-Scala
+- Explore [Advanced Topics](/spider/webview/advanced) for lifecycle hooks and actor integration
+- Return to [WebView Overview](/spider/webview)

@@ -448,6 +448,6 @@ object FlashHelper {
 
 ## Next Steps
 
-- Learn about [Middleware](middleware.md)
-- Explore [Request/Response Parsing](body-parsing.md)
-- Return to [HTTP Server](server.md)
+- Learn about [Middleware](/spider/middleware)
+- Explore [Request/Response Parsing](/spider/body-parsing)
+- Return to [HTTP Server](/spider/server)

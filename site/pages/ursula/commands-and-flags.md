@@ -293,5 +293,5 @@ object GreetCommand extends Command {
 
 ## Next Steps
 
-- Read the [Migration Guide](migration.md) to update existing code
-- Return to [Ursula Overview](index.md)
+- Read the [Migration Guide](/ursula/migration) to update existing code
+- Return to [Ursula Overview](/ursula)

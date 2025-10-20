@@ -108,7 +108,7 @@ val toolRegistry = ToolRegistry()
   .register(ToolSchema.derive[FileSystemTool], restricted)
 ```
 
-See [Security](security.md) for more details on FileSystemPolicy.
+See [Security](/hollywood/security) for more details on FileSystemPolicy.
 
 ## RegexTool
 
@@ -348,6 +348,6 @@ val response = agent.chat(
 
 ## Next Steps
 
-- Learn about [Security policies](security.md) for safe tool execution
-- Explore the [Tool system](tools.md)
-- Learn about [Agents](agents.md)
+- Learn about [Security policies](/hollywood/security) for safe tool execution
+- Explore the [Tool system](/hollywood/tools)
+- Learn about [Agents](/hollywood/agents)

@@ -382,6 +382,6 @@ val handler = router.lift((HttpMethod.GET, List("users", "123")))
 
 ## Next Steps
 
-- Learn about [Middleware](middleware.md) for request processing
-- Explore [Body Parsing](body-parsing.md) for handling request bodies
-- Return to [HTTP Server](server.md)
+- Learn about [Middleware](/spider/middleware) for request processing
+- Explore [Body Parsing](/spider/body-parsing) for handling request bodies
+- Return to [HTTP Server](/spider/server)

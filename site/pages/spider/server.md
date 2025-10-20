@@ -160,26 +160,26 @@ Spider includes a comprehensive `ContentType` enum covering common MIME types. T
 Spider provides many advanced features for building production-ready web applications:
 
 ### Middleware
-Add cross-cutting concerns like logging, authentication, CORS, and more. See [Middleware](middleware.md).
+Add cross-cutting concerns like logging, authentication, CORS, and more. See [Middleware](/spider/middleware).
 
 ### Sessions & Cookies
-Manage user sessions and cookies with built-in support for signed cookies and session stores. See [Cookies & Sessions](cookies-sessions.md).
+Manage user sessions and cookies with built-in support for signed cookies and session stores. See [Cookies & Sessions](/spider/cookies-sessions).
 
 ### Request Parsing
-Parse JSON, forms, and multipart file uploads with size limits and validation. See [Body Parsing](body-parsing.md).
+Parse JSON, forms, and multipart file uploads with size limits and validation. See [Body Parsing](/spider/body-parsing).
 
 ### Streaming
-Handle large uploads and downloads efficiently, plus Server-Sent Events for real-time updates. See [Streaming](streaming.md).
+Handle large uploads and downloads efficiently, plus Server-Sent Events for real-time updates. See [Streaming](/spider/streaming).
 
 ### Advanced Routing
-Extract path parameters, parse query strings, and organize routes with helpers. See [Advanced Routing](routing.md).
+Extract path parameters, parse query strings, and organize routes with helpers. See [Advanced Routing](/spider/routing).
 
 ## Next Steps
 
-- Learn about [Middleware](middleware.md) for request/response processing
-- Explore [Advanced Routing](routing.md) for path parameters and query strings
-- Read about [Body Parsing](body-parsing.md) for handling JSON, forms, and file uploads
-- Discover [Streaming](streaming.md) for large payloads and SSE
-- Learn about the [HTTP Client](client.md) for making requests
-- Explore [WebSocket Support](websockets.md) for real-time communication
-- Build reactive UIs with [WebView](webview/)
+- Learn about [Middleware](/spider/middleware) for request/response processing
+- Explore [Advanced Routing](/spider/routing) for path parameters and query strings
+- Read about [Body Parsing](/spider/body-parsing) for handling JSON, forms, and file uploads
+- Discover [Streaming](/spider/streaming) for large payloads and SSE
+- Learn about the [HTTP Client](/spider/client) for making requests
+- Explore [WebSocket Support](/spider/websockets) for real-time communication
+- Build reactive UIs with [WebView](/spider/webview)

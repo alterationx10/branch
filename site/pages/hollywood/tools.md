@@ -175,6 +175,6 @@ case class WebSearch(
 
 ## Next Steps
 
-- Explore [Security policies](security.md) for safe tool execution
-- Browse [Provided tools](provided-tools.md)
-- Learn about [Agents](agents.md)
+- Explore [Security policies](/hollywood/security) for safe tool execution
+- Browse [Provided tools](/hollywood/provided-tools)
+- Learn about [Agents](/hollywood/agents)

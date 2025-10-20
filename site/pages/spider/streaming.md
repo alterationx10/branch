@@ -462,6 +462,6 @@ case class StockTickerHandler(symbol: String) extends RequestHandler[Unit, Strea
 
 ## Next Steps
 
-- Learn about [Body Parsing](body-parsing.md) for standard request parsing
-- Explore [Middleware](middleware.md) for request processing
-- Return to [HTTP Server](server.md)
+- Learn about [Body Parsing](/spider/body-parsing) for standard request parsing
+- Explore [Middleware](/spider/middleware) for request processing
+- Return to [HTTP Server](/spider/server)

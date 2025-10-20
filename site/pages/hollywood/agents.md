@@ -189,6 +189,6 @@ This enables agent composition and specialization, where complex tasks can be de
 
 ## Next Steps
 
-- Learn about the [Tool system](tools.md)
-- Explore [Security policies](security.md) for safe tool execution
-- Browse [Provided tools](provided-tools.md)
+- Learn about the [Tool system](./tools)
+- Explore [Security policies](./security) for safe tool execution
+- Browse [Provided tools](./provided-tools)

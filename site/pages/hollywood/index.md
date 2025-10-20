@@ -70,10 +70,10 @@ val response = agent.chat("Make a GET request to https://api.github.com/users/oc
 
 ## Documentation
 
-- **[Agents](agents.md)** - OneShotAgent, RAG, Conversational agents
-- **[Tools](tools.md)** - Tool system, CallableTool, ToolExecutor, ToolRegistry
-- **[Security](security.md)** - ToolPolicy and RestrictedExecutor for safe tool execution
-- **[Provided Tools](provided-tools.md)** - Built-in tools (HTTP, FileSystem, Regex, JSON, WebFetch, SearXNG)
+- **[Agents](/hollywood/agents)** - OneShotAgent, RAG, Conversational agents
+- **[Tools](/hollywood/tools)** - Tool system, CallableTool, ToolExecutor, ToolRegistry
+- **[Security](/hollywood/security)** - ToolPolicy and RestrictedExecutor for safe tool execution
+- **[Provided Tools](/hollywood/provided-tools)** - Built-in tools (HTTP, FileSystem, Regex, JSON, WebFetch, SearXNG)
 
 ## Agent Interface
 
@@ -126,7 +126,7 @@ The test suite demonstrates key functionality:
 
 ## Next Steps
 
-- Learn about different [Agent types](agents.md)
-- Explore the [Tool system](tools.md)
-- Understand [Security policies](security.md)
-- Browse [Provided tools](provided-tools.md)
+- Learn about different [Agent types](/hollywood/agents)
+- Explore the [Tool system](/hollywood/tools)
+- Understand [Security policies](/hollywood/security)
+- Browse [Provided tools](/hollywood/provided-tools)

@@ -333,6 +333,6 @@ override def render(state: State): String = {
 
 ## Next Steps
 
-- Learn about the [HTML DSL](html-dsl.md) for building UIs
-- Explore [Advanced Topics](advanced.md) for lifecycle hooks and actor integration
-- Return to [WebView Overview](index.md)
+- Learn about the [HTML DSL](/spider/webview/html-dsl) for building UIs
+- Explore [Advanced Topics](/spider/webview/advanced) for lifecycle hooks and actor integration
+- Return to [WebView Overview](/spider/webview)
