@@ -19,24 +19,35 @@ object BodyParser {
 
   /** Configuration for body parsing. */
   case class ParserConfig(
-      maxJsonSize: Long = 10 * 1024 * 1024, // 10MB
-      maxFormSize: Long = 1 * 1024 * 1024,  // 1MB
-      maxTextSize: Long = 5 * 1024 * 1024   // 5MB
+      maxJsonSize: Long = 10 * 1024 * 1024,      // 10MB
+      maxFormSize: Long = 1 * 1024 * 1024,       // 1MB
+      maxTextSize: Long = 5 * 1024 * 1024,       // 5MB
+      maxMultipartSize: Long = 50 * 1024 * 1024, // 50MB total
+      maxFileSize: Long = 20 * 1024 * 1024,      // 20MB per file
+      maxFileCount: Int = 10,                    // Max uploaded files
+      allowedFileTypes: Option[Set[String]] =
+        None                                     // e.g., Some(Set("image/jpeg", "image/png"))
   )
 
   object ParserConfig {
     val default: ParserConfig = ParserConfig()
 
     val strict: ParserConfig = ParserConfig(
-      maxJsonSize = 1 * 1024 * 1024, // 1MB
-      maxFormSize = 512 * 1024,      // 512KB
-      maxTextSize = 1 * 1024 * 1024  // 1MB
+      maxJsonSize = 1 * 1024 * 1024,       // 1MB
+      maxFormSize = 512 * 1024,            // 512KB
+      maxTextSize = 1 * 1024 * 1024,       // 1MB
+      maxMultipartSize = 10 * 1024 * 1024, // 10MB
+      maxFileSize = 5 * 1024 * 1024,       // 5MB
+      maxFileCount = 5
     )
 
     val permissive: ParserConfig = ParserConfig(
-      maxJsonSize = 50 * 1024 * 1024, // 50MB
-      maxFormSize = 10 * 1024 * 1024, // 10MB
-      maxTextSize = 25 * 1024 * 1024  // 25MB
+      maxJsonSize = 50 * 1024 * 1024,       // 50MB
+      maxFormSize = 10 * 1024 * 1024,       // 10MB
+      maxTextSize = 25 * 1024 * 1024,       // 25MB
+      maxMultipartSize = 200 * 1024 * 1024, // 200MB
+      maxFileSize = 100 * 1024 * 1024,      // 100MB
+      maxFileCount = 50
     )
   }
 
@@ -126,6 +137,34 @@ object BodyParser {
         .map(_.split(";")(0).trim.toLowerCase) // Remove charset, etc.
     }
 
+    /** Extract the boundary parameter from multipart Content-Type header.
+      *
+      * Example: multipart/form-data;
+      * boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+      */
+    def multipartBoundary: Option[String] = {
+      request.headers
+        .get("Content-Type")
+        .orElse(request.headers.get("content-type"))
+        .flatMap(_.headOption)
+        .flatMap { ct =>
+          // Parse parameters after the semicolon
+          ct.split(";").map(_.trim).collectFirst {
+            case param if param.toLowerCase.startsWith("boundary=") =>
+              val boundary = param.substring("boundary=".length)
+              // Remove quotes if present
+              if (
+                boundary.startsWith("\"") && boundary
+                  .endsWith("\"") && boundary.length >= 2
+              ) {
+                boundary.substring(1, boundary.length - 1)
+              } else {
+                boundary
+              }
+          }
+        }
+    }
+
     /** Check if the body size exceeds a limit.
       *
       * Note: This checks the type A's byte representation if it's Array[Byte],
@@ -192,6 +231,33 @@ object BodyParser {
             }
           }
 
+        case Some("multipart/form-data") =>
+          // Extract boundary from Content-Type
+          request.multipartBoundary match {
+            case None =>
+              ParseFailure(
+                "Missing boundary parameter in multipart Content-Type"
+              )
+
+            case Some(boundary) =>
+              if (!request.isBodyWithinLimit(config.maxMultipartSize)) {
+                BodyTooLarge
+              } else {
+                MultipartParser.parseMultipart(
+                  request.body,
+                  boundary,
+                  config
+                ) match {
+                  case Success(multipartData) =>
+                    // For parseBodyAuto, return only the text fields (Left side)
+                    // Use parseMultipartBody() to get the full MultipartData with files
+                    ParseSuccess(Left(multipartData.fields))
+                  case Failure(e)             =>
+                    ParseFailure(e.getMessage)
+                }
+              }
+          }
+
         case _ => UnsupportedContentType
       }
     }
@@ -235,6 +301,39 @@ object BodyParser {
           case Success(value) => ParseSuccess(value)
           case Failure(e)     => ParseFailure(e.getMessage)
         }
+      }
+    }
+
+    /** Parse multipart/form-data body with size limits.
+      *
+      * Returns the full MultipartData including both text fields and uploaded
+      * files.
+      *
+      * @param config
+      *   Parser configuration with multipart limits
+      * @return
+      *   ParseResult with the multipart data or error
+      */
+    def parseMultipartBody(
+        config: ParserConfig = ParserConfig.default
+    ): ParseResult[MultipartData] = {
+      request.multipartBoundary match {
+        case None =>
+          ParseFailure("Missing boundary parameter in multipart Content-Type")
+
+        case Some(boundary) =>
+          if (!request.isBodyWithinLimit(config.maxMultipartSize)) {
+            BodyTooLarge
+          } else {
+            MultipartParser.parseMultipart(
+              request.body,
+              boundary,
+              config
+            ) match {
+              case Success(data) => ParseSuccess(data)
+              case Failure(e)    => ParseFailure(e.getMessage)
+            }
+          }
       }
     }
   }
