@@ -385,6 +385,6 @@ case class DatabaseActor() extends Actor {
 
 ## Next Steps
 
-- Learn about [Advanced Features](advanced.md) for supervision strategies and mailbox types
-- Explore the [EventBus](eventbus.md) for simpler pub/sub patterns
-- Return to [Keanu Overview](index.md)
+- Learn about [Advanced Features](/keanu/advanced) for supervision strategies and mailbox types
+- Explore the [EventBus](/keanu/eventbus) for simpler pub/sub patterns
+- Return to [Keanu Overview](/keanu)

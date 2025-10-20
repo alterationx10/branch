@@ -79,8 +79,8 @@ myapp greet --help           # Show greet command help
 
 ## Documentation
 
-- **[Commands and Flags](commands-and-flags.md)** - Building commands, using flags and arguments, CommandContext
-- **[Migration Guide](migration.md)** - Moving from traditional to modern approach
+- **[Commands and Flags](/ursula/commands-and-flags)** - Building commands, using flags and arguments, CommandContext
+- **[Migration Guide](/ursula/migration)** - Moving from traditional to modern approach
 
 ## Anatomy of the Framework
 
@@ -123,5 +123,5 @@ Each example is fully documented and runnable with `sbt`.
 
 ## Next Steps
 
-- Learn about [Commands and Flags](commands-and-flags.md)
-- Read the [Migration Guide](migration.md) if updating existing code
+- Learn about [Commands and Flags](/ursula/commands-and-flags)
+- Read the [Migration Guide](/ursula/migration) if updating existing code

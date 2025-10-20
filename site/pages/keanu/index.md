@@ -17,9 +17,9 @@ This module provides a typed EventBus implementation and a local ActorSystem for
 
 Keanu consists of two major components:
 
-- **[EventBus](eventbus.md)** - Publish-subscribe messaging system with typed messages and optional topic filtering
-- **[ActorSystem](actors.md)** - Local actor-based concurrency with supervision and lifecycle management
-- **[Advanced Features](advanced.md)** - Supervision strategies, mailbox types, dead letters, and lifecycle management
+- **[EventBus](/keanu/eventbus)** - Publish-subscribe messaging system with typed messages and optional topic filtering
+- **[ActorSystem](/keanu/actors)** - Local actor-based concurrency with supervision and lifecycle management
+- **[Advanced Features](/keanu/advanced)** - Supervision strategies, mailbox types, dead letters, and lifecycle management
 
 ## Quick Start
 
@@ -81,12 +81,12 @@ system.tell[CounterActor]("counter1", "get")
 
 ## Documentation
 
-- **[EventBus](eventbus.md)** - Publish-subscribe messaging system
-- **[ActorSystem](actors.md)** - Actor creation, TypedActor, StatefulActor
-- **[Advanced Features](advanced.md)** - Supervision, mailboxes, and lifecycle management
+- **[EventBus](/keanu/eventbus)** - Publish-subscribe messaging system
+- **[ActorSystem](/keanu/actors)** - Actor creation, TypedActor, StatefulActor
+- **[Advanced Features](/keanu/advanced)** - Supervision, mailboxes, and lifecycle management
 
 ## Next Steps
 
-- Learn about the [EventBus](eventbus.md)
-- Explore the [ActorSystem](actors.md)
-- Dive into [Advanced Features](advanced.md)
+- Learn about the [EventBus](/keanu/eventbus)
+- Explore the [ActorSystem](/keanu/actors)
+- Dive into [Advanced Features](/keanu/advanced)

@@ -427,6 +427,6 @@ request.contentType match {
 
 ## Next Steps
 
-- Learn about [Streaming](streaming.md) for large file uploads
-- Explore [Middleware](middleware.md) for request processing
-- Return to [HTTP Server](server.md)
+- Learn about [Streaming](/spider/streaming) for large file uploads
+- Explore [Middleware](/spider/middleware) for request processing
+- Return to [HTTP Server](/spider/server)

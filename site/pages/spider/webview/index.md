@@ -212,12 +212,12 @@ val server = WebViewServer()
 
 ## Documentation
 
-- **[HTML DSL](html-dsl.md)** - Type-safe HTML construction with tags, attributes, and components
-- **[Styling](styling.md)** - CSS-in-Scala with StyleSheet and CSS utilities
-- **[Advanced Topics](advanced.md)** - Lifecycle hooks, error boundaries, actor communication, and DevTools
+- **[HTML DSL](/spider/webview/html-dsl)** - Type-safe HTML construction with tags, attributes, and components
+- **[Styling](/spider/webview/styling)** - CSS-in-Scala with StyleSheet and CSS utilities
+- **[Advanced Topics](/spider/webview/advanced)** - Lifecycle hooks, error boundaries, actor communication, and DevTools
 
 ## Next Steps
 
-- Learn about the [HTML DSL](html-dsl.md) for building UIs
-- Explore [Styling](styling.md) for CSS-in-Scala
-- Dive into [Advanced Topics](advanced.md) for lifecycle hooks and actor integration
+- Learn about the [HTML DSL](/spider/webview/html-dsl) for building UIs
+- Explore [Styling](/spider/webview/styling) for CSS-in-Scala
+- Dive into [Advanced Topics](/spider/webview/advanced) for lifecycle hooks and actor integration

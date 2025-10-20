@@ -162,6 +162,6 @@ ChatEventBus.publish(
 
 ## Next Steps
 
-- Explore the [ActorSystem](actors.md) for more complex concurrent patterns
-- Learn about [Advanced Features](advanced.md)
-- Return to [Keanu Overview](index.md)
+- Explore the [ActorSystem](/keanu/actors) for more complex concurrent patterns
+- Learn about [Advanced Features](/keanu/advanced)
+- Return to [Keanu Overview](/keanu)

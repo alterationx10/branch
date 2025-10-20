@@ -189,6 +189,6 @@ ws.onerror = (error) => {
 
 ## Next Steps
 
-- Build HTTP applications with the [HTTP Server](server.md)
-- Create reactive UIs with [WebView](webview/) which uses WebSockets internally
-- Make HTTP requests with the [HTTP Client](client.md)
+- Build HTTP applications with the [HTTP Server](/spider/server)
+- Create reactive UIs with [WebView](/spider/webview) which uses WebSockets internally
+- Make HTTP requests with the [HTTP Client](/spider/client)

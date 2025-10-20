@@ -21,10 +21,10 @@ Spider is a lightweight HTTP framework with a custom HTTP/1.1 server implementat
 
 Spider consists of several major components:
 
-- **[HTTP Server](server.md)** - Custom HTTP/1.1 server with routing, static file serving, and security features
-- **[HTTP Client](client.md)** - Client API built on `java.net.http.HttpClient`
-- **[WebSocket Support](websockets.md)** - Full WebSocket implementation with lifecycle management
-- **[WebView Framework](webview/)** - Server-side reactive UI framework inspired by Phoenix LiveView
+- **[HTTP Server](/spider/server)** - Custom HTTP/1.1 server with routing, static file serving, and security features
+- **[HTTP Client](/spider/client)** - Client API built on `java.net.http.HttpClient`
+- **[WebSocket Support](/spider/websockets)** - Full WebSocket implementation with lifecycle management
+- **[WebView Framework](/spider/webview/)** - Server-side reactive UI framework inspired by Phoenix LiveView
 
 ## Quick Start
 
@@ -101,22 +101,22 @@ class CounterWebView extends WebView[CounterState, CounterEvent] {
 ## Documentation
 
 ### Core Server
-- **[HTTP Server](server.md)** - SpiderServer, RequestHandler, routing, file serving, and security configuration
-- **[HTTP Client](client.md)** - Making HTTP requests with the client API
-- **[WebSocket Support](websockets.md)** - WebSocket handlers, connections, and protocol details
+- **[HTTP Server](/spider/server)** - SpiderServer, RequestHandler, routing, file serving, and security configuration
+- **[HTTP Client](/spider/client)** - Making HTTP requests with the client API
+- **[WebSocket Support](/spider/websockets)** - WebSocket handlers, connections, and protocol details
 
 ### Advanced Features
-- **[Middleware](middleware.md)** - Request/response processing, CORS, sessions, CSRF, compression, rate limiting
-- **[Cookies & Sessions](cookies-sessions.md)** - Cookie handling and session management
-- **[Body Parsing](body-parsing.md)** - JSON, forms, and multipart file uploads
-- **[Streaming](streaming.md)** - Streaming requests, responses, and Server-Sent Events (SSE)
-- **[Advanced Routing](routing.md)** - Path parameters, query strings, and routing helpers
+- **[Middleware](/spider/middleware)** - Request/response processing, CORS, sessions, CSRF, compression, rate limiting
+- **[Cookies & Sessions](/spider/cookies-sessions)** - Cookie handling and session management
+- **[Body Parsing](/spider/body-parsing)** - JSON, forms, and multipart file uploads
+- **[Streaming](/spider/streaming)** - Streaming requests, responses, and Server-Sent Events (SSE)
+- **[Advanced Routing](/spider/routing)** - Path parameters, query strings, and routing helpers
 
 ### WebView Framework
-- **[WebView Overview](webview/)** - Introduction to the reactive UI framework
-- **[HTML DSL](webview/html-dsl.md)** - Type-safe HTML construction with tags, attributes, and components
-- **[Styling](webview/styling.md)** - CSS-in-Scala with StyleSheet and CSS utilities
-- **[Advanced Topics](webview/advanced.md)** - Lifecycle hooks, error boundaries, actor communication, and DevTools
+- **[WebView Overview](/spider/webview/)** - Introduction to the reactive UI framework
+- **[HTML DSL](/spider/webview/html-dsl)** - Type-safe HTML construction with tags, attributes, and components
+- **[Styling](/spider/webview/styling)** - CSS-in-Scala with StyleSheet and CSS utilities
+- **[Advanced Topics](/spider/webview/advanced)** - Lifecycle hooks, error boundaries, actor communication, and DevTools
 
 ## Features
 

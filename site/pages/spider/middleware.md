@@ -448,6 +448,6 @@ val handler = MyHandler().withMiddleware(middleware)
 
 ## Next Steps
 
-- Learn about [Cookies and Sessions](cookies-sessions.md)
-- Explore [Request/Response Parsing](body-parsing.md)
-- Return to [HTTP Server](server.md)
+- Learn about [Cookies and Sessions](/spider/cookies-sessions)
+- Explore [Request/Response Parsing](/spider/body-parsing)
+- Return to [HTTP Server](/spider/server)

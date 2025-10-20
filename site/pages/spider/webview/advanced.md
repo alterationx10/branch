@@ -474,6 +474,6 @@ class TodoWebView extends WebView[TodoState, TodoEvent] {
 
 ## Next Steps
 
-- Learn about the [HTML DSL](html-dsl.md) for building UIs
-- Explore [Styling](styling.md) for CSS-in-Scala
-- Return to [WebView Overview](index.md)
+- Learn about the [HTML DSL](/spider/webview/html-dsl) for building UIs
+- Explore [Styling](/spider/webview/styling) for CSS-in-Scala
+- Return to [WebView Overview](/spider/webview)

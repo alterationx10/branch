@@ -241,5 +241,5 @@ You can migrate at your own pace, or not at all!
 
 ## Next Steps
 
-- Learn more about [Commands and Flags](commands-and-flags.md)
-- Return to [Ursula Overview](index.md)
+- Learn more about [Commands and Flags](/ursula/commands-and-flags)
+- Return to [Ursula Overview](/ursula)

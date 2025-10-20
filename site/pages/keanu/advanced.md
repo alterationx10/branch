@@ -283,6 +283,6 @@ case class SessionActor(authService: AuthService)
 
 ## Next Steps
 
-- Explore the [EventBus](eventbus.md) for simpler pub/sub patterns
-- Learn about [ActorSystem basics](actors.md)
-- Return to [Keanu Overview](index.md)
+- Explore the [EventBus](/keanu/eventbus) for simpler pub/sub patterns
+- Learn about [ActorSystem basics](/keanu/actors)
+- Return to [Keanu Overview](/keanu)

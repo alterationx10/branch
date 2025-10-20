@@ -172,6 +172,6 @@ println(getResponse.body())
 
 ## Next Steps
 
-- Build web applications with the [HTTP Server](server.md)
-- Add real-time features with [WebSocket Support](websockets.md)
-- Create reactive UIs with [WebView](webview/)
+- Build web applications with the [HTTP Server](/spider/server)
+- Add real-time features with [WebSocket Support](/spider/websockets)
+- Create reactive UIs with [WebView](/spider/webview/)

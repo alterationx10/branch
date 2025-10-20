@@ -233,6 +233,6 @@ val rateLimitPolicy = RateLimitPolicy[WebSearch](
 
 ## Next Steps
 
-- Browse [Provided tools](provided-tools.md)
-- Learn about the [Tool system](tools.md)
-- Explore [Agents](agents.md)
+- Browse [Provided tools](/hollywood/provided-tools)
+- Learn about the [Tool system](/hollywood/tools)
+- Explore [Agents](/hollywood/agents)
