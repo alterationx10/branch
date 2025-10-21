@@ -109,7 +109,7 @@ case class FileHandler(
 
     // Check if file exists
     if (!file.exists() || !file.isFile) {
-      return Response(404, body = new File(""))
+      return Response(404, body = new File("")).textContent
     }
 
     // Generate ETag
