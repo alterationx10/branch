@@ -42,7 +42,7 @@ object CommandContextSpec {
     Arguments.int("port", "Server port", default = Some(8080))
   val PathArg =
     Arguments.path("path", "File path")
-  val EnvArg = Arguments.string(
+  val EnvArg  = Arguments.string(
     "env",
     "Environment",
     options = Some(Set("dev", "test", "prod"))

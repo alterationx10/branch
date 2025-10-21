@@ -26,14 +26,14 @@ import dev.alteration.branch.ursula.args.{Argument, Flag}
   * }}}
   */
 class CommandBuilder(trigger: String) {
-  private var _description: String                  = ""
-  private var _usage: String                        = trigger
-  private var _examples: Seq[String]                = Seq.empty
-  private var _flags: Seq[Flag[?]]                  = Seq.empty
-  private var _arguments: Seq[Argument[?]]          = Seq.empty
-  private var _strict: Boolean                      = true
-  private var _hidden: Boolean                      = false
-  private var _isDefaultCommand: Boolean            = false
+  private var _description: String                    = ""
+  private var _usage: String                          = trigger
+  private var _examples: Seq[String]                  = Seq.empty
+  private var _flags: Seq[Flag[?]]                    = Seq.empty
+  private var _arguments: Seq[Argument[?]]            = Seq.empty
+  private var _strict: Boolean                        = true
+  private var _hidden: Boolean                        = false
+  private var _isDefaultCommand: Boolean              = false
   private var _action: Option[CommandContext => Unit] = None
 
   /** Set the command description.

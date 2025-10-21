@@ -6,9 +6,9 @@ import dev.alteration.branch.ursula.args.{Argument, Flag}
   *
   * Provides three approaches to command creation:
   *
-  * 1. Traditional (extend Command trait directly) - for maximum control
-  * 2. Inline factory (Commands.create) - for concise definitions
-  * 3. Builder pattern (Commands.builder) - for fluent, discoverable API
+  *   1. Traditional (extend Command trait directly) - for maximum control 2.
+  *      Inline factory (Commands.create) - for concise definitions 3. Builder
+  *      pattern (Commands.builder) - for fluent, discoverable API
   *
   * Example usage:
   * {{{
@@ -38,8 +38,8 @@ object Commands {
 
   /** Create a command with all options specified inline.
     *
-    * This is the most direct factory method, allowing all command properties
-    * to be specified as named parameters.
+    * This is the most direct factory method, allowing all command properties to
+    * be specified as named parameters.
     *
     * @param trigger
     *   The command trigger (what the user types)
@@ -87,15 +87,15 @@ object Commands {
     val _action           = action
 
     new Command {
-      override val trigger: String                 = _trigger
-      override val description: String             = _description
-      override val usage: String                   = _usage
-      override val examples: Seq[String]           = _examples
-      override val flags: Seq[Flag[?]]             = _flags
-      override val arguments: Seq[Argument[?]]     = _arguments
-      override val strict: Boolean                 = _strict
-      override val hidden: Boolean                 = _hidden
-      override val isDefaultCommand: Boolean       = _isDefaultCommand
+      override val trigger: String                              = _trigger
+      override val description: String                          = _description
+      override val usage: String                                = _usage
+      override val examples: Seq[String]                        = _examples
+      override val flags: Seq[Flag[?]]                          = _flags
+      override val arguments: Seq[Argument[?]]                  = _arguments
+      override val strict: Boolean                              = _strict
+      override val hidden: Boolean                              = _hidden
+      override val isDefaultCommand: Boolean                    = _isDefaultCommand
       override def actionWithContext(ctx: CommandContext): Unit = _action(ctx)
     }
   }

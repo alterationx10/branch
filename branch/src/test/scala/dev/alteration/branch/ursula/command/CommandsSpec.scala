@@ -1,7 +1,7 @@
 package dev.alteration.branch.ursula.command
 
 import dev.alteration.branch.macaroni.runtimes.BranchExecutors
-import dev.alteration.branch.ursula.args.{Flags, Arguments}
+import dev.alteration.branch.ursula.args.{Arguments, Flags}
 import munit.*
 
 import scala.concurrent.ExecutionContext
@@ -117,7 +117,8 @@ class CommandsSpec extends FunSuite {
   }
 
   test("CommandBuilder builds command with all properties") {
-    val cmd = Commands.builder("test")
+    val cmd = Commands
+      .builder("test")
       .description("Test command")
       .usage("test -n <name>")
       .example("test -n Alice")
@@ -142,7 +143,8 @@ class CommandsSpec extends FunSuite {
   }
 
   test("CommandBuilder.example adds examples incrementally") {
-    val cmd = Commands.builder("test")
+    val cmd = Commands
+      .builder("test")
       .description("Test command")
       .example("example 1")
       .example("example 2")
@@ -154,7 +156,8 @@ class CommandsSpec extends FunSuite {
   }
 
   test("CommandBuilder.examples sets all examples at once") {
-    val cmd = Commands.builder("test")
+    val cmd = Commands
+      .builder("test")
       .description("Test command")
       .examples(Seq("example 1", "example 2"))
       .action { ctx => }
@@ -168,7 +171,8 @@ class CommandsSpec extends FunSuite {
     val flag2 = Flags.string("flag2", "f2", "Flag 2")
     val flag3 = Flags.string("flag3", "f3", "Flag 3")
 
-    val cmd = Commands.builder("test")
+    val cmd = Commands
+      .builder("test")
       .description("Test command")
       .withFlags(flag1)
       .withFlags(flag2, flag3)
@@ -182,7 +186,8 @@ class CommandsSpec extends FunSuite {
     val flag1 = Flags.string("flag1", "f1", "Flag 1")
     val flag2 = Flags.string("flag2", "f2", "Flag 2")
 
-    val cmd = Commands.builder("test")
+    val cmd = Commands
+      .builder("test")
       .description("Test command")
       .withFlags(flag1)
       .flags(Seq(flag2))
@@ -196,7 +201,8 @@ class CommandsSpec extends FunSuite {
     val arg1 = Arguments.string("arg1", "Argument 1")
     val arg2 = Arguments.string("arg2", "Argument 2")
 
-    val cmd = Commands.builder("test")
+    val cmd = Commands
+      .builder("test")
       .description("Test command")
       .withArguments(arg1)
       .withArguments(arg2)
@@ -210,7 +216,8 @@ class CommandsSpec extends FunSuite {
     val arg1 = Arguments.string("arg1", "Argument 1")
     val arg2 = Arguments.string("arg2", "Argument 2")
 
-    val cmd = Commands.builder("test")
+    val cmd = Commands
+      .builder("test")
       .description("Test command")
       .withArguments(arg1)
       .arguments(Seq(arg2))
@@ -221,7 +228,8 @@ class CommandsSpec extends FunSuite {
   }
 
   test("CommandBuilder.visible sets hidden to false") {
-    val cmd = Commands.builder("test")
+    val cmd = Commands
+      .builder("test")
       .description("Test command")
       .hidden()
       .visible()
@@ -233,7 +241,8 @@ class CommandsSpec extends FunSuite {
 
   test("CommandBuilder throws if description not set") {
     intercept[IllegalStateException] {
-      Commands.builder("test")
+      Commands
+        .builder("test")
         .action { ctx => }
         .build()
     }
@@ -241,14 +250,16 @@ class CommandsSpec extends FunSuite {
 
   test("CommandBuilder throws if action not set") {
     intercept[IllegalStateException] {
-      Commands.builder("test")
+      Commands
+        .builder("test")
         .description("Test command")
         .build()
     }
   }
 
   test("CommandBuilder defaults to trigger as usage") {
-    val cmd = Commands.builder("test")
+    val cmd = Commands
+      .builder("test")
       .description("Test command")
       .action { ctx => }
       .build()
@@ -257,7 +268,8 @@ class CommandsSpec extends FunSuite {
   }
 
   test("CommandBuilder defaults to strict mode") {
-    val cmd = Commands.builder("test")
+    val cmd = Commands
+      .builder("test")
       .description("Test command")
       .action { ctx => }
       .build()
@@ -283,7 +295,8 @@ class CommandsSpec extends FunSuite {
 
   test("builder-created command can be executed via lazyAction") {
     var executed = false
-    val cmd      = Commands.builder("test")
+    val cmd      = Commands
+      .builder("test")
       .description("Test command")
       .action { ctx =>
         executed = true
@@ -318,7 +331,8 @@ class CommandsSpec extends FunSuite {
     val messageArg = Arguments.string("message", "Message")
     var captured   = ""
 
-    val cmd = Commands.builder("echo")
+    val cmd = Commands
+      .builder("echo")
       .description("Echo a message")
       .withArguments(messageArg)
       .action { ctx =>

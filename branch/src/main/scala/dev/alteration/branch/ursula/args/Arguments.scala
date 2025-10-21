@@ -45,12 +45,12 @@ object Arguments {
     val _options     = options
 
     new Argument[String] {
-      override val name: String                     = _name
-      override val description: String              = _description
-      override val default: Option[String]          = _default
-      override val required: Boolean                = _required
-      override val hidden: Boolean                  = _hidden
-      override val options: Option[Set[String]]     = _options
+      override val name: String                           = _name
+      override val description: String                    = _description
+      override val default: Option[String]                = _default
+      override val required: Boolean                      = _required
+      override val hidden: Boolean                        = _hidden
+      override val options: Option[Set[String]]           = _options
       override def parse: PartialFunction[String, String] = { case s => s }
     }
   }
@@ -87,12 +87,12 @@ object Arguments {
     val _options     = options
 
     new Argument[Int] {
-      override val name: String                 = _name
-      override val description: String          = _description
-      override val default: Option[Int]         = _default
-      override val required: Boolean            = _required
-      override val hidden: Boolean              = _hidden
-      override val options: Option[Set[Int]]    = _options
+      override val name: String                        = _name
+      override val description: String                 = _description
+      override val default: Option[Int]                = _default
+      override val required: Boolean                   = _required
+      override val hidden: Boolean                     = _hidden
+      override val options: Option[Set[Int]]           = _options
       override def parse: PartialFunction[String, Int] = { case s => s.toInt }
     }
   }
@@ -129,12 +129,12 @@ object Arguments {
     val _options     = options
 
     new Argument[Double] {
-      override val name: String                    = _name
-      override val description: String             = _description
-      override val default: Option[Double]         = _default
-      override val required: Boolean               = _required
-      override val hidden: Boolean                 = _hidden
-      override val options: Option[Set[Double]]    = _options
+      override val name: String                           = _name
+      override val description: String                    = _description
+      override val default: Option[Double]                = _default
+      override val required: Boolean                      = _required
+      override val hidden: Boolean                        = _hidden
+      override val options: Option[Set[Double]]           = _options
       override def parse: PartialFunction[String, Double] = { case s =>
         s.toDouble
       }
