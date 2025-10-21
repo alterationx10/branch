@@ -3,6 +3,7 @@ package dev.alteration.branch.spider.server
 import dev.alteration.branch.macaroni.runtimes.BranchExecutors
 import dev.alteration.branch.spider.common.HttpMethod
 import dev.alteration.branch.spider.server.RequestHandler.given
+import dev.alteration.branch.spider.server.FileHandler.given
 import dev.alteration.branch.spider.websocket.{
   WebSocketConnection,
   WebSocketHandler,
@@ -10,7 +11,7 @@ import dev.alteration.branch.spider.websocket.{
 }
 import dev.alteration.branch.friday.http.JsonBody
 
-import java.io.OutputStream
+import java.io.{File, OutputStream}
 import java.net.{ServerSocket, Socket, SocketTimeoutException}
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.util.{Failure, Success, Try, Using}
@@ -265,6 +266,11 @@ class SpiderServer(
             response.asInstanceOf[Response[Array[Byte]]],
             output
           )
+        case _: File               =>
+          HttpWriter.write(
+            response.asInstanceOf[Response[File]],
+            output
+          )
         case jsonBody: JsonBody[?] =>
           // JsonBody wraps bytes, extract them and write
           val bytesResponse = Response(
@@ -340,6 +346,11 @@ class SpiderServer(
         case _: Array[Byte]       =>
           HttpWriter.write(
             response.asInstanceOf[Response[Array[Byte]]],
+            output
+          )
+        case _: File              =>
+          HttpWriter.write(
+            response.asInstanceOf[Response[File]],
             output
           )
         case _                    =>
