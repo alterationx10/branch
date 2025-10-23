@@ -1,0 +1,15 @@
+<nav>
+    <ul>
+        <li>
+            <a href="index.html" class="contrast">
+                <img src="/img/logo.png" height="64" width="64" style="vertical-align:middle">
+                <strong>{{config.siteTitle}}</strong>
+            </a>
+        </li>
+    </ul>
+    <ul>
+        {{#config.navigation}}
+        <li><a href="{{href}}" class="contrast">{{label}}</a></li>
+        {{/config.navigation}}
+    </ul>
+</nav>

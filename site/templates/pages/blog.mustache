@@ -1,0 +1,25 @@
+<article>
+    <header>
+        <hgroup>
+            <h1>{{content.fm.title}}</h1>
+            {{#content.fm.description}}
+            <p>{{content.fm.description}}</p>
+            {{/content.fm.description}}
+        </hgroup>
+        <p>
+            <small>
+                {{#content.fm.author}}By {{content.fm.author}}{{/content.fm.author}}{{#content.fm.author}}{{#content.fm.published}} • {{/content.fm.published}}{{#content.fm.lastUpdated}}{{^content.fm.published}} • {{/content.fm.published}}{{/content.fm.lastUpdated}}{{/content.fm.author}}{{#content.fm.published}}Published {{content.fm.published}}{{/content.fm.published}}{{#content.fm.lastUpdated}}{{^content.fm.published}}Updated {{content.fm.lastUpdated}}{{/content.fm.published}}{{/content.fm.lastUpdated}}
+            </small>
+        </p>
+        <p>
+            {{#content.fm.tags}}
+            <a href="/tags#{{.}}" class="secondary">
+                <small>{{.}}</small>
+            </a>
+            {{/content.fm.tags}}
+        </p>
+    </header>
+    <div>
+        {{&content.content}}
+    </div>
+</article>

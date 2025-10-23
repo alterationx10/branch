@@ -1,0 +1,36 @@
+<div id="tags-content">
+    <h1>Browse by Tag</h1>
+    {{#content}}
+    <section id="{{tag}}">
+        <a href="#{{tag}}" class="contrast">
+            <h2>{{tag}}</h2>
+        </a>
+        {{#articles}}
+        <article>
+            <hgroup>
+                <a href="{{href}}" class="contrast">
+                    <h3>{{fm.title}}</h3>
+                </a>
+                {{#fm.description}}
+                <p>{{fm.description}}</p>
+                {{/fm.description}}
+            </hgroup>
+            <p>
+                <small>
+                    {{#fm.author}}By {{fm.author}} • {{/fm.author}}
+                    {{#fm.published}}{{fm.published}}{{/fm.published}}
+                </small>
+            </p>
+            <p>{{summary}}</p>
+            <footer>
+                {{#fm.tags}}
+                <a href="#{{.}}" class="secondary">
+                    <small>{{.}}</small>
+                </a>
+                {{/fm.tags}}
+            </footer>
+        </article>
+        {{/articles}}
+    </section>
+    {{/content}}
+</div>

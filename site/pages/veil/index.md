@@ -46,7 +46,7 @@ val config: Try[AppConfig] = Config.of[AppConfig].fromResource("app-config.json"
 val config: Try[AppConfig] = Config.of[AppConfig].fromFile("config/app-config.json")
 ```
 
-The `Config` type-class will automatically handle JSON parsing and mapping to your case class. It uses the [Friday JSON library](/friday/json) under the hood.
+The `Config` type-class will automatically handle JSON parsing and mapping to your case class. It uses the [Friday JSON library](/friday) under the hood.
 
 ### Auto-Derivation
 
