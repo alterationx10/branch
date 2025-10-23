@@ -146,11 +146,11 @@ class PiggyPostgresqlSpec extends PGContainerSuite {
 
     val now = Instant
       .now()
-      .minusSeconds(1) // Help to avoid a race condition on fast tests
+      .minusSeconds(2) // Help to avoid a race condition on fast tests
     val uuid = Sql.statement("SELECT now()", _.parsed[Instant]).executePool
     assert(uuid.isSuccess)
     assert(uuid.get.nonEmpty)
-    assert(uuid.get.get.isAfter(now))
+    assert(uuid.get.get.isAfter(now), s"${uuid} :: ${now}")
     assert(
       uuid.get.exists(i => java.time.Duration.between(i, now).toMillis < 1000)
     )
