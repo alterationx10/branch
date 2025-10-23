@@ -1,1 +1,51 @@
-{"siteTitle": "My Blarg! Site"}
+{
+  "siteTitle": "Branch Framework",
+  "author": "Mark Rudolph",
+  "navigation": [
+    {
+      "label": "Lzy",
+      "href": "/lzy"
+    },
+    {
+      "label": "Spider",
+      "href": "/spider"
+    },
+    {
+      "label": "Piggy",
+      "href": "/piggy"
+    },
+    {
+      "label": "Friday",
+      "href": "/friday"
+    },
+    {
+      "label": "Macaroni",
+      "href": "/macaroni"
+    },
+    {
+      "label": "Veil",
+      "href": "/veil"
+    },
+    {
+      "label": "Blammo",
+      "href": "/blammo"
+    },
+    {
+      "label": "Keanu",
+      "href": "/keanu"
+    },
+    {
+      "label": "Ursula",
+      "href": "/ursula"
+    },
+    {
+      "label": "Mustachio",
+      "href": "/mustachio"
+    },
+    {
+      "label": "Holywood",
+      "href": "/hollywood"
+    }
+  ],
+  "dynamic": {}
+}

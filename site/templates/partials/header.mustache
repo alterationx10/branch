@@ -1,0 +1,18 @@
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark"/>
+    <link rel="icon" href="/img/favicon.png"/>
+    <link rel="mask-icon" href="/img/logo.png" color="white">
+    <link
+            rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.violet.min.css"
+    >
+
+    <title>
+        {{content.fm.title}}{{^content.fm.title}}{{config.siteTitle}}{{/content.fm.title}}
+    </title>
+    <meta name="keywords" content="{{content.fm.tags}}">
+    <meta name="author" content="{{content.fm.author}}{{^content.fm.author}}{{config.author}}{{/content.fm.author}}">
+    <meta name="description" content="{{content.fm.description}}">
+</head>

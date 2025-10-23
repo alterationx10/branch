@@ -1,0 +1,22 @@
+<nav>
+    <ul>
+        <li>
+            <a href="index.html" class="contrast">
+                <img src="/img/logo.png" height="64" width="64" style="vertical-align:middle">
+                <strong>{{config.siteTitle}}</strong>
+            </a>
+        </li>
+    </ul>
+    <ul>
+        <li>
+            <details class="dropdown">
+                <summary>Explore</summary>
+                <ul>
+                    {{#config.navigation}}
+                    <li><a href="{{href}}">{{label}}</a></li>
+                    {{/config.navigation}}
+                </ul>
+            </details>
+        </li>
+    </ul>
+</nav>

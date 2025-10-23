@@ -176,19 +176,28 @@ class SpiderServer(
               }
 
             case Failure(e) =>
-              // Failed to parse request, send 400 Bad Request
-              println(s"Failed to parse request: ${e.getMessage}")
-              val errorResponse =
-                badRequest(s"Invalid HTTP request: ${e.getMessage}")
-              HttpWriter.write(errorResponse, output)
-              keepAlive = false
+              // Check if this is a benign connection error (client closed early)
+              if (isConnectionError(e)) {
+                // Client closed connection - exit silently
+                keepAlive = false
+              } else {
+                // Failed to parse request, send 400 Bad Request
+                println(s"Failed to parse request: ${e.getMessage}")
+                val errorResponse =
+                  badRequest(s"Invalid HTTP request: ${e.getMessage}")
+                HttpWriter.write(errorResponse, output)
+                keepAlive = false
+              }
           }
         } catch {
           case _: SocketTimeoutException =>
             println("Socket read timeout")
             keepAlive = false
           case e: Exception              =>
-            println(s"Error processing request: ${e.getMessage}")
+            // Check if this is a benign connection error
+            if (!isConnectionError(e)) {
+              println(s"Error processing request: ${e.getMessage}")
+            }
             keepAlive = false
         }
       }
@@ -481,6 +490,31 @@ class SpiderServer(
     connectionHeader match {
       case Some("close") => false
       case _             => true // HTTP/1.1 defaults to keep-alive
+    }
+  }
+
+  /** Check if an exception is a connection-related error that should be handled
+    * silently (no logging, no response attempt).
+    *
+    * These errors are typically caused by clients closing connections early,
+    * which is normal behavior and not indicative of a server problem.
+    *
+    * @param error
+    *   The exception to check
+    * @return
+    *   true if this is a benign connection error
+    */
+  private def isConnectionError(error: Throwable): Boolean = {
+    error match {
+      case se: java.net.SocketException =>
+        val msg = se.getMessage
+        msg != null && (
+          msg.contains("Connection reset") ||
+            msg.contains("Broken pipe") ||
+            msg.contains("Connection reset by peer") ||
+            msg.contains("Socket closed")
+        )
+      case _                            => false
     }
   }
 

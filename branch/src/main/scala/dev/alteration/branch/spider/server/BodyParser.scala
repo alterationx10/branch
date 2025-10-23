@@ -26,7 +26,7 @@ object BodyParser {
       maxFileSize: Long = 20 * 1024 * 1024,      // 20MB per file
       maxFileCount: Int = 10,                    // Max uploaded files
       allowedFileTypes: Option[Set[String]] =
-        None                                     // e.g., Some(Set("image/jpeg", "image/png"))
+        None // e.g., Some(Set("image/jpeg", "image/png"))
   )
 
   object ParserConfig {
