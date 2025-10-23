@@ -8,8 +8,15 @@
         </li>
     </ul>
     <ul>
-        {{#config.navigation}}
-        <li><a href="{{href}}" class="contrast">{{label}}</a></li>
-        {{/config.navigation}}
+        <li>
+            <details class="dropdown">
+                <summary>Explore</summary>
+                <ul>
+                    {{#config.navigation}}
+                    <li><a href="{{href}}">{{label}}</a></li>
+                    {{/config.navigation}}
+                </ul>
+            </details>
+        </li>
     </ul>
 </nav>
