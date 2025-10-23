@@ -1,7 +1,12 @@
 package dev.alteration.branch.ursula.command
 
 import dev.alteration.branch.macaroni.runtimes.BranchExecutors
-import dev.alteration.branch.ursula.args.{Arguments, Flags}
+import dev.alteration.branch.ursula.args.{
+  Argument,
+  Arguments,
+  Flags,
+  StringFlag
+}
 import munit.*
 
 import scala.concurrent.ExecutionContext
@@ -9,8 +14,9 @@ import scala.concurrent.ExecutionContext
 class CommandsSpec extends FunSuite {
   given ExecutionContext = BranchExecutors.executionContext
 
-  val testFlag = Flags.string("name", "n", "Test flag", required = true)
-  val testArg  = Arguments.string("message", "Test argument")
+  val testFlag: StringFlag      =
+    Flags.string("name", "n", "Test flag", required = true)
+  val testArg: Argument[String] = Arguments.string("message", "Test argument")
 
   // Inline Factory Tests
 
@@ -25,7 +31,7 @@ class CommandsSpec extends FunSuite {
       strict = false,
       hidden = true,
       isDefaultCommand = true
-    ) { ctx =>
+    ) { _ =>
       // test action
     }
 
@@ -44,7 +50,7 @@ class CommandsSpec extends FunSuite {
     val cmd = Commands.create(
       trigger = "test",
       description = "Test command"
-    ) { ctx => }
+    ) { _ => }
 
     assertEquals(cmd.usage, "test")
   }
@@ -53,7 +59,7 @@ class CommandsSpec extends FunSuite {
     val cmd = Commands.create(
       trigger = "test",
       description = "Test command"
-    ) { ctx => }
+    ) { _ => }
 
     assertEquals(cmd.examples, Seq.empty)
     assertEquals(cmd.flags, Seq.empty)
@@ -64,7 +70,7 @@ class CommandsSpec extends FunSuite {
     val cmd = Commands.create(
       trigger = "test",
       description = "Test command"
-    ) { ctx => }
+    ) { _ => }
 
     assertEquals(cmd.strict, true)
     assertEquals(cmd.hidden, false)
@@ -76,7 +82,7 @@ class CommandsSpec extends FunSuite {
     val cmd      = Commands.create(
       trigger = "test",
       description = "Test command"
-    ) { ctx =>
+    ) { _ =>
       executed = true
     }
 
@@ -91,7 +97,7 @@ class CommandsSpec extends FunSuite {
       trigger = "simple",
       description = "Simple command",
       flags = Seq(testFlag)
-    ) { ctx => }
+    ) { _ => }
 
     assertEquals(cmd.trigger, "simple")
     assertEquals(cmd.description, "Simple command")
@@ -102,7 +108,7 @@ class CommandsSpec extends FunSuite {
   }
 
   test("Commands.simple with no flags or arguments") {
-    val cmd = Commands.simple("simple", "Simple command") { ctx => }
+    val cmd = Commands.simple("simple", "Simple command") { _ => }
 
     assertEquals(cmd.flags, Seq.empty)
     assertEquals(cmd.arguments, Seq.empty)
@@ -128,7 +134,7 @@ class CommandsSpec extends FunSuite {
       .strict(false)
       .hidden()
       .asDefault()
-      .action { ctx => }
+      .action { _ => }
       .build()
 
     assertEquals(cmd.trigger, "test")
@@ -149,7 +155,7 @@ class CommandsSpec extends FunSuite {
       .example("example 1")
       .example("example 2")
       .example("example 3")
-      .action { ctx => }
+      .action { _ => }
       .build()
 
     assertEquals(cmd.examples, Seq("example 1", "example 2", "example 3"))
@@ -160,7 +166,7 @@ class CommandsSpec extends FunSuite {
       .builder("test")
       .description("Test command")
       .examples(Seq("example 1", "example 2"))
-      .action { ctx => }
+      .action { _ => }
       .build()
 
     assertEquals(cmd.examples, Seq("example 1", "example 2"))
@@ -176,7 +182,7 @@ class CommandsSpec extends FunSuite {
       .description("Test command")
       .withFlags(flag1)
       .withFlags(flag2, flag3)
-      .action { ctx => }
+      .action { _ => }
       .build()
 
     assertEquals(cmd.flags, Seq(flag1, flag2, flag3))
@@ -191,7 +197,7 @@ class CommandsSpec extends FunSuite {
       .description("Test command")
       .withFlags(flag1)
       .flags(Seq(flag2))
-      .action { ctx => }
+      .action { _ => }
       .build()
 
     assertEquals(cmd.flags, Seq(flag2))
@@ -206,7 +212,7 @@ class CommandsSpec extends FunSuite {
       .description("Test command")
       .withArguments(arg1)
       .withArguments(arg2)
-      .action { ctx => }
+      .action { _ => }
       .build()
 
     assertEquals(cmd.arguments, Seq(arg1, arg2))
@@ -221,7 +227,7 @@ class CommandsSpec extends FunSuite {
       .description("Test command")
       .withArguments(arg1)
       .arguments(Seq(arg2))
-      .action { ctx => }
+      .action { _ => }
       .build()
 
     assertEquals(cmd.arguments, Seq(arg2))
@@ -233,7 +239,7 @@ class CommandsSpec extends FunSuite {
       .description("Test command")
       .hidden()
       .visible()
-      .action { ctx => }
+      .action { _ => }
       .build()
 
     assertEquals(cmd.hidden, false)
@@ -243,7 +249,7 @@ class CommandsSpec extends FunSuite {
     intercept[IllegalStateException] {
       Commands
         .builder("test")
-        .action { ctx => }
+        .action { _ => }
         .build()
     }
   }
@@ -261,7 +267,7 @@ class CommandsSpec extends FunSuite {
     val cmd = Commands
       .builder("test")
       .description("Test command")
-      .action { ctx => }
+      .action { _ => }
       .build()
 
     assertEquals(cmd.usage, "test")
@@ -271,7 +277,7 @@ class CommandsSpec extends FunSuite {
     val cmd = Commands
       .builder("test")
       .description("Test command")
-      .action { ctx => }
+      .action { _ => }
       .build()
 
     assertEquals(cmd.strict, true)
@@ -283,7 +289,7 @@ class CommandsSpec extends FunSuite {
 
   test("factory-created command can be executed via lazyAction") {
     var executed = false
-    val cmd      = Commands.simple("test", "Test command") { ctx =>
+    val cmd      = Commands.simple("test", "Test command") { _ =>
       executed = true
     }
 
@@ -298,7 +304,7 @@ class CommandsSpec extends FunSuite {
     val cmd      = Commands
       .builder("test")
       .description("Test command")
-      .action { ctx =>
+      .action { _ =>
         executed = true
       }
       .build()
