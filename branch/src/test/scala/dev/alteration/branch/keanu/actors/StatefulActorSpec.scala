@@ -178,7 +178,7 @@ class StatefulActorSpec extends FunSuite {
     latch1.await(2, SECONDS)
 
     as.tell[RestartActor]("test", Fail)
-    Thread.sleep(150) // Wait for restart
+    Thread.sleep(30) // Wait for restart
 
     as.tell[RestartActor]("test", GetCount(latch2))
     latch2.await(2, SECONDS)
@@ -236,7 +236,7 @@ class StatefulActorSpec extends FunSuite {
     latch1.await(2, SECONDS)
 
     as.tell[PersistentActor]("test", Fail)
-    Thread.sleep(150) // Wait for restart
+    Thread.sleep(30) // Wait for restart
 
     as.tell[PersistentActor]("test", GetCount(latch2))
     latch2.await(2, SECONDS)
@@ -283,7 +283,7 @@ class StatefulActorSpec extends FunSuite {
     as.tell[ParentActor]("parent", CreateChild)
     as.tell[ParentActor]("parent", CreateChild)
     as.tell[ParentActor]("parent", CreateChild)
-    Thread.sleep(100) // Let children register
+    Thread.sleep(20) // Let children register
     as.tell[ParentActor]("parent", GetChildCount(latch))
 
     latch.await(2, SECONDS)

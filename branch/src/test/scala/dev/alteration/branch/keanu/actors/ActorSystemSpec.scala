@@ -53,8 +53,7 @@ class ActorSystemSpec extends FunSuite {
     as.tell[OrderedActor]("test", "msg2")
     as.tell[OrderedActor]("test", "msg3")
 
-    // Give some time for messages to be processed
-    Thread.sleep(100)
+    // Shutdown waits for messages to be processed
     as.shutdownAwait()
 
     assertEquals(messages.toList, List("msg1", "msg2", "msg3"))
@@ -87,7 +86,7 @@ class ActorSystemSpec extends FunSuite {
 
     case class ConcurrentActor(id: Int, latch: CountDownLatch) extends Actor {
       override def onMsg: PartialFunction[Any, Any] = { case "start" =>
-        Thread.sleep(100) // Simulate some work
+        Thread.sleep(10) // Simulate some work
         latch.countDown()
         id
       }
@@ -124,7 +123,7 @@ class ActorSystemSpec extends FunSuite {
     as.tell[SelectiveActor]("test", "unhandled")
     as.tell[SelectiveActor]("test", 42)
 
-    Thread.sleep(100) // Give time for messages to be processed
+    Thread.sleep(20) // Give time for messages to be processed
 
     val deadLetters = as.getDeadLetters(10)
     assertEquals(deadLetters.size, 2, "Should have 2 unhandled messages")
@@ -155,7 +154,7 @@ class ActorSystemSpec extends FunSuite {
 
     // Send 10 unhandled messages
     (1 to 10).foreach(i => as.tell[NoOpActor]("test", s"msg$i"))
-    Thread.sleep(100)
+    Thread.sleep(20)
 
     val limited = as.getDeadLetters(5)
     assertEquals(limited.size, 5, "Should respect limit of 5")
@@ -257,7 +256,7 @@ class ActorSystemSpec extends FunSuite {
     // This should not crash the system
     as.tell[FailingActor]("failing", "message")
 
-    Thread.sleep(100) // Give time for actor to fail
+    Thread.sleep(20) // Give time for actor to fail
 
     // System should still be operational
     assert(!as.isShutdown, "System should still be running")
@@ -270,7 +269,7 @@ class ActorSystemSpec extends FunSuite {
   test("shutdownAwait should timeout if actors don't terminate") {
     case class SlowActor() extends Actor {
       override def onMsg: PartialFunction[Any, Any] = { case "slow" =>
-        Thread.sleep(5000) // Sleep longer than timeout
+        Thread.sleep(1000) // Sleep longer than timeout
         ()
       }
     }
@@ -280,9 +279,9 @@ class ActorSystemSpec extends FunSuite {
     as.registerProp(props)
 
     as.tell[SlowActor]("slow", "slow")
-    Thread.sleep(50) // Give time for message to be taken
+    Thread.sleep(10) // Give time for message to be taken
 
-    val result = as.shutdownAwait(500) // 500ms timeout
+    val result = as.shutdownAwait(200) // 200ms timeout
     assertEquals(result, false, "Shutdown should timeout and return false")
   }
 
@@ -296,7 +295,6 @@ class ActorSystemSpec extends FunSuite {
     as.registerProp(props)
 
     as.tell[FastActor]("fast", "message")
-    Thread.sleep(50)
 
     val result = as.shutdownAwait(1000)
     assertEquals(result, true, "Shutdown should complete successfully")
@@ -332,11 +330,11 @@ class ActorSystemSpec extends FunSuite {
     as.registerProp(props)
 
     as.tell[RestartActor]("test", "success")
-    Thread.sleep(50)
+    Thread.sleep(10)
     as.tell[RestartActor]("test", "fail")
-    Thread.sleep(100)
+    Thread.sleep(20)
     as.tell[RestartActor]("test", "success")
-    Thread.sleep(50)
+    Thread.sleep(10)
 
     as.shutdownAwait()
 
@@ -364,7 +362,7 @@ class ActorSystemSpec extends FunSuite {
     // Send success and fail messages together
     as.tell[StopActor]("test", "success")
     as.tell[StopActor]("test", "fail")
-    Thread.sleep(150) // Wait for processing and stop
+    Thread.sleep(30) // Wait for processing and stop
 
     as.shutdownAwait()
 
@@ -401,7 +399,7 @@ class ActorSystemSpec extends FunSuite {
     as.registerProp(props)
 
     as.tell[BackoffActor]("test", "trigger")
-    Thread.sleep(1500) // Wait for retries
+    Thread.sleep(500) // Wait for retries
 
     as.shutdownAwait()
 
@@ -442,7 +440,7 @@ class ActorSystemSpec extends FunSuite {
     as.registerProp(props)
 
     as.tell[LifecycleActor]("test", "message")
-    Thread.sleep(100)
+    Thread.sleep(20)
 
     as.shutdownAwait()
 
@@ -464,7 +462,7 @@ class ActorSystemSpec extends FunSuite {
 
     as.tell[LifecycleActor]("test", "message")
     as.tell[LifecycleActor]("test", PoisonPill)
-    Thread.sleep(100)
+    Thread.sleep(20)
 
     as.shutdownAwait()
 
@@ -497,9 +495,9 @@ class ActorSystemSpec extends FunSuite {
     as.registerProp(props)
 
     as.tell[LifecycleActor]("test", "fail")
-    Thread.sleep(150)
+    Thread.sleep(30)
     as.tell[LifecycleActor]("test", "success")
-    Thread.sleep(50)
+    Thread.sleep(10)
 
     as.shutdownAwait()
 
@@ -539,7 +537,7 @@ class ActorSystemSpec extends FunSuite {
     as.registerProp(props)
 
     as.tell[StopActor]("test", "message")
-    Thread.sleep(100)
+    Thread.sleep(20)
 
     as.shutdownAwait()
 
@@ -596,7 +594,7 @@ class ActorSystemSpec extends FunSuite {
       override def onMsg: PartialFunction[Any, Any] = {
         case "block"   =>
           // Block to let mailbox fill up
-          Thread.sleep(500)
+          Thread.sleep(100)
           receivedMessages.synchronized { receivedMessages += "block" }
         case "done"    => latch.countDown()
         case s: String =>
@@ -613,11 +611,11 @@ class ActorSystemSpec extends FunSuite {
 
     // Send blocking message first, then fill mailbox
     as.tell[BlockingActor]("test", "block")
-    Thread.sleep(50)                       // Let actor start processing
+    Thread.sleep(10)                       // Let actor start processing
     as.tell[BlockingActor]("test", "msg1")
     as.tell[BlockingActor]("test", "msg2")
     as.tell[BlockingActor]("test", "msg3") // This should be dropped
-    Thread.sleep(600)                      // Wait for block to finish
+    Thread.sleep(120)                      // Wait for block to finish
     as.tell[BlockingActor]("test", "done")
 
     latch.await(2, SECONDS)
@@ -632,7 +630,7 @@ class ActorSystemSpec extends FunSuite {
   test("BoundedMailbox with Fail should throw exception when full") {
     case class FailActor() extends Actor {
       override def onMsg: PartialFunction[Any, Any] = {
-        case "block" => Thread.sleep(200)
+        case "block" => Thread.sleep(50)
         case _       => ()
       }
     }
@@ -646,7 +644,7 @@ class ActorSystemSpec extends FunSuite {
 
     // Send blocking message and fill mailbox
     as.tell[FailActor]("test", "block")
-    Thread.sleep(50)
+    Thread.sleep(10)
     as.tell[FailActor]("test", "msg1")
     as.tell[FailActor]("test", "msg2")
 
@@ -656,7 +654,7 @@ class ActorSystemSpec extends FunSuite {
     }
 
     // Wait for block to finish processing before shutdown
-    Thread.sleep(300)
+    Thread.sleep(60)
     as.shutdownAwait()
   }
 
@@ -695,7 +693,7 @@ class ActorSystemSpec extends FunSuite {
     as.tell[PriorityActor]("test", 1)
     as.tell[PriorityActor]("test", 5)
     as.tell[PriorityActor]("test", 3)
-    Thread.sleep(50) // Give time for priority queue to sort
+    Thread.sleep(10) // Give time for priority queue to sort
     as.tell[PriorityActor]("test", "done")
 
     latch.await(2, SECONDS)
@@ -744,7 +742,7 @@ class ActorSystemSpec extends FunSuite {
 
     case class CapacityActor() extends Actor {
       override def onMsg: PartialFunction[Any, Any] = {
-        case "block"   => Thread.sleep(1000) // Block to let mailbox fill
+        case "block"   => Thread.sleep(100) // Block to let mailbox fill
         case s: String =>
           receivedMessages.synchronized {
             receivedMessages += s
@@ -761,12 +759,12 @@ class ActorSystemSpec extends FunSuite {
 
     // Start with blocking message
     as.tell[CapacityActor]("test", "block")
-    Thread.sleep(50)
+    Thread.sleep(10)
 
     // Try to overflow the mailbox
     (1 to 10).foreach(i => as.tell[CapacityActor]("test", s"msg$i"))
 
-    Thread.sleep(1500) // Wait for processing
+    Thread.sleep(150) // Wait for processing
     as.shutdownAwait()
 
     val messages = receivedMessages.synchronized { receivedMessages.toList }
@@ -793,7 +791,7 @@ class ActorSystemSpec extends FunSuite {
     as.registerProp(props)
 
     as.tell[LoggingActor]("test", "message")
-    Thread.sleep(100)
+    Thread.sleep(20)
     as.shutdownAwait()
 
     val entries     = testLogger.getEntries
@@ -818,9 +816,9 @@ class ActorSystemSpec extends FunSuite {
     as.registerProp(props)
 
     as.tell[FailingActor]("test", "fail")
-    Thread.sleep(150)
+    Thread.sleep(30)
     as.tell[FailingActor]("test", "success")
-    Thread.sleep(50)
+    Thread.sleep(10)
     as.shutdownAwait()
 
     val entries       = testLogger.getEntries
@@ -845,7 +843,7 @@ class ActorSystemSpec extends FunSuite {
     as.registerProp(props)
 
     as.tell[StoppableActor]("test", "message")
-    Thread.sleep(150)
+    Thread.sleep(30)
     as.shutdownAwait()
 
     val entries    = testLogger.getEntries
@@ -869,7 +867,7 @@ class ActorSystemSpec extends FunSuite {
     as.registerProp(props)
 
     as.tell[FailActor]("test", "message")
-    Thread.sleep(150)
+    Thread.sleep(30)
     as.shutdownAwait()
 
     val entries    = testLogger.getEntries
@@ -891,7 +889,7 @@ class ActorSystemSpec extends FunSuite {
     as.registerProp(props)
 
     as.tell[TestActor]("test", "message")
-    Thread.sleep(50)
+    Thread.sleep(10)
     as.shutdownAwait()
 
     val entries        = testLogger.getEntries
@@ -919,7 +917,7 @@ class ActorSystemSpec extends FunSuite {
     as.registerProp(props)
 
     as.tell[BrokenActor]("test", "message")
-    Thread.sleep(150)
+    Thread.sleep(30)
     as.shutdownAwait()
 
     val entries     = testLogger.getEntries
@@ -1002,7 +1000,7 @@ class ActorSystemSpec extends FunSuite {
     case class SlowActor() extends Actor {
       override def onMsg: PartialFunction[Any, Any] = {
         case _: Ask[?] =>
-          Thread.sleep(5000) // Never complete the promise
+          Thread.sleep(500) // Never complete the promise
           ()
         case _         => ()
       }
@@ -1012,10 +1010,10 @@ class ActorSystemSpec extends FunSuite {
     val props = ActorProps.props[SlowActor](EmptyTuple)
     as.registerProp(props)
 
-    val future = as.ask[SlowActor, String]("test", "query", 100.millis)
+    val future = as.ask[SlowActor, String]("test", "query", 50.millis)
 
     intercept[AskTimeoutException] {
-      Await.result(future, 1.second)
+      Await.result(future, 500.millis)
     }
 
     as.shutdownAwait()
@@ -1224,7 +1222,7 @@ class ActorSystemSpec extends FunSuite {
     case class IgnoringActor() extends Actor {
       override def onMsg: PartialFunction[Any, Any] = { case _: Ask[?] =>
         // Never complete the promise
-        Thread.sleep(5000)
+        Thread.sleep(500)
       }
     }
 
@@ -1233,10 +1231,10 @@ class ActorSystemSpec extends FunSuite {
     as.registerProp(props)
 
     val future =
-      as.ask[IgnoringActor, String]("myActor", "myMessage", 100.millis)
+      as.ask[IgnoringActor, String]("myActor", "myMessage", 50.millis)
 
     val exception = intercept[AskTimeoutException] {
-      Await.result(future, 1.second)
+      Await.result(future, 500.millis)
     }
 
     assertEquals(exception.actorName, "myActor")
@@ -1525,7 +1523,7 @@ class ActorSystemSpec extends FunSuite {
     as.actorOf[TestActor](path)
 
     as.tellPath(path, "hello")
-    Thread.sleep(100)
+    Thread.sleep(20)
 
     val messages = receivedMessages.synchronized { receivedMessages.toList }
     assertEquals(messages, List("hello"))
@@ -1551,7 +1549,7 @@ class ActorSystemSpec extends FunSuite {
     as.actorOf[TestActor]("myactor")
 
     as.tellPath("/user/myactor", "hello")
-    Thread.sleep(100)
+    Thread.sleep(20)
 
     val messages = receivedMessages.synchronized { receivedMessages.toList }
     assertEquals(messages, List("hello"))
@@ -1597,7 +1595,7 @@ class ActorSystemSpec extends FunSuite {
 
     val refId = as.actorOf[TestActor]("myactor")
     as.tell(refId, "hello")
-    Thread.sleep(100)
+    Thread.sleep(20)
 
     val messages = receivedMessages.synchronized { receivedMessages.toList }
     assertEquals(messages, List("hello"))
@@ -1625,7 +1623,7 @@ class ActorSystemSpec extends FunSuite {
 
     // Stop the child
     as.tellPath(childPath, PoisonPill)
-    Thread.sleep(100)
+    Thread.sleep(20)
 
     // Verify child is removed from hierarchy
     assertEquals(
@@ -1719,7 +1717,7 @@ class ActorSystemSpec extends FunSuite {
 
     val refId = as.actorOf[ContextActor]("test")
     as.tell(refId, "getSelf")
-    Thread.sleep(100)
+    Thread.sleep(20)
 
     as.shutdownAwait()
 
@@ -1744,7 +1742,7 @@ class ActorSystemSpec extends FunSuite {
     val child  = as.actorOf[ChildActor](ActorPath.user("parent") / "child")
 
     as.tell(child, "getParent")
-    Thread.sleep(100)
+    Thread.sleep(20)
 
     as.shutdownAwait()
 
@@ -1767,7 +1765,7 @@ class ActorSystemSpec extends FunSuite {
 
     val actor = as.actorOf[TopLevelActor]("toplevel")
     as.tell(actor, "getParent")
-    Thread.sleep(100)
+    Thread.sleep(20)
 
     as.shutdownAwait()
 
@@ -1856,7 +1854,7 @@ class ActorSystemSpec extends FunSuite {
           context.actorOf[ChildActor]("worker1")
           context.actorOf[ChildActor]("worker2")
           context.actorOf[ChildActor]("worker3")
-          Thread.sleep(50) // Give time for children to register
+          Thread.sleep(10) // Give time for children to register
           childList = context.children
           latch.countDown()
         case _                => ()
@@ -1896,9 +1894,9 @@ class ActorSystemSpec extends FunSuite {
       override def onMsg: PartialFunction[Any, Any] = {
         case "createAndStop" =>
           val child = context.actorOf[ChildActor]("worker1")
-          Thread.sleep(50)  // Let child start
+          Thread.sleep(10)  // Let child start
           context.stop(child)
-          Thread.sleep(100) // Let child stop
+          Thread.sleep(20) // Let child stop
           val remaining = context.children
           childStopped = remaining.isEmpty
           latch.countDown()
@@ -2039,7 +2037,7 @@ class ActorSystemSpec extends FunSuite {
           (1 to 5).foreach { i =>
             context.actorOf[WorkerActor](s"worker$i")
           }
-          Thread.sleep(100) // Let workers register
+          Thread.sleep(20) // Let workers register
           workerCount = context.children.size
           latch.countDown()
         case _            => ()

@@ -80,7 +80,7 @@ class LoggingMiddlewareSpec extends FunSuite {
 
     val handlerWithDelay = new RequestHandler[String, String] {
       def handle(request: Request[String]): Response[String] = {
-        Thread.sleep(50) // Add some delay
+        Thread.sleep(10) // Add some delay
         Response(200, "ok")
       }
     }

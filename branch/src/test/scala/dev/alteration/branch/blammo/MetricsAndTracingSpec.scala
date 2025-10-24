@@ -86,7 +86,7 @@ class MetricsAndTracingSpec extends FunSuite {
       TestService.spanEvent("starting-work")
 
       val innerResult = TestService.traced("inner-operation") {
-        Thread.sleep(10) // Simulate work
+        Thread.sleep(1) // Simulate work
         42
       }
 
@@ -114,7 +114,7 @@ class MetricsAndTracingSpec extends FunSuite {
       )
     ) {
       // Simulate database query
-      Thread.sleep(5)
+      Thread.sleep(1)
       "user data"
     }
 
