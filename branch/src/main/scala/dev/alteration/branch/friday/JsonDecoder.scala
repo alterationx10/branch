@@ -132,8 +132,8 @@ object JsonDecoder {
   }
 
   /** Creates a JsonDecoder for an iterable type
-    * @param builder
-    *   the builder for the iterable type
+    * @param builderFactory
+    *   a function that creates a fresh builder for the iterable type
     * @param decoder
     *   the JsonDecoder for the element type
     * @tparam A
@@ -144,11 +144,13 @@ object JsonDecoder {
     *   a new JsonDecoder for the iterable type
     */
   private[friday] def iterableDecoder[A, F[_]](
-      builder: mutable.Builder[A, F[A]]
+      builderFactory: => mutable.Builder[A, F[A]]
   )(using decoder: JsonDecoder[A]): JsonDecoder[F[A]] =
     (json: Json) =>
       Try {
-        var idx = 0
+        // Create a fresh builder for each decode to avoid state reuse
+        val builder = builderFactory
+        var idx     = 0
         json.arrVal.foldLeft(builder)((b, j) => {
           decoder.decode(j) match {
             case Success(value) =>
