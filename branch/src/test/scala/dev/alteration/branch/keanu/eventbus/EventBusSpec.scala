@@ -75,7 +75,7 @@ class EventBusSpec extends munit.FunSuite {
     testEventBus.publishNoTopic(2)
 
     Thread.sleep(
-      100
+      20
     ) // Give time for any potential (unwanted) message processing
     assertEquals(counter, 1)
   }
@@ -99,7 +99,7 @@ class EventBusSpec extends munit.FunSuite {
     testEventBus.publishNoTopic(2)
 
     Thread.sleep(
-      100
+      20
     ) // Give time for any potential (unwanted) message processing
     assertEquals(counter, 1)
   }
@@ -206,7 +206,7 @@ class EventBusSpec extends munit.FunSuite {
     // Messages published after shutdown should not be processed
     val oldCounter = counter.get()
     testEventBus.publishNoTopic(10)
-    Thread.sleep(100) // Give time for any potential message processing
+    Thread.sleep(20) // Give time for any potential message processing
 
     assertEquals(
       counter.get(),
@@ -241,7 +241,7 @@ class EventBusSpec extends munit.FunSuite {
     // Messages after close should not be processed
     val oldCounter = counter
     testEventBus.publishNoTopic(10)
-    Thread.sleep(100) // Give time for any potential message processing
+    Thread.sleep(20) // Give time for any potential message processing
 
     assertEquals(
       counter,
@@ -278,7 +278,7 @@ class EventBusSpec extends munit.FunSuite {
 
     // Publish a message
     testEventBus.publishNoTopic(42)
-    Thread.sleep(50) // Give time for error handling
+    Thread.sleep(10) // Give time for error handling
 
     assertEquals(errorCount, 1)
     assert(lastError.isDefined)

@@ -68,7 +68,7 @@ class TypedActorSpec extends FunSuite {
 
     as.tell[TestActor]("test", ValidMessage("hello"))
     as.tell[TestActor]("test", "raw string") // Should go to dead letters
-    Thread.sleep(100)
+    Thread.sleep(20)
 
     as.shutdownAwait()
 
@@ -146,7 +146,7 @@ class TypedActorSpec extends FunSuite {
 
     as.tell[SelectiveActor]("test", Handled("processed"))
     as.tell[SelectiveActor]("test", Unhandled("ignored"))
-    Thread.sleep(100)
+    Thread.sleep(20)
 
     as.shutdownAwait()
 
@@ -220,7 +220,7 @@ class TypedActorSpec extends FunSuite {
     as.registerProp(props)
 
     as.tell[LifecycleActor]("test", Fail)
-    Thread.sleep(150) // Wait for restart
+    Thread.sleep(30) // Wait for restart
     as.tell[LifecycleActor]("test", Done)
     latch.await(2, SECONDS)
     as.shutdownAwait()
@@ -252,7 +252,7 @@ class TypedActorSpec extends FunSuite {
     as.registerProp(props)
 
     as.tell[SupervisedActor]("test", Fail)
-    Thread.sleep(150)
+    Thread.sleep(30)
     as.tell[SupervisedActor]("test", Done)
     latch.await(2, SECONDS)
     as.shutdownAwait()
@@ -300,7 +300,7 @@ class TypedActorSpec extends FunSuite {
         case Start       =>
           // Block to let all priority messages queue up
           startLatch.countDown()
-          Thread.sleep(200)
+          Thread.sleep(50)
         case Priority(v) =>
           receivedMessages.synchronized {
             receivedMessages += v

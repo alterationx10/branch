@@ -24,7 +24,7 @@ trait HttpFixtureSuite extends FunSuite {
         }(ExecutionContext.global)
 
         // Give server time to start
-        Thread.sleep(100)
+        Thread.sleep(50)
 
         ServerFixture(server, port)
       },
