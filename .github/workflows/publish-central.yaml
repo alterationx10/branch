@@ -33,14 +33,44 @@ jobs:
       - name: Setup sbt launcher
         uses: sbt/setup-sbt@v1
 
-      - name: Run tests
-        run: sbt test
-
       - name: Build + Sign
         run: sbt publishSigned
         env:
           BRANCH_VERSION: ${{ env.BRANCH_VERSION }}
           PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+
+      - name: blammo tests
+        run: sbt "testOnly *blammo*"
+
+      - name: friday tests
+        run: sbt "testOnly *friday*"
+
+      - name: hollywood tests
+        run: sbt "testOnly *hollywood*"
+
+      - name: keanu tests
+        run: sbt "testOnly *keanu*"
+
+      - name: lzy tests
+        run: sbt "testOnly *lzy*"
+
+      - name: macaroni tests
+        run: sbt "testOnly *macaroni*"
+
+      - name: mustachio tests
+        run: sbt "testOnly *mustachio*"
+
+      - name: piggy tests
+        run: sbt "testOnly *piggy*"
+
+      - name: spider tests
+        run: sbt "testOnly *spider*"
+
+      - name: ursula tests
+        run: sbt "testOnly *ursula*"
+
+      - name: veil tests
+        run: sbt "testOnly *veil*"
 
       - name: ZIP
         run: |
